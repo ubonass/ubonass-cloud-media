@@ -197,10 +197,10 @@ public class CallRpcHandler extends RpcHandler {
             logger.info("Accepted call from '{}' to '{}'", fromId, targetId);
 
             UserMediaSession pipeline = null;
-            logger.info("caller session {},callee session'",
-                    calleer.getSessionId(), callee.getSessionId());
-            
-            pipeline = userMediaSessions.get(callee.getSessionId());
+            /*logger.info("caller session {},callee session'",
+                    calleer.getSessionId(), callee.getSessionId());*/
+
+            pipeline = userMediaSessions.get(calleer.getSessionId());
 
             callee.setWebRtcEndpoint(pipeline.getCalleeWebRtcEp());
             pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
