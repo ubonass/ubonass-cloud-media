@@ -377,9 +377,10 @@ function onError() {
 function onIceCandidate(candidate) {
     //iceCandidatesList.push(candidate);
     console.log("Local candidate" + JSON.stringify(candidate));
-    //预先保存
     var message = {
-        candidate: candidate
+        candidate: candidate.candidate,
+        sdpMid:candidate.sdpMid,
+        sdpMLineIndex:candidate.sdpMLineIndex
     };
     sendMessageParams("onIceCandidate", message, msgId++);
 }
