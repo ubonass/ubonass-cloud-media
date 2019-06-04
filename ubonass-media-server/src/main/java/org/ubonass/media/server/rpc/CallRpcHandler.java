@@ -222,16 +222,16 @@ public class CallRpcHandler extends RpcHandler {
             //startCommunication.addProperty("id", "startCommunication");
             startCommunication.addProperty(
                     ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
-            synchronized (callee) {
-                logger.info("-------------8-------------------------");
-                notificationService.sendNotification(
-                        callee.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
-            }
+            logger.info("-------------8-------------------------");
+            notificationService.sendNotification(
+                        rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+
             logger.info("-----------------9---------------------");
             pipeline.getCalleeWebRtcEp().gatherCandidates();
             logger.info("-----------------10---------------------");
             String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
             String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
+            /*
             JsonObject notify = new JsonObject();
             //notify.addProperty("id", "callResponse");
             notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT);
@@ -243,7 +243,7 @@ public class CallRpcHandler extends RpcHandler {
                         calleer.getParticipantPrivateId(), ProtocolElements.ONINCOMING_CALL_METHOD, notify);
                 logger.info("--------------11------------------------");
             }
-            pipeline.getCallerWebRtcEp().gatherCandidates();
+            pipeline.getCallerWebRtcEp().gatherCandidates();*/
 
         } else {
             JsonObject notify = new JsonObject();
