@@ -379,7 +379,6 @@ function onIceCandidate(candidate) {
     console.log("Local candidate" + JSON.stringify(candidate));
     //预先保存
     var message = {
-        /!*id: 'onIceCandidate',*!/
         candidate: candidate
     };
     sendMessageParams("onIceCandidate", message, msgId++);
