@@ -15,7 +15,7 @@
  *
  */
 
-var ws = new WebSocket('wss://ubonass:4443/call');
+var ws = new WebSocket('wss://ubonass.com:4443/call');
 var videoInput;
 var videoOutput;
 var webRtcPeer;
