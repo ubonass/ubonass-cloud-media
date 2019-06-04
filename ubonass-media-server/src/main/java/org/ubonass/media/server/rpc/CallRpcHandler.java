@@ -1,0 +1,282 @@
+package org.ubonass.media.server.rpc;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.kurento.client.EventListener;
+import org.kurento.client.IceCandidate;
+import org.kurento.client.IceCandidateFoundEvent;
+import org.kurento.jsonrpc.JsonUtils;
+import org.kurento.jsonrpc.Transaction;
+import org.kurento.jsonrpc.message.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.ubonass.media.client.CloudMediaException;
+import org.ubonass.media.client.CloudMediaException.Code;
+import org.ubonass.media.client.internal.ProtocolElements;
+import org.ubonass.media.server.call.UserMediaSession;
+import org.ubonass.media.server.call.UserRpcConnection;
+import org.ubonass.media.server.call.UserRpcRegistry;
+import org.ubonass.media.server.kurento.KurentoClientProvider;
+import org.ubonass.media.server.utils.RandomStringGenerator;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class CallRpcHandler extends RpcHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(CallRpcHandler.class);
+
+    @Autowired
+    private UserRpcRegistry registry;
+
+    @Autowired
+    private RpcNotificationService notificationService;
+
+    @Autowired
+    private KurentoClientProvider kcProvider;
+
+    /**
+     * 每次建立视频或者音频通信后有一个唯一的KurentoSession
+     * Key为房间号,如果不是room则随机生成
+     */
+    private Map<String, UserMediaSession> userMediaSessions = new ConcurrentHashMap<>();
+
+    @Override
+    public void handleRequest(Transaction transaction,
+                              Request<JsonObject> request) throws Exception {
+        super.handleRequest(transaction, request);
+        String participantPrivateId =
+                getParticipantPrivateIdByTransaction(transaction);
+
+        logger.info("WebSocket session #{} - Request: {}", participantPrivateId, request);
+        RpcConnection rpcConnection;
+        if (ProtocolElements.REGISTER_METHOD.equals(request.getMethod())) {
+            // Store new RpcConnection information if method 'keepLive'
+            rpcConnection = notificationService.newRpcConnection(transaction, request);
+        } else if (notificationService.getRpcConnection(participantPrivateId) == null) {
+            // Throw exception if any method is called before 'joinCloud'
+            logger.warn(
+                    "No connection found for participant with privateId {} when trying to execute method '{}'. Method 'Session.connect()' must be the first operation called in any session",
+                    participantPrivateId, request.getMethod());
+            throw new CloudMediaException(Code.TRANSPORT_ERROR_CODE,
+                    "No connection found for participant with privateId " + participantPrivateId
+                            + ". Method 'Session.connect()' must be the first operation called in any session");
+        }
+
+        rpcConnection = notificationService.addTransaction(transaction, request);
+
+        transaction.startAsync();
+
+        switch (request.getMethod()) {
+            case ProtocolElements.REGISTER_METHOD:
+                register(rpcConnection, request);
+                break;
+            case ProtocolElements.CALL_METHOD:
+                call(rpcConnection, request);
+                break;
+            case ProtocolElements.ONINCOMING_CALL_METHOD:
+                onIncomingCall(rpcConnection, request);
+                break;
+            case ProtocolElements.ONICECANDIDATE_METHOD: {
+                JsonElement parse =
+                        new JsonParser().parse(getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM));
+                JsonObject candidate = (JsonObject) parse;
+                UserRpcConnection user = registry.getByUserRpcConnection(rpcConnection);
+                if (user != null) {
+                    IceCandidate cand =
+                            new IceCandidate(candidate.get("candidate").getAsString(), candidate.get("sdpMid")
+                                    .getAsString(), candidate.get("sdpMLineIndex").getAsInt());
+                    user.addCandidate(cand);
+                }
+                break;
+            }
+            case ProtocolElements.CALL_STOP_METHOD:
+                stop(rpcConnection, request);
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    private void register(RpcConnection rpcConnection, Request<JsonObject> request) {
+        JsonObject result = new JsonObject();
+        String userId = getStringParam(request, ProtocolElements.REGISTER_USER_PARAM);
+        result.addProperty("method", ProtocolElements.REGISTER_METHOD);
+        result.addProperty(ProtocolElements.REGISTER_USER_PARAM, userId);
+        String responseMsg = null;
+        if (!request.getParams().has(ProtocolElements.REGISTER_USER_PARAM)) {
+            responseMsg = "rejected: empty user key";
+            //result.addProperty("method", ProtocolElements.REGISTER_METHOD);
+            result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
+            result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
+        } else {
+            UserRpcConnection user = new UserRpcConnection(rpcConnection, userId);
+            if (userId.isEmpty()) {
+                responseMsg = "rejected: empty user name";
+                result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
+                result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
+            } else if (registry.exists(userId)) {
+                responseMsg = "rejected: user '" + userId + "' already registered";
+                result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
+                result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
+            } else {
+                logger.info("register use........");
+                registry.register(user);
+                result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_ACCEPTD);
+            }
+        }
+
+        notificationService.sendResponse(rpcConnection.getParticipantPrivateId(), request.getId(), result);
+    }
+
+    private void call(RpcConnection rpcConnection, Request<JsonObject> request) {
+        String targetId = getStringParam(request, ProtocolElements.CALL_TARGETUSER_PARAM);
+        String fromId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
+        String media = null;
+        if (request.getParams().has(ProtocolElements.CALL_MEDIA_PARAM))
+            media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
+        UserRpcConnection caller = registry.getByUserRpcConnection(rpcConnection);
+        if (registry.exists(targetId)) {
+            JsonObject notify = new JsonObject();
+            caller.setSdpOffer(getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM));
+            caller.setCallingTo(targetId);
+            //判断目标用户是否在线
+            String sessionId = RandomStringGenerator.generateRandomChain();
+            UserMediaSession one2OneSession =
+                    new UserMediaSession(kcProvider.getKurentoClient());
+            userMediaSessions.putIfAbsent(sessionId, one2OneSession);
+            caller.setSessionId(sessionId);//保存sessionId
+            notify.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, fromId);
+            if (media != null)//如果未空表示全部
+                notify.addProperty(ProtocolElements.INCOMINGCALL_MEDIA_PARAM, media);
+            UserRpcConnection callee = registry.getByUserId(targetId);
+            callee.sendNotification(ProtocolElements.INCOMINGCALL_METHOD, notify);
+            callee.setCallingFrom(fromId);
+            callee.setSessionId(sessionId);//保存sessionId
+        } else {
+            JsonObject result = new JsonObject();
+            result.addProperty("method", ProtocolElements.CALL_METHOD);
+            result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
+                    "rejected: user '" + targetId + "' is not registered");
+            caller.sendResponse(request.getId(), result);
+        }
+    }
+
+    private void onIncomingCall(RpcConnection rpcConnection, Request<JsonObject> request) {
+        String type = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM);
+        //原始ID发起者是谁
+        String fromId = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_FROMUSER_PARAM);
+        String media = null;//如果为null则说明,all,视频语音一体
+        if (request.getParams().has(ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM))
+            media = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM);
+        final UserRpcConnection calleer = registry.getByUserId(fromId);
+        final UserRpcConnection callee = registry.getByUserRpcConnection(rpcConnection);
+        String targetId = calleer.getCallingTo();//这是当前发送者的ID
+        //需要判断sessionId是否存在
+        if (ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT.equals(type)) {
+            logger.info("Accepted call from '{}' to '{}'", fromId, targetId);
+
+            UserMediaSession pipeline = null;
+
+            pipeline = userMediaSessions.get(callee.getSessionId());
+
+            callee.setWebRtcEndpoint(pipeline.getCalleeWebRtcEp());
+            pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
+                    new IceCandidateEventListener(callee));
+
+            calleer.setWebRtcEndpoint(pipeline.getCallerWebRtcEp());
+            pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
+                    new IceCandidateEventListener(calleer));
+
+            String calleeSdpOffer = getStringParam(request,
+                    ProtocolElements.ONIINCOMING_CALL_SDPOFFER_PARAM);
+            String calleeSdpAnswer = pipeline.generateSdpAnswerForCallee(calleeSdpOffer);
+
+            JsonObject startCommunication = new JsonObject();
+            //startCommunication.addProperty("id", "startCommunication");
+            startCommunication.addProperty(
+                    ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
+            synchronized (callee) {
+                callee.sendNotification(ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+            }
+
+            pipeline.getCalleeWebRtcEp().gatherCandidates();
+
+            String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
+            String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
+            JsonObject notify = new JsonObject();
+            //notify.addProperty("id", "callResponse");
+            notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT);
+            if (media != null)
+                notify.addProperty(ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM, media);
+            notify.addProperty(ProtocolElements.ONIINCOMING_CALL_SDPANSWER_PARAM, callerSdpAnswer);
+            synchronized (calleer) {
+                calleer.sendNotification(ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+            }
+            pipeline.getCallerWebRtcEp().gatherCandidates();
+
+        } else {
+            JsonObject notify = new JsonObject();
+            if (request.getParams().has(ProtocolElements.ONIINCOMING_CALL_REJECT_REASON)) {
+                notify.addProperty(ProtocolElements.ONIINCOMING_CALL_REJECT_REASON, getStringParam(request,
+                        ProtocolElements.ONIINCOMING_CALL_REJECT_REASON));
+            }
+            notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_REJECT);
+            calleer.sendNotification(ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+        }
+    }
+
+    private class IceCandidateEventListener implements EventListener<IceCandidateFoundEvent> {
+
+        private UserRpcConnection rpcConnection;
+
+        private IceCandidateEventListener(UserRpcConnection rpcConnection) {
+            this.rpcConnection = rpcConnection;
+        }
+
+        @Override
+        public void onEvent(IceCandidateFoundEvent event) {
+            if (rpcConnection == null ||
+                    rpcConnection.getSession() == null) return;
+            JsonObject notify = new JsonObject();
+            notify.add(ProtocolElements.ICECANDIDATE_CANDIDATE_PARAM,
+                    JsonUtils.toJsonObject(event.getCandidate()));
+            try {
+                synchronized (rpcConnection.getSession()) {
+                    rpcConnection.getSession().sendNotification(
+                            ProtocolElements.ICECANDIDATE_METHOD, notify);
+                }
+            } catch (IOException e) {
+                logger.info(e.getMessage());
+            }
+        }
+    }
+
+    public void stop(RpcConnection rpcConnection, Request<JsonObject> request) {
+        UserRpcConnection stopperUser =
+                registry.getByUserRpcConnection(rpcConnection);
+        if (userMediaSessions.containsKey(stopperUser.getSessionId())) {
+            UserMediaSession userMediaSession =
+                    userMediaSessions.remove(stopperUser.getSessionId());
+            userMediaSession.release();
+
+            UserRpcConnection stoppedUser =
+                    (stopperUser.getCallingFrom() != null) ? registry.getByUserId(stopperUser
+                            .getCallingFrom()) : stopperUser.getCallingTo() != null ? registry
+                            .getByUserId(stopperUser.getCallingTo()) : null;
+
+            if (stoppedUser != null) {
+                JsonObject message = new JsonObject();
+                //message.addProperty("id", "stopCommunication");
+                stoppedUser.sendNotification(ProtocolElements.STOP_COMMUNICATION_METHOD, null);
+                stoppedUser.clear();
+            }
+            stopperUser.clear();
+        }
+    }
+
+}
