@@ -79,19 +79,9 @@ public class CallRpcHandler extends RpcHandler {
             case ProtocolElements.ONINCOMING_CALL_METHOD:
                 onIncomingCall(rpcConnection, request);
                 break;
-            case ProtocolElements.ONICECANDIDATE_METHOD: {
-                JsonElement parse =
-                        new JsonParser().parse(getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM));
-                JsonObject candidate = (JsonObject) parse;
-                UserRpcConnection user = registry.getByUserRpcConnection(rpcConnection);
-                if (user != null) {
-                    IceCandidate cand =
-                            new IceCandidate(candidate.get("candidate").getAsString(), candidate.get("sdpMid")
-                                    .getAsString(), candidate.get("sdpMLineIndex").getAsInt());
-                    user.addCandidate(cand);
-                }
+            case ProtocolElements.ONICECANDIDATE_METHOD:
+                onIceCandidate(rpcConnection, request);
                 break;
-            }
             case ProtocolElements.CALL_STOP_METHOD:
                 stop(rpcConnection, request);
                 break;
@@ -142,7 +132,7 @@ public class CallRpcHandler extends RpcHandler {
         JsonObject result = new JsonObject();
         if (registry.exists(targetId)) {//判断目标用户是否在线
 
-            logger.info("exists target user {}",targetId);
+            logger.info("exists target user {}", targetId);
 
             caller.setSdpOffer(getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM));
             caller.setCallingTo(targetId);
@@ -158,28 +148,28 @@ public class CallRpcHandler extends RpcHandler {
             callee.setSessionId(sessionId);
             JsonObject notify = new JsonObject();
 
-            logger.info("start send incoming cal to  target user {}",targetId);
+            logger.info("start send incoming cal to  target user {}", targetId);
 
             notify.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, fromId);
             if (media != null)//如果未空表示全部
                 notify.addProperty(ProtocolElements.INCOMINGCALL_MEDIA_PARAM, media);
             notificationService.sendNotification(
-                    callee.getParticipantPrivateId(),ProtocolElements.INCOMINGCALL_METHOD,notify);
+                    callee.getParticipantPrivateId(), ProtocolElements.INCOMINGCALL_METHOD, notify);
 
-            logger.info("end send incoming cal to  target user {}",targetId);
+            logger.info("end send incoming cal to  target user {}", targetId);
 
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");
 
-            notificationService.sendResponse(caller.getParticipantPrivateId(),request.getId(),result);
+            notificationService.sendResponse(caller.getParticipantPrivateId(), request.getId(), result);
 
         } else {
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");
-            logger.info("rejected send incoming call to {} user,reason its not registered",targetId);
+            logger.info("rejected send incoming call to {} user,reason its not registered", targetId);
             notificationService.sendResponse(
-                    caller.getParticipantPrivateId(),request.getId(),result);
+                    caller.getParticipantPrivateId(), request.getId(), result);
         }
     }
 
@@ -219,7 +209,7 @@ public class CallRpcHandler extends RpcHandler {
                     ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
             synchronized (callee) {
                 notificationService.sendNotification(
-                        callee.getParticipantPrivateId(),ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+                        callee.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
             }
 
             pipeline.getCalleeWebRtcEp().gatherCandidates();
@@ -234,7 +224,7 @@ public class CallRpcHandler extends RpcHandler {
             notify.addProperty(ProtocolElements.ONIINCOMING_CALL_SDPANSWER_PARAM, callerSdpAnswer);
             synchronized (calleer) {
                 notificationService.sendNotification(
-                        calleer.getParticipantPrivateId(),ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+                        calleer.getParticipantPrivateId(), ProtocolElements.ONINCOMING_CALL_METHOD, notify);
             }
             pipeline.getCallerWebRtcEp().gatherCandidates();
 
@@ -246,9 +236,27 @@ public class CallRpcHandler extends RpcHandler {
             }
             notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_REJECT);
             notificationService.sendNotification(
-                    calleer.getParticipantPrivateId(),ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+                    calleer.getParticipantPrivateId(), ProtocolElements.ONINCOMING_CALL_METHOD, notify);
         }
     }
+
+    private void onIceCandidate(RpcConnection rpcConnection, Request<JsonObject> request) {
+
+        String candidate =
+                getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
+        JsonParser parser = new JsonParser();
+        JsonElement elment = parser.parse(candidate);
+        JsonObject candidateObject = elment.getAsJsonObject();
+        UserRpcConnection user = registry.getByUserRpcConnection(rpcConnection);
+        if (user != null) {
+            IceCandidate cand = new IceCandidate(
+                            candidateObject.get("candidate").toString(),
+                            candidateObject.get("sdpMid").toString(),
+                            Integer.valueOf(candidateObject.get("sdpMLineIndex").toString()));
+            user.addCandidate(cand);
+        }
+    }
+
 
     private class IceCandidateEventListener implements EventListener<IceCandidateFoundEvent> {
 
@@ -294,7 +302,7 @@ public class CallRpcHandler extends RpcHandler {
                 //message.addProperty("id", "stopCommunication");
 
                 notificationService.sendNotification(
-                        stoppedUser.getParticipantPrivateId(),ProtocolElements.STOP_COMMUNICATION_METHOD, null);
+                        stoppedUser.getParticipantPrivateId(), ProtocolElements.STOP_COMMUNICATION_METHOD, null);
                 stoppedUser.clear();
             }
             stopperUser.clear();
