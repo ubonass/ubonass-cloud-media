@@ -195,9 +195,9 @@ function callResponse(message) {
         //发送ice....
         console.log("callResponse success");
         if (iceCandidatesList.length != 0) {
-            for (var candidate in iceCandidatesList) {
+            for (var index in iceCandidatesList) {
                 var message = {
-                    candidate: candidate
+                    candidate: iceCandidatesList[index]
                 };
                 sendMessageParams("onIceCandidate", message, msgId++);
             }

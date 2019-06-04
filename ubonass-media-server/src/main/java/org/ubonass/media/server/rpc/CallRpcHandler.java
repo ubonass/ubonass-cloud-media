@@ -174,7 +174,6 @@ public class CallRpcHandler extends RpcHandler {
             notificationService.sendResponse(caller.getParticipantPrivateId(),request.getId(),result);
 
         } else {
-
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");
