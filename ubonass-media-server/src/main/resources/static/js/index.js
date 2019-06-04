@@ -383,7 +383,7 @@ function sendMessageParams(method, params, id) {
         'jsonrpc': '2.0'
     }
     var jsonMessage = JSON.stringify(object);
-    console.log('Senging message: ' + jsonMessage);
+    //console.log('Senging message: ' + jsonMessage);
     ws.send(jsonMessage);
 }
 
