@@ -139,6 +139,7 @@ public class CallRpcHandler extends RpcHandler {
         if (request.getParams().has(ProtocolElements.CALL_MEDIA_PARAM))
             media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         UserRpcConnection caller = registry.getByUserRpcConnection(rpcConnection);
+        JsonObject result = new JsonObject();
         if (registry.exists(targetId)) {//判断目标用户是否在线
 
             logger.info("exists target user {}",targetId);
@@ -166,8 +167,14 @@ public class CallRpcHandler extends RpcHandler {
                     callee.getParticipantPrivateId(),ProtocolElements.INCOMINGCALL_METHOD,notify);
 
             logger.info("end send incoming cal to  target user {}",targetId);
+
+            result.addProperty("method", ProtocolElements.CALL_METHOD);
+            result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");
+
+            notificationService.sendResponse(caller.getParticipantPrivateId(),request.getId(),result);
+
         } else {
-            JsonObject result = new JsonObject();
+
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");

@@ -40,6 +40,8 @@ const REGISTERED = 2;
 var msgId = 0;
 var userId;
 
+var iceCandidatesList = new Array();
+
 function setRegisterState(nextState) {
     switch (nextState) {
         case NOT_REGISTERED:
@@ -112,6 +114,9 @@ function handlerResult(message) {
         case 'register':
             resgisterResponse(message);
             break;
+        case 'call':
+            callResponse(message);
+            break;
     }
 }
 
@@ -123,7 +128,7 @@ function handlerMethod(message) {
             incomingCall(message);
             break;
         case 'onIncomingCall':
-            callResponse(message);
+            onIncomingCall(message);
             break;
         case 'startCommunication':
             startCommunication(message);
@@ -180,6 +185,25 @@ ws.onmessage = function onmessage(message) {
     }*/
 }
 
+function callResponse(message) {
+    if (message.response != 'OK') {
+        var errorMessage = message.response ? message.response
+            : 'Unknown reason for register rejection.';
+        console.log(errorMessage);
+        alert('Error registering user. See console for further information.');
+    } else {
+        //发送ice....
+        if (iceCandidatesList.length != 0) {
+            for (var candidate in iceCandidatesList) {
+                var message = {
+                    candidate: candidate
+                };
+                sendMessageParams("onIceCandidate", message, msgId++);
+            }
+        }
+    }
+}
+
 function resgisterResponse(message) {
     if (message.type == 'accepted') {
         setRegisterState(REGISTERED);
@@ -192,7 +216,7 @@ function resgisterResponse(message) {
     }
 }
 
-function callResponse(message) {
+function onIncomingCall(message) {
     if (message.type != 'accept') {
         console.info('Call not accepted by peer. Closing call');
         var errorMessage = message.reason ? message.reason
@@ -345,14 +369,19 @@ function onError() {
     setCallState(NO_CALL);
 }
 
+/**
+ * 先进行保存当接收到call返回的时候再发送
+ * @param candidate
+ */
 function onIceCandidate(candidate) {
+    iceCandidatesList.push(candidate);
     console.log("Local candidate" + JSON.stringify(candidate));
-
-    var message = {
-        /*id: 'onIceCandidate',*/
+    //预先保存
+    /*var message = {
+        /!*id: 'onIceCandidate',*!/
         candidate: candidate
     };
-    sendMessageParams("onIceCandidate", message, msgId++);
+    sendMessageParams("onIceCandidate", message, msgId++);*/
 }
 
 function sendMessage(message) {
