@@ -117,7 +117,7 @@ function handlerResult(message) {
 
 function handlerMethod(message) {
     var strMessage = JSON.stringify(message)
-    console.info('Method message: ' + strMessage.toString());
+    //console.info('Method message: ' + strMessage.toString());
     switch (message.method) {
         case 'incomingCall':
             incomingCall(message);
@@ -141,16 +141,6 @@ function handlerMethod(message) {
         default:
             console.error('Unrecognized message', parsedMessage);
     }
-}
-
-function onopen() {
-    setRegisterState(REGISTERING);
-
-    var message = {
-        userId: name,
-    };
-    sendMessageParams("register", message, msgId++);
-    document.getElementById('peer').focus();
 }
 
 ws.onmessage = function onmessage(message) {

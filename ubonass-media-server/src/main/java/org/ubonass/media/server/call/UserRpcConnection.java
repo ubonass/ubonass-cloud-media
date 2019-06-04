@@ -62,7 +62,7 @@ public class UserRpcConnection extends RpcConnection {
         this.callingFrom = callingFrom;
     }
 
-    public void sendResponse(Integer transactionId, JsonObject result) {
+    /*public void sendResponse(Integer transactionId, JsonObject result) {
         logger.info("Sending response from user '{}': {}", userId,
                 result.toString());
         notificationService.sendResponse(getParticipantPrivateId(), transactionId, result);
@@ -81,7 +81,7 @@ public class UserRpcConnection extends RpcConnection {
 
         notificationService.sendErrorResponse(getParticipantPrivateId(),
                 transactionId, data, error);
-    }
+    }*/
 
     public void setWebRtcEndpoint(WebRtcEndpoint webRtcEndpoint) {
         this.webRtcEndpoint = webRtcEndpoint;

@@ -50,7 +50,6 @@ public class CallRpcHandler extends RpcHandler {
         super.handleRequest(transaction, request);
         String participantPrivateId =
                 getParticipantPrivateIdByTransaction(transaction);
-
         logger.info("WebSocket session #{} - Request: {}", participantPrivateId, request);
         RpcConnection rpcConnection;
         if (ProtocolElements.REGISTER_METHOD.equals(request.getMethod())) {
@@ -140,29 +139,41 @@ public class CallRpcHandler extends RpcHandler {
         if (request.getParams().has(ProtocolElements.CALL_MEDIA_PARAM))
             media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         UserRpcConnection caller = registry.getByUserRpcConnection(rpcConnection);
-        if (registry.exists(targetId)) {
-            JsonObject notify = new JsonObject();
+        if (registry.exists(targetId)) {//判断目标用户是否在线
+
+            logger.info("exists target user {}",targetId);
+
             caller.setSdpOffer(getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM));
             caller.setCallingTo(targetId);
-            //判断目标用户是否在线
+            //生成session
             String sessionId = RandomStringGenerator.generateRandomChain();
             UserMediaSession one2OneSession =
                     new UserMediaSession(kcProvider.getKurentoClient());
             userMediaSessions.putIfAbsent(sessionId, one2OneSession);
             caller.setSessionId(sessionId);//保存sessionId
+
+            UserRpcConnection callee = registry.getByUserId(targetId);
+            callee.setCallingFrom(fromId);
+            callee.setSessionId(sessionId);
+            JsonObject notify = new JsonObject();
+
+            logger.info("start send incoming cal to  target user {}",targetId);
+
             notify.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, fromId);
             if (media != null)//如果未空表示全部
                 notify.addProperty(ProtocolElements.INCOMINGCALL_MEDIA_PARAM, media);
-            UserRpcConnection callee = registry.getByUserId(targetId);
-            callee.sendNotification(ProtocolElements.INCOMINGCALL_METHOD, notify);
-            callee.setCallingFrom(fromId);
-            callee.setSessionId(sessionId);//保存sessionId
+            notificationService.sendNotification(
+                    callee.getParticipantPrivateId(),ProtocolElements.INCOMINGCALL_METHOD,notify);
+
+            logger.info("end send incoming cal to  target user {}",targetId);
         } else {
             JsonObject result = new JsonObject();
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");
-            caller.sendResponse(request.getId(), result);
+            logger.info("rejected send incoming call to {} user,reason its not registered",targetId);
+            notificationService.sendResponse(
+                    caller.getParticipantPrivateId(),request.getId(),result);
         }
     }
 
@@ -201,7 +212,8 @@ public class CallRpcHandler extends RpcHandler {
             startCommunication.addProperty(
                     ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
             synchronized (callee) {
-                callee.sendNotification(ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+                notificationService.sendNotification(
+                        callee.getParticipantPrivateId(),ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
             }
 
             pipeline.getCalleeWebRtcEp().gatherCandidates();
@@ -215,7 +227,8 @@ public class CallRpcHandler extends RpcHandler {
                 notify.addProperty(ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM, media);
             notify.addProperty(ProtocolElements.ONIINCOMING_CALL_SDPANSWER_PARAM, callerSdpAnswer);
             synchronized (calleer) {
-                calleer.sendNotification(ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+                notificationService.sendNotification(
+                        calleer.getParticipantPrivateId(),ProtocolElements.ONINCOMING_CALL_METHOD, notify);
             }
             pipeline.getCallerWebRtcEp().gatherCandidates();
 
@@ -226,7 +239,8 @@ public class CallRpcHandler extends RpcHandler {
                         ProtocolElements.ONIINCOMING_CALL_REJECT_REASON));
             }
             notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_REJECT);
-            calleer.sendNotification(ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+            notificationService.sendNotification(
+                    calleer.getParticipantPrivateId(),ProtocolElements.ONINCOMING_CALL_METHOD, notify);
         }
     }
 
@@ -272,7 +286,9 @@ public class CallRpcHandler extends RpcHandler {
             if (stoppedUser != null) {
                 JsonObject message = new JsonObject();
                 //message.addProperty("id", "stopCommunication");
-                stoppedUser.sendNotification(ProtocolElements.STOP_COMMUNICATION_METHOD, null);
+
+                notificationService.sendNotification(
+                        stoppedUser.getParticipantPrivateId(),ProtocolElements.STOP_COMMUNICATION_METHOD, null);
                 stoppedUser.clear();
             }
             stopperUser.clear();
