@@ -327,7 +327,7 @@ function onOfferCall(error, offerSdp) {
         return console.error('Error generating the offer');
     console.log('Invoking SDP offer callback function');
     var message = {
-        fromId: userId
+        fromId: userId,
         targetId: document.getElementById('peer').value,
         media: "all",
         sdpOffer: offerSdp
