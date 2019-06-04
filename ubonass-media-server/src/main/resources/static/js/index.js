@@ -193,6 +193,7 @@ function callResponse(message) {
         alert('Error registering user. See console for further information.');
     } else {
         //发送ice....
+        console.log("callResponse success");
         if (iceCandidatesList.length != 0) {
             for (var candidate in iceCandidatesList) {
                 var message = {
