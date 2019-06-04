@@ -40,7 +40,8 @@ public class UserRpcRegistry {
 
     public UserRpcConnection
     getByUserRpcConnection(RpcConnection rpcConnection) {
-        return usersByParticipantPrivateIdId.get(rpcConnection.getParticipantPrivateId());
+        return usersByParticipantPrivateIdId
+                .get(rpcConnection.getParticipantPrivateId());
     }
 
     public boolean exists(String userId) {

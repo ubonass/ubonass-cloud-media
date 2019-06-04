@@ -180,15 +180,26 @@ public class CallRpcHandler extends RpcHandler {
         String media = null;//如果为null则说明,all,视频语音一体
         if (request.getParams().has(ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM))
             media = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM);
+
         final UserRpcConnection calleer = registry.getByUserId(fromId);
         final UserRpcConnection callee = registry.getByUserRpcConnection(rpcConnection);
+        if (calleer == null)
+            logger.error("calleer is null");
+        if (callee == null)
+            logger.error("callee is null");
+
+        logger.info("caller ParticipantPrivateId {},callee ParticipantPrivateId {}",
+                calleer.getParticipantPrivateId(),callee.getParticipantPrivateId());
+
         String targetId = calleer.getCallingTo();//这是当前发送者的ID
         //需要判断sessionId是否存在
         if (ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT.equals(type)) {
             logger.info("Accepted call from '{}' to '{}'", fromId, targetId);
 
             UserMediaSession pipeline = null;
-
+            logger.info("caller session {},callee session'",
+                    calleer.getSessionId(), callee.getSessionId());
+            
             pipeline = userMediaSessions.get(callee.getSessionId());
 
             callee.setWebRtcEndpoint(pipeline.getCalleeWebRtcEp());
