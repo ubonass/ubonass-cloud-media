@@ -352,7 +352,7 @@ function onIceCandidate(candidate) {
         /*id: 'onIceCandidate',*/
         candidate: candidate
     };
-    sendMessageParams(onIceCandidate, message, msgId++);
+    sendMessageParams("onIceCandidate", message, msgId++);
 }
 
 function sendMessage(message) {
