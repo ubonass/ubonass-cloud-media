@@ -326,13 +326,14 @@ function onOfferCall(error, offerSdp) {
     if (error)
         return console.error('Error generating the offer');
     console.log('Invoking SDP offer callback function');
+
     var message = {
         fromId: userId,
         targetId: document.getElementById('peer').value,
         media: "all",
         sdpOffer: offerSdp
     };
-    sendMessage("call", message, msgId++);
+    sendMessageParams("call", message, msgId++);
 }
 
 function stop(message) {
@@ -361,7 +362,7 @@ function onIceCandidate(candidate) {
         /*id: 'onIceCandidate',*/
         candidate: candidate
     };
-    sendMessage(onIceCandidate, message, msgId++);
+    sendMessageParams(onIceCandidate, message, msgId++);
 }
 
 function sendMessage(message) {
@@ -383,7 +384,7 @@ function sendMessageParams(method, params, id) {
         'jsonrpc': '2.0'
     }
     var jsonMessage = JSON.stringify(object);
-    //console.log('Senging message: ' + jsonMessage);
+    console.log('Senging message: ' + jsonMessage);
     ws.send(jsonMessage);
 }
 
