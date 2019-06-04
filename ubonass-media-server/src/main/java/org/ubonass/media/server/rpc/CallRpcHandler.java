@@ -242,17 +242,14 @@ public class CallRpcHandler extends RpcHandler {
 
     private void onIceCandidate(RpcConnection rpcConnection, Request<JsonObject> request) {
 
-        String candidate =
-                getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
-        JsonParser parser = new JsonParser();
-        JsonElement elment = parser.parse(candidate);
-        JsonObject candidateObject = elment.getAsJsonObject();
+        //String endpointName = getStringParam(request, ProtocolElements.ONICECANDIDATE_EPNAME_PARAM);
+        String candidate = getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
+        String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
+        int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
+
         UserRpcConnection user = registry.getByUserRpcConnection(rpcConnection);
         if (user != null) {
-            IceCandidate cand = new IceCandidate(
-                            candidateObject.get("candidate").toString(),
-                            candidateObject.get("sdpMid").toString(),
-                            Integer.valueOf(candidateObject.get("sdpMLineIndex").toString()));
+            IceCandidate cand = new IceCandidate(candidate, sdpMid, sdpMLineIndex);
             user.addCandidate(cand);
         }
     }

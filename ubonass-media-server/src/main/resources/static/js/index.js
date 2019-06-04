@@ -375,14 +375,14 @@ function onError() {
  * @param candidate
  */
 function onIceCandidate(candidate) {
-    iceCandidatesList.push(candidate);
+    //iceCandidatesList.push(candidate);
     console.log("Local candidate" + JSON.stringify(candidate));
     //预先保存
-    /*var message = {
+    var message = {
         /!*id: 'onIceCandidate',*!/
         candidate: candidate
     };
-    sendMessageParams("onIceCandidate", message, msgId++);*/
+    sendMessageParams("onIceCandidate", message, msgId++);
 }
 
 function sendMessage(message) {
