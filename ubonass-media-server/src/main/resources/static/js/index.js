@@ -15,7 +15,15 @@
  *
  */
 
-var ws = new WebSocket('wss://ubonass.com:4443/call');
+ws = new WebSocket('wss://localhost:8443/call');
+
+/*ws.onmessage = function (message) {
+    onmessage(message);
+}
+ws.onopen = function() {
+    onopen();
+}
+var ws;/!* = new WebSocket('ws://localhost:8443/call');*!/*/
 var videoInput;
 var videoOutput;
 var webRtcPeer;
@@ -30,6 +38,7 @@ const REGISTERING = 1;
 const REGISTERED = 2;
 
 var msgId = 0;
+var userId;
 
 function setRegisterState(nextState) {
     switch (nextState) {
@@ -134,7 +143,17 @@ function handlerMethod(message) {
     }
 }
 
-ws.onmessage = function (message) {
+function onopen() {
+    setRegisterState(REGISTERING);
+
+    var message = {
+        userId: name,
+    };
+    sendMessageParams("register", message, msgId++);
+    document.getElementById('peer').focus();
+}
+
+ws.onmessage = function onmessage(message) {
     var parsedMessage = JSON.parse(message.data);
     console.info('Received message: ' + message.data);
     //console.info('Received message: ' + parsedMessage);
@@ -265,15 +284,16 @@ function onOfferIncomingCall(error, offerSdp) {
 }
 
 function register() {
-    var name = document.getElementById('name').value;
-    if (name == '') {
+
+    userId = document.getElementById('name').value;
+    if (userId == '') {
         window.alert('You must insert your user name');
         return;
     }
     setRegisterState(REGISTERING);
 
     var message = {
-        userId: name,
+        userId: userId,
     };
     sendMessageParams("register", message, msgId++);
     document.getElementById('peer').focus();

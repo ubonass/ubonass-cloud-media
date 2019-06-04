@@ -325,4 +325,5 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     public List<String> allowedOrigins() {
         return Arrays.asList("*");
     }
+
 }
