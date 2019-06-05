@@ -123,7 +123,8 @@ function handlerResult(message) {
 function handlerMethod(message) {
     var strParamsMessage = JSON.stringify(message.params)
     console.info('Method paramsMessage: ' + strParamsMessage);
-    var paramsMessage = message.params;
+    var paramsMessage = JSON.parse(message.params);// message.params;
+    //var objectParams = JSON.parse(message.params);
     switch (message.method) {
         case 'incomingCall':
             incomingCall(paramsMessage);
