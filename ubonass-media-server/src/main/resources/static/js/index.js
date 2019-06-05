@@ -121,9 +121,9 @@ function handlerResult(message) {
 }
 
 function handlerMethod(message) {
-    var strParamsMessage = JSON.stringify(message.params)
+    //var strParamsMessage = JSON.stringify(message.params)
     console.info('Method paramsMessage: ' + strParamsMessage);
-    var paramsMessage = JSON.parse(message.params);// message.params;
+    var paramsMessage = message.params;
     //var objectParams = JSON.parse(message.params);
     switch (message.method) {
         case 'incomingCall':
@@ -158,38 +158,11 @@ function handlerMethod(message) {
 ws.onmessage = function onmessage(message) {
     var parsedMessage = JSON.parse(message.data);
     console.info('Received message: ' + message.data);
-    //console.info('Received message: ' + parsedMessage);
     if (parsedMessage.hasOwnProperty('result')) {
         handlerResult(parsedMessage.result);
     } else {
         handlerMethod(parsedMessage);
     }
-    /*switch (parsedMessage.id) {
-        case 'register':
-            resgisterResponse(parsedMessage);
-            break;
-        case 'callResponse':
-            callResponse(parsedMessage);
-            break;
-        case 'incomingCall':
-            incomingCall(parsedMessage);
-            break;
-        case 'startCommunication':
-            startCommunication(parsedMessage);
-            break;
-        case 'stopCommunication':
-            console.info('Communication ended by remote peer');
-            stop(true);
-            break;
-        case 'iceCandidate':
-            webRtcPeer.addIceCandidate(parsedMessage.candidate, function (error) {
-                if (error)
-                    return console.error('Error adding candidate: ' + error);
-            });
-            break;
-        default:
-            console.error('Unrecognized message', parsedMessage);
-    }*/
 }
 
 function callResponse(message) {
