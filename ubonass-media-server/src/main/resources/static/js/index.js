@@ -122,7 +122,7 @@ function handlerResult(message) {
 
 function handlerMethod(message) {
     var strParamsMessage = JSON.stringify(message.params)
-    console.info('Method paramsMessage: ' + strParamsMessage.toString());
+    console.info('Method paramsMessage: ' + strParamsMessage);
     var paramsMessage = message.params;
     switch (message.method) {
         case 'incomingCall':
@@ -139,12 +139,12 @@ function handlerMethod(message) {
             stop(true);
             break;
         case 'iceCandidate':
-            var candidate = {
+            /*var candidate = {
                 candidate:paramsMessage.candidate,
                 sdpMid:paramsMessage.sdpMid,
                 sdpMLineIndex:paramsMessage.sdpMLineIndex
-            };
-            webRtcPeer.addIceCandidate(candidate/*message.candidate*/, function (error) {
+            };*/
+            webRtcPeer.addIceCandidate(paramsMessage.candidate, function (error) {
                 if (error)
                     return console.error('Error adding candidate: ' + error);
             });
