@@ -12,6 +12,7 @@ import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.socket.TextMessage;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
@@ -200,37 +201,67 @@ public class CallRpcHandler extends RpcHandler {
             logger.info("caller session {},callee session'",
                     calleer.getSessionId(), callee.getSessionId());
 
-            logger.info("----------------1----------------------");
             pipeline = userMediaSessions.get(calleer.getSessionId());
-            logger.info("--------------------------------------");
+
             callee.setWebRtcEndpoint(pipeline.getCalleeWebRtcEp());
-            logger.info("----------------2----------------------");
+
             pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
-                    new IceCandidateEventListener(callee));
-            logger.info("-----------------3---------------------");
+                    new EventListener<IceCandidateFoundEvent>() {
+
+                        @Override
+                        public void onEvent(IceCandidateFoundEvent event) {
+                            JsonObject jsonObject = new JsonObject();
+                            //jsonObject.addProperty("id", "iceCandidate");
+                            jsonObject.add("candidate",
+                                    JsonUtils.toJsonObject(event.getCandidate()));
+                            notificationService.sendNotification(
+                                    rpcConnection.getParticipantPrivateId(),
+                                    ProtocolElements.ICECANDIDATE_METHOD,
+                                    jsonObject);
+                        }
+                    });
+
+            /*pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
+                    new IceCandidateEventListener(callee));*/
+
             calleer.setWebRtcEndpoint(pipeline.getCallerWebRtcEp());
-            logger.info("-----------------4---------------------");
-            pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
-                    new IceCandidateEventListener(calleer));
-            logger.info("-----------------5---------------------");
+
+            pipeline.getCallerWebRtcEp().addIceCandidateFoundListener(
+                    new EventListener<IceCandidateFoundEvent>() {
+
+                        @Override
+                        public void onEvent(IceCandidateFoundEvent event) {
+                            JsonObject jsonObject = new JsonObject();
+                            //jsonObject.addProperty("id", "iceCandidate");
+                            jsonObject.add("candidate",
+                                    JsonUtils.toJsonObject(event.getCandidate()));
+                            notificationService.sendNotification(
+                                    calleer.getParticipantPrivateId(),
+                                    ProtocolElements.ICECANDIDATE_METHOD,
+                                    jsonObject);
+                        }
+                    });
+            /*pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
+                    new IceCandidateEventListener(calleer));*/
+
             String calleeSdpOffer = getStringParam(request,
                     ProtocolElements.ONIINCOMING_CALL_SDPOFFER_PARAM);
-            logger.info("-----------------6---------------------");
+
             String calleeSdpAnswer = pipeline.generateSdpAnswerForCallee(calleeSdpOffer);
-            logger.info("-----------------7---------------------");
+
             JsonObject startCommunication = new JsonObject();
             //startCommunication.addProperty("id", "startCommunication");
             startCommunication.addProperty(
                     ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
-            logger.info("-------------8-------------------------");
+
             synchronized (callee) {
                 notificationService.sendNotification(
                         rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
             }
 
-            logger.info("-----------------9---------------------");
+
             pipeline.getCalleeWebRtcEp().gatherCandidates();
-            logger.info("-----------------10---------------------");
+
             String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
             String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
 
