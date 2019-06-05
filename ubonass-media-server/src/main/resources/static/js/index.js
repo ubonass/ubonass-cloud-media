@@ -121,17 +121,18 @@ function handlerResult(message) {
 }
 
 function handlerMethod(message) {
-    var strMessage = JSON.stringify(message)
-    //console.info('Method message: ' + strMessage.toString());
+    var strParamsMessage = JSON.stringify(message.params)
+    console.info('Method paramsMessage: ' + strParamsMessage.toString());
+    var paramsMessage = message.params;
     switch (message.method) {
         case 'incomingCall':
-            incomingCall(message);
+            incomingCall(paramsMessage);
             break;
         case 'onIncomingCall':
-            onIncomingCall(message);
+            onIncomingCall(paramsMessage);
             break;
         case 'startCommunication':
-            startCommunication(message);
+            startCommunication(paramsMessage);
             break;
         case 'stopCommunication':
             console.info('Communication ended by remote peer');
@@ -139,9 +140,9 @@ function handlerMethod(message) {
             break;
         case 'iceCandidate':
             var candidate = {
-                candidate:message.candidate,
-                sdpMid:message.sdpMid,
-                sdpMLineIndex:message.sdpMLineIndex
+                candidate:paramsMessage.candidate,
+                sdpMid:paramsMessage.sdpMid,
+                sdpMLineIndex:paramsMessage.sdpMLineIndex
             };
             webRtcPeer.addIceCandidate(candidate/*message.candidate*/, function (error) {
                 if (error)
@@ -149,7 +150,7 @@ function handlerMethod(message) {
             });
             break;
         default:
-            console.error('Unrecognized message', strMessage);
+            console.error('Unrecognized message', message.data);
     }
 }
 
@@ -160,7 +161,7 @@ ws.onmessage = function onmessage(message) {
     if (parsedMessage.hasOwnProperty('result')) {
         handlerResult(parsedMessage.result);
     } else {
-        handlerMethod(parsedMessage.method);
+        handlerMethod(parsedMessage);
     }
     /*switch (parsedMessage.id) {
         case 'register':

@@ -223,8 +223,10 @@ public class CallRpcHandler extends RpcHandler {
             startCommunication.addProperty(
                     ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
             logger.info("-------------8-------------------------");
-            notificationService.sendNotification(
-                    rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+            synchronized (callee) {
+                notificationService.sendNotification(
+                        rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+            }
 
             logger.info("-----------------9---------------------");
             pipeline.getCalleeWebRtcEp().gatherCandidates();
