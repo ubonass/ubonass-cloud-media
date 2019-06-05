@@ -138,7 +138,12 @@ function handlerMethod(message) {
             stop(true);
             break;
         case 'iceCandidate':
-            webRtcPeer.addIceCandidate(message.candidate, function (error) {
+            var candidate = {
+                candidate:message.candidate,
+                sdpMid:message.sdpMid,
+                sdpMLineIndex:message.sdpMLineIndex
+            };
+            webRtcPeer.addIceCandidate(candidate/*message.candidate*/, function (error) {
                 if (error)
                     return console.error('Error adding candidate: ' + error);
             });

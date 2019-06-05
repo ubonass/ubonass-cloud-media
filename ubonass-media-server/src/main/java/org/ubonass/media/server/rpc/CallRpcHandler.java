@@ -285,8 +285,13 @@ public class CallRpcHandler extends RpcHandler {
             if (rpcConnection == null ||
                     rpcConnection.getSession() == null) return;
             JsonObject notify = new JsonObject();
-            notify.add(ProtocolElements.ICECANDIDATE_CANDIDATE_PARAM,
-                    JsonUtils.toJsonObject(event.getCandidate()));
+            IceCandidate iceCandidate = event.getCandidate();
+            notify.addProperty(ProtocolElements.ICECANDIDATE_CANDIDATE_PARAM,
+                    iceCandidate.getCandidate());
+            notify.addProperty(ProtocolElements.ICECANDIDATE_SDPMID_PARAM,
+                    iceCandidate.getSdpMid());
+            notify.addProperty(ProtocolElements.ICECANDIDATE_SDPMLINEINDEX_PARAM,
+                    iceCandidate.getSdpMLineIndex());
             try {
                 synchronized (rpcConnection.getSession()) {
                     rpcConnection.getSession().sendNotification(
