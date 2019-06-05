@@ -149,7 +149,7 @@ function handlerMethod(message) {
             });
             break;
         default:
-            console.error('Unrecognized message', parsedMessage);
+            console.error('Unrecognized message', strMessage);
     }
 }
 

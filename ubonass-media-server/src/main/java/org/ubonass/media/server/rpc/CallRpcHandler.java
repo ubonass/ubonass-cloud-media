@@ -189,7 +189,7 @@ public class CallRpcHandler extends RpcHandler {
             logger.error("callee is null");
 
         logger.info("caller ParticipantPrivateId {},callee ParticipantPrivateId {}",
-                calleer.getParticipantPrivateId(),callee.getParticipantPrivateId());
+                calleer.getParticipantPrivateId(), callee.getParticipantPrivateId());
 
         String targetId = calleer.getCallingTo();//这是当前发送者的ID
         //需要判断sessionId是否存在
@@ -224,14 +224,14 @@ public class CallRpcHandler extends RpcHandler {
                     ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
             logger.info("-------------8-------------------------");
             notificationService.sendNotification(
-                        rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+                    rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
 
             logger.info("-----------------9---------------------");
             pipeline.getCalleeWebRtcEp().gatherCandidates();
             logger.info("-----------------10---------------------");
             String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
             String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
-            /*
+
             JsonObject notify = new JsonObject();
             //notify.addProperty("id", "callResponse");
             notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT);
@@ -243,7 +243,7 @@ public class CallRpcHandler extends RpcHandler {
                         calleer.getParticipantPrivateId(), ProtocolElements.ONINCOMING_CALL_METHOD, notify);
                 logger.info("--------------11------------------------");
             }
-            pipeline.getCallerWebRtcEp().gatherCandidates();*/
+            pipeline.getCallerWebRtcEp().gatherCandidates();
 
         } else {
             JsonObject notify = new JsonObject();
