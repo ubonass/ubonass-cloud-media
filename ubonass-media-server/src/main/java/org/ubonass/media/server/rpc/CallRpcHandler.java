@@ -304,41 +304,6 @@ public class CallRpcHandler extends RpcHandler {
         }
     }
 
-
-    private class IceCandidateEventListener implements EventListener<IceCandidateFoundEvent> {
-
-        private UserRpcConnection rpcConnection;
-
-        private IceCandidateEventListener(UserRpcConnection rpcConnection) {
-            this.rpcConnection = rpcConnection;
-        }
-
-        @Override
-        public void onEvent(IceCandidateFoundEvent event) {
-            if (rpcConnection == null ||
-                    rpcConnection.getSession() == null) return;
-            JsonObject notify = new JsonObject();
-            IceCandidate iceCandidate = event.getCandidate();
-
-            notify.add("candidate", JsonUtils.toJsonObject(iceCandidate));
-
-            /*notify.addProperty(ProtocolElements.ICECANDIDATE_CANDIDATE_PARAM,
-                    iceCandidate.getCandidate());
-            notify.addProperty(ProtocolElements.ICECANDIDATE_SDPMID_PARAM,
-                    iceCandidate.getSdpMid());
-            notify.addProperty(ProtocolElements.ICECANDIDATE_SDPMLINEINDEX_PARAM,
-                    iceCandidate.getSdpMLineIndex());*/
-            try {
-                synchronized (rpcConnection.getSession()) {
-                    rpcConnection.getSession().sendNotification(
-                            ProtocolElements.ICECANDIDATE_METHOD, notify);
-                }
-            } catch (IOException e) {
-                logger.info(e.getMessage());
-            }
-        }
-    }
-
     public void stop(RpcConnection rpcConnection, Request<JsonObject> request) {
         UserRpcConnection stopperUser =
                 registry.getByUserRpcConnection(rpcConnection);

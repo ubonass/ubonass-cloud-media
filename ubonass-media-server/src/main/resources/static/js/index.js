@@ -141,14 +141,12 @@ function handlerMethod(message) {
             stop(true);
             break;
         case 'iceCandidate':
-            console.info("----------------------------");
             /*var candidate = {
                 candidate:paramsMessage.candidate,
                 sdpMid:paramsMessage.sdpMid,
                 sdpMLineIndex:paramsMessage.sdpMLineIndex
             };*/
             var candidate = paramsMessage.candidate;
-            console.info('---candidate ----:' + candidate);
             webRtcPeer.addIceCandidate(candidate, function (error) {
                 if (error)
                     return console.error('Error adding candidate: ' + error);
