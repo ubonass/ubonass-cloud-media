@@ -123,7 +123,8 @@ function handlerResult(message) {
 function handlerMethod(message) {
     //var strParamsMessage = JSON.stringify(message.params)
     var paramsMessage = message.params;
-    console.info('Method :' + message.method + ' paramsMessage: ' + JSON.stringify(paramsMessage));
+    console.info('Method :' + message.method +
+        ' paramsMessage: ' + JSON.stringify(paramsMessage));
     //var objectParams = JSON.parse(message.params);
     switch (message.method) {
         case 'incomingCall':
@@ -145,7 +146,9 @@ function handlerMethod(message) {
                 sdpMid:paramsMessage.sdpMid,
                 sdpMLineIndex:paramsMessage.sdpMLineIndex
             };*/
-            webRtcPeer.addIceCandidate(paramsMessage.candidate, function (error) {
+            var candidate = paramsMessage.candidate;
+            console.info('candidate :' + candidate);
+            webRtcPeer.addIceCandidate(candidate, function (error) {
                 if (error)
                     return console.error('Error adding candidate: ' + error);
             });
@@ -359,8 +362,8 @@ function onIceCandidate(candidate) {
     console.log("Local candidate" + JSON.stringify(candidate));
     var message = {
         candidate: candidate.candidate,
-        sdpMid:candidate.sdpMid,
-        sdpMLineIndex:candidate.sdpMLineIndex
+        sdpMid: candidate.sdpMid,
+        sdpMLineIndex: candidate.sdpMLineIndex
     };
     sendMessageParams("onIceCandidate", message, msgId++);
 }
