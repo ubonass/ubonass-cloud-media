@@ -275,7 +275,7 @@ public class CallRpcHandler extends RpcHandler {
 
     private void onCallRejectProcess(RpcConnection rpcConnection,
                                      Request<JsonObject> request) {
-        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_REJECT)
+        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
         /*String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         final UserSession calleer = registry.getByUserId(fromId);*/
@@ -294,7 +294,7 @@ public class CallRpcHandler extends RpcHandler {
 
     private void onCallHangupProcess(RpcConnection rpcConnection,
                                      Request<JsonObject> request) {
-        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_HANGUP)
+        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_HANGUP)) return;
         KurentoCallSession kurentoCallSession =
                 callSessions.get(rpcConnection.getParticipantPrivateId());

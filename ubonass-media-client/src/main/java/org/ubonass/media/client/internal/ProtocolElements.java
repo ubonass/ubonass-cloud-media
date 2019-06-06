@@ -319,7 +319,7 @@ public class ProtocolElements {
     public static final String ONCALL_EVENT_REJECT_REASON = "reason";//拒接原因
     public static final String ONCALL_EVENT_HANGUP = "hangup";//对方挂断
     public static final String ONCALL_EVENT_CONNECTED = "connected";//已经建立通话
-    
+
 
 
 
