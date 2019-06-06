@@ -241,6 +241,9 @@ public class CallRpcHandler extends RpcHandler {
             //startCommunication.addProperty("id", "startCommunication");
             connectedObject.addProperty(
                     ProtocolElements.ONCALL_SDPANSWER_PARAM, calleeSdpAnswer);
+            connectedObject.addProperty(
+                    ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_CONNECTED);
+
             synchronized (callee) {
                 notificationService.sendNotification(
                         rpcConnection.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, connectedObject);
@@ -251,9 +254,9 @@ public class CallRpcHandler extends RpcHandler {
             String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
             String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
 
+            /*告知calleer对方已经接听*/
             JsonObject accetpObject = new JsonObject();
-            accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
-                    ProtocolElements.ONCALL_EVENT_ACCEPT);
+            accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
             if (media != null)
                 accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
             accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
