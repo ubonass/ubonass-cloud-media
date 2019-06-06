@@ -250,7 +250,7 @@ function incomingCall(message) {
         var response = {
             /*id: 'incomingCallResponse',*/
             fromId: message.fromId,
-            type: 'busy',
+            event: 'busy',
             media: message.media,
             reason: 'bussy'
         };
@@ -280,7 +280,7 @@ function incomingCall(message) {
     } else {
         var response = {
             fromId: message.fromId,
-            type: 'reject',
+            event: 'reject',
             media: message.media,
             reason: "hangup"
         };
@@ -295,7 +295,7 @@ function onOfferIncomingCall(error, offerSdp) {
     var response = {
         media: 'all',
         fromId: fromId,
-        type: 'accept',
+        event: 'accept',
         sdpOffer: offerSdp
     };
     sendMessageParams("onCall", response, msgId++);
