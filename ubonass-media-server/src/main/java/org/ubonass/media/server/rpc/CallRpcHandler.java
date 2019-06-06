@@ -277,16 +277,19 @@ public class CallRpcHandler extends RpcHandler {
                                      Request<JsonObject> request) {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
-        /*String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
-        final UserSession calleer = registry.getByUserId(fromId);*/
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+        if (callSessions.containsKey(
+                onlineClients.get(fromId).getSessionId())) {
+            KurentoCallSession session = callSessions.remove(
+                    onlineClients.get(fromId).getSessionId());
+            if (session != null)
+                session.release();
+        }
         JsonObject rejectObject = new JsonObject();
         if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
             rejectObject.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
                     ProtocolElements.ONCALL_EVENT_REJECT_REASON));
         }
-        KurentoCallSession session = callSessions.remove(fromId);
-        session.release();
         rejectObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
         notificationService.sendNotification(
                 onlineClients.get(fromId).getSessionId(), ProtocolElements.ONCALL_METHOD, rejectObject);
@@ -298,10 +301,23 @@ public class CallRpcHandler extends RpcHandler {
                 .equals(ProtocolElements.ONCALL_EVENT_HANGUP)) return;
         KurentoCallSession kurentoCallSession =
                 callSessions.get(rpcConnection.getParticipantPrivateId());
+
+        if (callSessions.containsKey(kurentoCallSession.getCallingFrom())) {
+            KurentoCallSession session =
+                    callSessions.remove(kurentoCallSession.getCallingFrom());
+            if (session != null)
+                session.release();
+        }
+
+        if (callSessions.containsKey(kurentoCallSession.getCallingTo())) {
+            KurentoCallSession session =
+                    callSessions.remove(kurentoCallSession.getCallingTo());
+            if (session != null)
+                session.release();
+        }
         JsonObject hangupObject = new JsonObject();
         hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
                 ProtocolElements.ONCALL_EVENT_HANGUP);
-
         if (rpcConnection.getParticipantPrivateId().equals(kurentoCallSession.getCallingFrom())) {
             notificationService.sendNotification(
                     kurentoCallSession.getCallingTo(),
