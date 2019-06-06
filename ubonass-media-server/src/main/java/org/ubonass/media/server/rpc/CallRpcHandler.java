@@ -161,7 +161,7 @@ public class CallRpcHandler extends RpcHandler {
                     });
 
             String sdpOffer = getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM);
-            String sdpAnswer = webRtcEndpoint.processAnswer(sdpOffer);
+            String sdpAnswer = webRtcEndpoint.processOffer(sdpOffer);
 
             JsonObject notifyInCallObject = new JsonObject();
             notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, fromId);
@@ -251,7 +251,7 @@ public class CallRpcHandler extends RpcHandler {
         calleewebRtcEndpoint.connect(callerwebRtcEndpoint);
 
         String sdpOffer = getStringParam(request, ProtocolElements.ONCALL_SDPOFFER_PARAM);
-        String sdpAnswer = calleewebRtcEndpoint.processAnswer(sdpOffer);
+        String sdpAnswer = calleewebRtcEndpoint.processOffer(sdpOffer);
 
         JsonObject connectedObject = new JsonObject();
         //startCommunication.addProperty("id", "startCommunication");
