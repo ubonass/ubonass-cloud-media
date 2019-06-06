@@ -171,14 +171,11 @@ function callResponse(message) {
     } else {
         //发送ice....
         console.log("callResponse success");
-        /*if (iceCandidatesList.length != 0) {
-            for (var index in iceCandidatesList) {
-                var message = {
-                    candidate: iceCandidatesList[index]
-                };
-                sendMessageParams("onIceCandidate", message, msgId++);
-            }
-        }*/
+        setCallState(IN_CALL);
+        webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
+            if (error)
+                return console.error(error);
+        });
     }
 }
 
@@ -196,13 +193,13 @@ function resgisterResponse(message) {
 
 function onCall(message) {
 
-    if (message.event == 'accept') {//对方已接听
+    /*if (message.event == 'accept') {//对方已接听
         setCallState(IN_CALL);
         webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
             if (error)
                 return console.error(error);
         });
-    } else if (message.event == 'connected'){//已建立连接
+    } else */if (message.event == 'connected'){//已建立连接
         setCallState(IN_CALL);
         webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
             if (error)

@@ -132,14 +132,17 @@ public class CallRpcHandler extends RpcHandler {
 
             logger.info("exists target user {}", targetId);
 
-            caller.setSdpOffer(getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM));
+            //caller.setSdpOffer(getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM));
             caller.setCallingTo(targetId);
             //生成session
             String sessionId = RandomStringGenerator.generateRandomChain();
-            UserMediaSession one2OneSession =
+            UserMediaSession userMediaSession =
                     new UserMediaSession(kcProvider.getKurentoClient());
-            userMediaSessions.putIfAbsent(sessionId, one2OneSession);
+            userMediaSessions.putIfAbsent(sessionId, userMediaSession);
             caller.setSessionId(sessionId);//保存sessionId
+
+            String sdpOffer = getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM);
+            String sdpAnswer = userMediaSession.generateSdpAnswerForCaller(sdpOffer);
 
             UserRpcConnection callee = registry.getByUserId(targetId);
             callee.setCallingFrom(fromId);
@@ -158,8 +161,10 @@ public class CallRpcHandler extends RpcHandler {
 
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");
+            result.addProperty(ProtocolElements.CALL_SDPANSWER_PARAM, sdpAnswer);
 
-            notificationService.sendResponse(caller.getParticipantPrivateId(), request.getId(), result);
+            notificationService.sendResponse(
+                    rpcConnection.getParticipantPrivateId(), request.getId(), result);
 
         } else {
             result.addProperty("method", ProtocolElements.CALL_METHOD);
@@ -262,15 +267,15 @@ public class CallRpcHandler extends RpcHandler {
 
         pipeline.getCalleeWebRtcEp().gatherCandidates();
 
-        String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
-        String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
+        /*String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
+        String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);*/
 
         /*告知calleer对方已经接听*/
         JsonObject accetpObject = new JsonObject();
         accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
         if (media != null)
             accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
-        accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
+        //accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
         synchronized (calleer) {
             notificationService.sendNotification(
                     calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, accetpObject);

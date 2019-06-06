@@ -17,10 +17,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.ubonass.media.server.config.HttpHandshakeInterceptor;
-import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.kurento.AutodiscoveryKurentoClientProvider;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
-import org.ubonass.media.server.kurento.core.KurentoSessionManager;
 import org.ubonass.media.server.kurento.kms.FixedOneKmsManager;
 import org.ubonass.media.server.rpc.CallRpcHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
@@ -80,12 +78,6 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     @ConditionalOnMissingBean
     public RpcNotificationService rpcNotificationService() {
         return new RpcNotificationService();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public SessionManager sessionManager() {
-        return new KurentoSessionManager();
     }
 
 

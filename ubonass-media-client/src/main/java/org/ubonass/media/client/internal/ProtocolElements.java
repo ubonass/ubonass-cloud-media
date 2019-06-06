@@ -291,7 +291,8 @@ public class ProtocolElements {
     public static final String CALL_TARGETUSER_PARAM = "targetId";
     public static final String CALL_MEDIA_PARAM = "media";//
     public static final String CALL_SDPOFFER_PARAM = "sdpOffer";//
-    public static final String CALL_RESPONSE_PARAM = "response";//服务器回复A,OK表示成功
+    public static final String CALL_SDPANSWER_PARAM = "sdpAnswer";//
+    public static final String CALL_RESPONSE_PARAM = "response";//服务器回复A,OK表示呼叫成功
 
     /**
      * 服务器->B的来电通知
