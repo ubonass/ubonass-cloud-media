@@ -293,18 +293,6 @@ public class ProtocolElements {
     public static final String CALL_SDPOFFER_PARAM = "sdpOffer";//
     public static final String CALL_RESPONSE_PARAM = "response";//服务器回复A,OK表示成功
 
-
-    /**
-     * B->服务器->A的通知
-     */
-    /*public static final String ONCALL_METHOD = "onCall";
-    public static final String ONCALL_SDPANSWER_PARAM = "sdpAnswer";//服务器回复A
-    public static final String ONCALL_RESPONSE_TYPE_PARAM = "type";//服务器回复A
-    public static final String ONCALL_RESPONSE_TYPE_ACCEPT = "accept";//接听
-    public static final String ONCALL_RESPONSE_TYPE_REJECTED = "rejected";//拒接
-    public static final String ONCALL_RESPONSE_TYPE_HANGUP = "hangup";//挂断
-    public static final String ONCALL_RESPONSE_TYPE_BUSY = "busy";//繁忙*/
-
     /**
      * 服务器->B的来电通知
      */
@@ -315,19 +303,22 @@ public class ProtocolElements {
     public static final String INCOMINGCALL_MEDIA_PARAM = "media";//video or audio or all,default all
 
     /**
-     * B->服务器的应答回复
+     * B->服务器的应答回复,该事件为双向事件
      */
-    public static final String ONINCOMING_CALL_METHOD = "onIncomingCall";
-    public static final String ONIINCOMING_CALL_FROMUSER_PARAM = "fromId";//谁是发起者,和call中的fromId一至
-    //public static final String ONIINCOMING_CALL_TARGETUSER_PARAM = "targetId";
-    public static final String ONIINCOMING_CALL_SDPOFFER_PARAM = "sdpOffer";
-    public static final String ONIINCOMING_CALL_SDPANSWER_PARAM = "sdpAnswer";//这是服务器回复给发起者的
+    public static final String ONCALL_METHOD = "onCall";
+    public static final String ONCALL_FROMUSER_PARAM = "fromId";//谁是发起者,和call中的fromId一至
+    //public static final String ONCALL_TARGETUSER_PARAM = "targetId";
+    public static final String ONCALL_SDPOFFER_PARAM = "sdpOffer";
+    public static final String ONCALL_SDPANSWER_PARAM = "sdpAnswer";//这是服务器回复给发起者的
     //public static final String INCOMING_CALL_SESSION_PARAM = "sessionId";//有服务器随机生成
-    public static final String ONIINCOMING_CALL_MEDIA_PARAM = "media";//
-    public static final String ONIINCOMING_CALL_TYPE_PARAM = "type";
-    public static final String ONIINCOMING_CALL_TYPE_ACCEPT = "accept";//接听
-    public static final String ONIINCOMING_CALL_TYPE_REJECT = "reject";//拒接
-    public static final String ONIINCOMING_CALL_REJECT_REASON = "reason";//拒接原因
+    public static final String ONCALL_MEDIA_PARAM = "media";//
+    public static final String ONCALL_EVENT_PARAM = "event";
+    public static final String ONCALL_EVENT_ACCEPT = "accept";//接听
+    public static final String ONCALL_EVENT_REJECT = "reject";//对方拒接
+    public static final String ONCALL_EVENT_REJECT_REASON = "reason";//拒接原因
+    public static final String ONCALL_EVENT_HANGUP = "hangup";//对方挂断
+    public static final String ONCALL_EVENT_CONNECTED = "connected";//已经建立通话
+
     /**
      * 开始视频通话(服务器->B
      */
