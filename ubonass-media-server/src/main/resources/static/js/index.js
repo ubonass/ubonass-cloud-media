@@ -30,7 +30,7 @@ var webRtcPeer;
 var response;
 var callerMessage;
 var fromId;
-var sessionId;
+var targetId;
 
 var registerName = null;
 var registerState = null;
@@ -207,7 +207,9 @@ function onCall(message) {
         var errorMessage = message.reason ? message.reason
             : 'Unknown reason for call rejection.';
         console.log(errorMessage);
-        stop();
+        stop(true);
+    } else if (message.event == 'hangup') {//对方已挂断
+        stop(true);
     }
 }
 
@@ -254,14 +256,13 @@ function incomingCall(message) {
             });
 
     } else {
-        var response = {
+        var reject = {
             fromId: message.fromId,
             event: 'reject',
-            media: message.media,
-            reason: "hangup"
+            reason: "....busy......"
         };
-        sendMessageParams("onCall", response, msgId++);
-        stop();
+        sendMessageParams("onCall", reject, msgId++);
+        stop(true);
     }
 }
 

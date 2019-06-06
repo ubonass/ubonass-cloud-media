@@ -80,9 +80,6 @@ public class CallRpcHandler extends RpcHandler {
             case ProtocolElements.ONICECANDIDATE_METHOD:
                 onIceCandidate(rpcConnection, request);
                 break;
-            /*case ProtocolElements.CALL_STOP_METHOD:
-                stop(rpcConnection, request);
-                break;*/
             default:
                 break;
         }
@@ -132,7 +129,10 @@ public class CallRpcHandler extends RpcHandler {
             //生成session
             //String sessionId = RandomStringGenerator.generateRandomChain();
             KurentoCallSession callSession =
-                    new KurentoCallSession(kcProvider.getKurentoClient());
+                    new KurentoCallSession(
+                            kcProvider.getKurentoClient(),
+                            rpcConnection.getSession().getSessionId(),
+                            onlineClients.get(targetId).getSessionId());
             //rpcConnection.setSessionId(sessionId);
 
             callSessions.putIfAbsent(rpcConnection.getSession().getSessionId(), callSession);
@@ -280,23 +280,37 @@ public class CallRpcHandler extends RpcHandler {
         /*String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         final UserSession calleer = registry.getByUserId(fromId);*/
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
-        JsonObject notify = new JsonObject();
+        JsonObject rejectObject = new JsonObject();
         if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
-            notify.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
+            rejectObject.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
                     ProtocolElements.ONCALL_EVENT_REJECT_REASON));
         }
         KurentoCallSession session = callSessions.remove(fromId);
         session.release();
-        notify.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
+        rejectObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
         notificationService.sendNotification(
-                onlineClients.get(fromId).getSessionId(), ProtocolElements.ONCALL_METHOD, notify);
+                onlineClients.get(fromId).getSessionId(), ProtocolElements.ONCALL_METHOD, rejectObject);
     }
 
     private void onCallHangupProcess(RpcConnection rpcConnection,
                                      Request<JsonObject> request) {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_HANGUP)
                 .equals(ProtocolElements.ONCALL_EVENT_HANGUP)) return;
+        KurentoCallSession kurentoCallSession =
+                callSessions.get(rpcConnection.getParticipantPrivateId());
+        JsonObject hangupObject = new JsonObject();
+        hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
+                ProtocolElements.ONCALL_EVENT_HANGUP);
 
+        if (rpcConnection.getParticipantPrivateId().equals(kurentoCallSession.getCallingFrom())) {
+            notificationService.sendNotification(
+                    kurentoCallSession.getCallingTo(),
+                    ProtocolElements.ONCALL_METHOD, hangupObject);
+        } else {
+            notificationService.sendNotification(
+                    kurentoCallSession.getCallingFrom(),
+                    ProtocolElements.ONCALL_METHOD, hangupObject);
+        }
     }
 
     private void onIceCandidate(RpcConnection rpcConnection,

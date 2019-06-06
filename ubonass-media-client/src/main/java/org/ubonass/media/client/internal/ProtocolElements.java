@@ -319,16 +319,7 @@ public class ProtocolElements {
     public static final String ONCALL_EVENT_REJECT_REASON = "reason";//拒接原因
     public static final String ONCALL_EVENT_HANGUP = "hangup";//对方挂断
     public static final String ONCALL_EVENT_CONNECTED = "connected";//已经建立通话
-
-    /**
-     * 开始视频通话(服务器->B
-     */
-    public static final String START_COMMUNICATION_METHOD = "startCommunication";
-    public static final String START_COMMUNICATION_SDPANSWER_PARAM= "sdpAnswer";
-
-    public static final String STOP_COMMUNICATION_METHOD = "stopCommunication";
-
-    public static final String CALL_STOP_METHOD = "stop";
+    
 
 
 

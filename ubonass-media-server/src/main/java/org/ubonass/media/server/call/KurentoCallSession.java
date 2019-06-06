@@ -14,14 +14,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KurentoCallSession {
 
     private MediaPipeline pipeline;
+    private String callingTo;
+    private String callingFrom;
     /**
      * key为session的privateId
      * value为WebRtcEndpoint
      */
     private Map<String, WebRtcEndpoint> webRtcEndpointMap = new ConcurrentHashMap<>();
 
-    public KurentoCallSession(KurentoClient kurento) {
+    public KurentoCallSession(KurentoClient kurento,String callingFrom,String callingTo) {
         try {
+            this.callingFrom = callingFrom;
+            this.callingTo = callingTo;
             this.pipeline = kurento.createMediaPipeline();
         } catch (Throwable t) {
             if (this.pipeline != null) {
@@ -56,10 +60,20 @@ public class KurentoCallSession {
             Map.Entry<String, WebRtcEndpoint> entry = it.next();
             it.remove();
         }*/
-        webRtcEndpointMap.clear();
-        webRtcEndpointMap = null;
+        if (webRtcEndpointMap != null) {
+            webRtcEndpointMap.clear();
+            webRtcEndpointMap = null;
+        }
         if (pipeline != null) {
             pipeline.release();
         }
+    }
+
+    public String getCallingTo() {
+        return callingTo;
+    }
+
+    public String getCallingFrom() {
+        return callingFrom;
     }
 }
