@@ -12,7 +12,6 @@ import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.socket.TextMessage;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
@@ -22,7 +21,6 @@ import org.ubonass.media.server.call.UserRpcRegistry;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 import org.ubonass.media.server.utils.RandomStringGenerator;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -83,9 +81,9 @@ public class CallRpcHandler extends RpcHandler {
             case ProtocolElements.ONICECANDIDATE_METHOD:
                 onIceCandidate(rpcConnection, request);
                 break;
-            case ProtocolElements.CALL_STOP_METHOD:
+            /*case ProtocolElements.CALL_STOP_METHOD:
                 stop(rpcConnection, request);
-                break;
+                break;*/
             default:
                 break;
         }
@@ -130,7 +128,7 @@ public class CallRpcHandler extends RpcHandler {
             media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         UserRpcConnection caller = registry.getByUserRpcConnection(rpcConnection);
         JsonObject result = new JsonObject();
-        if (registry.exists(targetId)) {//判断目标用户是否在线
+        if (registry.exists(targetId)) {
 
             logger.info("exists target user {}", targetId);
 
@@ -175,7 +173,22 @@ public class CallRpcHandler extends RpcHandler {
 
     private void onCall(RpcConnection rpcConnection, Request<JsonObject> request) {
         String event = getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM);
-        //原始ID发起者是谁
+        switch (event) {
+            case ProtocolElements.ONCALL_EVENT_ACCEPT:
+                onCallAcceptProcess(rpcConnection, request);
+                break;
+            case ProtocolElements.ONCALL_EVENT_REJECT:
+                onCallRejectProcess(rpcConnection, request);
+                break;
+            case ProtocolElements.ONCALL_EVENT_HANGUP:
+                onCallHangupProcess(rpcConnection, request);
+                break;
+        }
+    }
+
+    private void onCallAcceptProcess(RpcConnection rpcConnection, Request<JsonObject> request) {
+        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
+                .equals(ProtocolElements.ONCALL_EVENT_ACCEPT)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String media = null;//如果为null则说明,all,视频语音一体
         if (request.getParams().has(ProtocolElements.ONCALL_MEDIA_PARAM))
@@ -184,99 +197,109 @@ public class CallRpcHandler extends RpcHandler {
         final UserRpcConnection calleer = registry.getByUserId(fromId);
         final UserRpcConnection callee = registry.getByUserRpcConnection(rpcConnection);
 
+        String targetId = calleer.getCallingTo();//这是当前发送者的ID
+
         logger.info("caller ParticipantPrivateId {},callee ParticipantPrivateId {}",
                 calleer.getParticipantPrivateId(), callee.getParticipantPrivateId());
+        logger.info("Accepted call from '{}' to '{}'", fromId, targetId);
 
-        String targetId = calleer.getCallingTo();//这是当前发送者的ID
-        //需要判断sessionId是否存在
-        if (ProtocolElements.ONCALL_EVENT_ACCEPT.equals(event)) {
-            logger.info("Accepted call from '{}' to '{}'", fromId, targetId);
+        UserMediaSession pipeline = null;
+        logger.info("caller session {},callee session {}",
+                calleer.getSessionId(), callee.getSessionId());
 
-            UserMediaSession pipeline = null;
-            logger.info("caller session {},callee session {}",
-                    calleer.getSessionId(), callee.getSessionId());
+        pipeline = userMediaSessions.get(calleer.getSessionId());
 
-            pipeline = userMediaSessions.get(calleer.getSessionId());
+        callee.setWebRtcEndpoint(pipeline.getCalleeWebRtcEp());
 
-            callee.setWebRtcEndpoint(pipeline.getCalleeWebRtcEp());
+        pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
+                new EventListener<IceCandidateFoundEvent>() {
 
-            pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
-                    new EventListener<IceCandidateFoundEvent>() {
+                    @Override
+                    public void onEvent(IceCandidateFoundEvent event) {
+                        JsonObject jsonObject = new JsonObject();
+                        //jsonObject.addProperty("id", "iceCandidate");
+                        jsonObject.add("candidate",
+                                JsonUtils.toJsonObject(event.getCandidate()));
+                        notificationService.sendNotification(
+                                rpcConnection.getParticipantPrivateId(),
+                                ProtocolElements.ICECANDIDATE_METHOD,
+                                jsonObject);
+                    }
+                });
 
-                        @Override
-                        public void onEvent(IceCandidateFoundEvent event) {
-                            JsonObject jsonObject = new JsonObject();
-                            //jsonObject.addProperty("id", "iceCandidate");
-                            jsonObject.add("candidate",
-                                    JsonUtils.toJsonObject(event.getCandidate()));
-                            notificationService.sendNotification(
-                                    rpcConnection.getParticipantPrivateId(),
-                                    ProtocolElements.ICECANDIDATE_METHOD,
-                                    jsonObject);
-                        }
-                    });
+        calleer.setWebRtcEndpoint(pipeline.getCallerWebRtcEp());
 
-            calleer.setWebRtcEndpoint(pipeline.getCallerWebRtcEp());
+        pipeline.getCallerWebRtcEp().addIceCandidateFoundListener(
+                new EventListener<IceCandidateFoundEvent>() {
 
-            pipeline.getCallerWebRtcEp().addIceCandidateFoundListener(
-                    new EventListener<IceCandidateFoundEvent>() {
+                    @Override
+                    public void onEvent(IceCandidateFoundEvent event) {
+                        JsonObject jsonObject = new JsonObject();
+                        //jsonObject.addProperty("id", "iceCandidate");
+                        jsonObject.add("candidate",
+                                JsonUtils.toJsonObject(event.getCandidate()));
+                        notificationService.sendNotification(
+                                calleer.getParticipantPrivateId(),
+                                ProtocolElements.ICECANDIDATE_METHOD,
+                                jsonObject);
+                    }
+                });
 
-                        @Override
-                        public void onEvent(IceCandidateFoundEvent event) {
-                            JsonObject jsonObject = new JsonObject();
-                            //jsonObject.addProperty("id", "iceCandidate");
-                            jsonObject.add("candidate",
-                                    JsonUtils.toJsonObject(event.getCandidate()));
-                            notificationService.sendNotification(
-                                    calleer.getParticipantPrivateId(),
-                                    ProtocolElements.ICECANDIDATE_METHOD,
-                                    jsonObject);
-                        }
-                    });
+        String calleeSdpOffer = getStringParam(request,
+                ProtocolElements.ONCALL_SDPOFFER_PARAM);
+        String calleeSdpAnswer = pipeline.generateSdpAnswerForCallee(calleeSdpOffer);
+        JsonObject connectedObject = new JsonObject();
+        //startCommunication.addProperty("id", "startCommunication");
+        connectedObject.addProperty(
+                ProtocolElements.ONCALL_SDPANSWER_PARAM, calleeSdpAnswer);
+        connectedObject.addProperty(
+                ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_CONNECTED);
 
-            String calleeSdpOffer = getStringParam(request,
-                    ProtocolElements.ONCALL_SDPOFFER_PARAM);
-            String calleeSdpAnswer = pipeline.generateSdpAnswerForCallee(calleeSdpOffer);
-            JsonObject connectedObject = new JsonObject();
-            //startCommunication.addProperty("id", "startCommunication");
-            connectedObject.addProperty(
-                    ProtocolElements.ONCALL_SDPANSWER_PARAM, calleeSdpAnswer);
-            connectedObject.addProperty(
-                    ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_CONNECTED);
-
-            synchronized (callee) {
-                notificationService.sendNotification(
-                        rpcConnection.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, connectedObject);
-            }
-
-            pipeline.getCalleeWebRtcEp().gatherCandidates();
-
-            String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
-            String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
-
-            /*告知calleer对方已经接听*/
-            JsonObject accetpObject = new JsonObject();
-            accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
-            if (media != null)
-                accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
-            accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
-            synchronized (calleer) {
-                notificationService.sendNotification(
-                        calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, accetpObject);
-
-            }
-            pipeline.getCallerWebRtcEp().gatherCandidates();
-
-        } else {
-            JsonObject notify = new JsonObject();
-            if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
-                notify.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
-                        ProtocolElements.ONCALL_EVENT_REJECT_REASON));
-            }
-            notify.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
+        synchronized (callee) {
             notificationService.sendNotification(
-                    calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, notify);
+                    rpcConnection.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, connectedObject);
         }
+
+        pipeline.getCalleeWebRtcEp().gatherCandidates();
+
+        String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
+        String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
+
+        /*告知calleer对方已经接听*/
+        JsonObject accetpObject = new JsonObject();
+        accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
+        if (media != null)
+            accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
+        accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
+        synchronized (calleer) {
+            notificationService.sendNotification(
+                    calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, accetpObject);
+
+        }
+        pipeline.getCallerWebRtcEp().gatherCandidates();
+    }
+
+    private void onCallRejectProcess(RpcConnection rpcConnection,
+                                     Request<JsonObject> request) {
+        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_REJECT)
+                .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
+        String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+        final UserRpcConnection calleer = registry.getByUserId(fromId);
+        JsonObject notify = new JsonObject();
+        if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
+            notify.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
+                    ProtocolElements.ONCALL_EVENT_REJECT_REASON));
+        }
+        notify.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
+        notificationService.sendNotification(
+                calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, notify);
+    }
+
+    private void onCallHangupProcess(RpcConnection rpcConnection,
+                                     Request<JsonObject> request) {
+        if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_HANGUP)
+                .equals(ProtocolElements.ONCALL_EVENT_HANGUP)) return;
+
     }
 
     private void onIceCandidate(RpcConnection rpcConnection, Request<JsonObject> request) {

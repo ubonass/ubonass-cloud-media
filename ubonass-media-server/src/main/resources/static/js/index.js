@@ -141,11 +141,6 @@ function handlerMethod(message) {
             stop(true);
             break;
         case 'iceCandidate':
-            /*var candidate = {
-                candidate:paramsMessage.candidate,
-                sdpMid:paramsMessage.sdpMid,
-                sdpMLineIndex:paramsMessage.sdpMLineIndex
-            };*/
             var candidate = paramsMessage.candidate;
             webRtcPeer.addIceCandidate(candidate, function (error) {
                 if (error)
@@ -360,10 +355,10 @@ function stop(message) {
         webRtcPeer.dispose();
         webRtcPeer = null;
         if (!message) {
-            /*var message = {
-                id: 'stop'
-            }*/
-            sendMessage("stop", msgId++);
+            var message = {
+                event: 'hangup'
+            }
+            sendMessage("onCall", message,msgId++);
         }
     }
     hideSpinner(videoInput, videoOutput);

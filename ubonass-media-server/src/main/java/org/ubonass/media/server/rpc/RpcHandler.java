@@ -4,10 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.kurento.client.EventListener;
-import org.kurento.client.IceCandidateFoundEvent;
 import org.kurento.jsonrpc.DefaultJsonRpcHandler;
-import org.kurento.jsonrpc.JsonUtils;
 import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.internal.ws.WebSocketServerSession;
@@ -16,13 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.ubonass.media.client.CloudMediaException;
-import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
-import org.ubonass.media.server.kurento.core.One2OneParticipant;
-import org.ubonass.media.server.kurento.core.One2OneSession;
-import org.ubonass.media.server.utils.RandomStringGenerator;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -41,19 +33,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
      * key为用户远程连的客户唯一标识,Value为Session
      */
     private Map<String, Session> onlineUsers = new ConcurrentHashMap<>();
-    /**
-     * 每次建立视频或者音频通信后有一个唯一的KurentoSession
-     * Key为房间号,如果不是room则随机生成
-     */
-    private Map<String, One2OneSession> one2oneSessions = new ConcurrentHashMap<>();
-
-    /**
-     * One2OneParticipant记录用户的sdp等信息代表一个客户端,key为userId
-     */
-    private Map<String, One2OneParticipant> one2oneParticipants = new ConcurrentHashMap<>();
-
     @Autowired
-    private RpcNotificationService cloudMediaNotification;
+    private RpcNotificationService notificationService;
 
     @Autowired
     private KurentoClientProvider kcProvider;
@@ -67,8 +48,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         RpcConnection rpcConnection;
         if (ProtocolElements.KEEPLIVE_METHOD.equals(request.getMethod())) {
             // Store new RpcConnection information if method 'keepLive'
-            rpcConnection = cloudMediaNotification.newRpcConnection(transaction, request);
-        } else if (cloudMediaNotification.getRpcConnection(participantPrivateId) == null) {
+            rpcConnection = notificationService.newRpcConnection(transaction, request);
+        } else if (notificationService.getRpcConnection(participantPrivateId) == null) {
             // Throw exception if any method is called before 'joinCloud'
             logger.warn(
                     "No connection found for participant with privateId {} when trying to execute method '{}'. Method 'Session.connect()' must be the first operation called in any session",
@@ -78,7 +59,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                             + ". Method 'Session.connect()' must be the first operation called in any session");
         }
 
-        rpcConnection = cloudMediaNotification.addTransaction(transaction, request);
+        rpcConnection = notificationService.addTransaction(transaction, request);
 
         transaction.startAsync();
 
@@ -107,7 +88,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     private void keepLive(RpcConnection rpcConnection, Request<JsonObject> request) {
         JsonObject result = new JsonObject();
         result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
-        cloudMediaNotification.sendResponse(rpcConnection.getParticipantPrivateId(),
+        notificationService.sendResponse(rpcConnection.getParticipantPrivateId(),
                 request.getId(), result);
 
     }
@@ -167,7 +148,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         if (session != null)
             result.addProperty(ProtocolElements.INVITED_SESSION_PARAM, session);
         result.addProperty(ProtocolElements.INVITED_TYPEMEDIA_PARAM, typeOfMedia);
-        cloudMediaNotification.sendResponse(rpcConnection.getParticipantPrivateId(),
+        notificationService.sendResponse(rpcConnection.getParticipantPrivateId(),
                 request.getId(), result);
     }
 
@@ -296,7 +277,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             }
         }
         RpcConnection rpc =
-                this.cloudMediaNotification.closeRpcSession(rpcSessionId);
+                this.notificationService.closeRpcSession(rpcSessionId);
         if (rpc != null) rpc = null;
     }
 
