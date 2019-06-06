@@ -89,7 +89,6 @@ public class CallRpcHandler extends RpcHandler {
             default:
                 break;
         }
-
     }
 
     private void register(RpcConnection rpcConnection, Request<JsonObject> request) {
@@ -221,9 +220,6 @@ public class CallRpcHandler extends RpcHandler {
                         }
                     });
 
-            /*pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
-                    new IceCandidateEventListener(callee));*/
-
             calleer.setWebRtcEndpoint(pipeline.getCallerWebRtcEp());
 
             pipeline.getCallerWebRtcEp().addIceCandidateFoundListener(
@@ -241,8 +237,6 @@ public class CallRpcHandler extends RpcHandler {
                                     jsonObject);
                         }
                     });
-            /*pipeline.getCalleeWebRtcEp().addIceCandidateFoundListener(
-                    new IceCandidateEventListener(calleer));*/
 
             String calleeSdpOffer = getStringParam(request,
                     ProtocolElements.ONIINCOMING_CALL_SDPOFFER_PARAM);

@@ -40,7 +40,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     /**
      * key为用户远程连的客户唯一标识,Value为Session
      */
-    private Map<String, Session> identifierSessions = new ConcurrentHashMap<>();
+    private Map<String, Session> onlineUsers = new ConcurrentHashMap<>();
     /**
      * 每次建立视频或者音频通信后有一个唯一的KurentoSession
      * Key为房间号,如果不是room则随机生成
@@ -137,9 +137,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     JsonObject target = targetArray.get(i).getAsJsonObject();
                     String targetId = target.get("userId").getAsString();
                     //判断targetId是否在sessions集合当中
-                    boolean targetOnline = identifierSessions.containsKey(targetId);
+                    boolean targetOnline = onlineUsers.containsKey(targetId);
                     if (targetOnline) {
-                        Session targetSession = identifierSessions.get(targetId);
+                        Session targetSession = onlineUsers.get(targetId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_FROMUSER_PARAM, fromId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_TARGETUSER_PARAM, targetId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_TYPEMEDIA_PARAM, typeOfMedia);
@@ -184,8 +184,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         /**
          * 判断目标用户是否存在
          */
-        if (identifierSessions.containsKey(targetId)) {
-            Session targetSession = identifierSessions.get(targetId);
+        if (onlineUsers.containsKey(targetId)) {
+            Session targetSession = onlineUsers.get(targetId);
             JsonObject notifParams = new JsonObject();
             notifParams.addProperty(ProtocolElements.ONINVITED_TARGETUSER_PARAM, targetId);
             notifParams.addProperty(ProtocolElements.ONINVITED_FROMUSER_PARAM, fromId);
@@ -273,7 +273,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                                 .getWebSocketSession()
                                 .getAttributes()
                                 .get("userId");
-                identifierSessions.put(userId, rpcSession);
+                onlineUsers.put(userId, rpcSession);
             }
         }
     }
@@ -291,7 +291,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                         .getWebSocketSession()
                         .getAttributes()
                         .get("userId");
-                identifierSessions.remove(userId);
+                onlineUsers.remove(userId);
                 logger.info("afterConnectionClosed userId:" + userId);
             }
         }

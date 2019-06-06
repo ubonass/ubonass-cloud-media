@@ -176,14 +176,14 @@ function callResponse(message) {
     } else {
         //发送ice....
         console.log("callResponse success");
-        if (iceCandidatesList.length != 0) {
+        /*if (iceCandidatesList.length != 0) {
             for (var index in iceCandidatesList) {
                 var message = {
                     candidate: iceCandidatesList[index]
                 };
                 sendMessageParams("onIceCandidate", message, msgId++);
             }
-        }
+        }*/
     }
 }
 
