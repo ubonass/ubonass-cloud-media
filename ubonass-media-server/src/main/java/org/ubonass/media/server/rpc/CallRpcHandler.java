@@ -77,8 +77,8 @@ public class CallRpcHandler extends RpcHandler {
             case ProtocolElements.CALL_METHOD:
                 call(rpcConnection, request);
                 break;
-            case ProtocolElements.ONINCOMING_CALL_METHOD:
-                onIncomingCall(rpcConnection, request);
+            case ProtocolElements.ONCALL_METHOD:
+                onCall(rpcConnection, request);
                 break;
             case ProtocolElements.ONICECANDIDATE_METHOD:
                 onIceCandidate(rpcConnection, request);
@@ -173,31 +173,27 @@ public class CallRpcHandler extends RpcHandler {
         }
     }
 
-    private void onIncomingCall(RpcConnection rpcConnection, Request<JsonObject> request) {
-        String type = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM);
+    private void onCall(RpcConnection rpcConnection, Request<JsonObject> request) {
+        String event = getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM);
         //原始ID发起者是谁
-        String fromId = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_FROMUSER_PARAM);
+        String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String media = null;//如果为null则说明,all,视频语音一体
-        if (request.getParams().has(ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM))
-            media = getStringParam(request, ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM);
+        if (request.getParams().has(ProtocolElements.ONCALL_MEDIA_PARAM))
+            media = getStringParam(request, ProtocolElements.ONCALL_MEDIA_PARAM);
 
         final UserRpcConnection calleer = registry.getByUserId(fromId);
         final UserRpcConnection callee = registry.getByUserRpcConnection(rpcConnection);
-        if (calleer == null)
-            logger.error("calleer is null");
-        if (callee == null)
-            logger.error("callee is null");
 
         logger.info("caller ParticipantPrivateId {},callee ParticipantPrivateId {}",
                 calleer.getParticipantPrivateId(), callee.getParticipantPrivateId());
 
         String targetId = calleer.getCallingTo();//这是当前发送者的ID
         //需要判断sessionId是否存在
-        if (ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT.equals(type)) {
+        if (ProtocolElements.ONCALL_EVENT_ACCEPT.equals(event)) {
             logger.info("Accepted call from '{}' to '{}'", fromId, targetId);
 
             UserMediaSession pipeline = null;
-            logger.info("caller session {},callee session'",
+            logger.info("caller session {},callee session {}",
                     calleer.getSessionId(), callee.getSessionId());
 
             pipeline = userMediaSessions.get(calleer.getSessionId());
@@ -239,48 +235,44 @@ public class CallRpcHandler extends RpcHandler {
                     });
 
             String calleeSdpOffer = getStringParam(request,
-                    ProtocolElements.ONIINCOMING_CALL_SDPOFFER_PARAM);
-
+                    ProtocolElements.ONCALL_SDPOFFER_PARAM);
             String calleeSdpAnswer = pipeline.generateSdpAnswerForCallee(calleeSdpOffer);
-
-            JsonObject startCommunication = new JsonObject();
+            JsonObject connectedObject = new JsonObject();
             //startCommunication.addProperty("id", "startCommunication");
-            startCommunication.addProperty(
-                    ProtocolElements.START_COMMUNICATION_SDPANSWER_PARAM, calleeSdpAnswer);
-
+            connectedObject.addProperty(
+                    ProtocolElements.ONCALL_SDPANSWER_PARAM, calleeSdpAnswer);
             synchronized (callee) {
                 notificationService.sendNotification(
-                        rpcConnection.getParticipantPrivateId(), ProtocolElements.START_COMMUNICATION_METHOD, startCommunication);
+                        rpcConnection.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, connectedObject);
             }
-
 
             pipeline.getCalleeWebRtcEp().gatherCandidates();
 
             String callerSdpOffer = registry.getByUserId(fromId).getSdpOffer();
             String callerSdpAnswer = pipeline.generateSdpAnswerForCaller(callerSdpOffer);
 
-            JsonObject notify = new JsonObject();
-            //notify.addProperty("id", "callResponse");
-            notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_ACCEPT);
+            JsonObject accetpObject = new JsonObject();
+            accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
+                    ProtocolElements.ONCALL_EVENT_ACCEPT);
             if (media != null)
-                notify.addProperty(ProtocolElements.ONIINCOMING_CALL_MEDIA_PARAM, media);
-            notify.addProperty(ProtocolElements.ONIINCOMING_CALL_SDPANSWER_PARAM, callerSdpAnswer);
+                accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
+            accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
             synchronized (calleer) {
                 notificationService.sendNotification(
-                        calleer.getParticipantPrivateId(), ProtocolElements.ONINCOMING_CALL_METHOD, notify);
-                logger.info("--------------11------------------------");
+                        calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, accetpObject);
+
             }
             pipeline.getCallerWebRtcEp().gatherCandidates();
 
         } else {
             JsonObject notify = new JsonObject();
-            if (request.getParams().has(ProtocolElements.ONIINCOMING_CALL_REJECT_REASON)) {
-                notify.addProperty(ProtocolElements.ONIINCOMING_CALL_REJECT_REASON, getStringParam(request,
-                        ProtocolElements.ONIINCOMING_CALL_REJECT_REASON));
+            if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
+                notify.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
+                        ProtocolElements.ONCALL_EVENT_REJECT_REASON));
             }
-            notify.addProperty(ProtocolElements.ONIINCOMING_CALL_TYPE_PARAM, ProtocolElements.ONIINCOMING_CALL_TYPE_REJECT);
+            notify.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
             notificationService.sendNotification(
-                    calleer.getParticipantPrivateId(), ProtocolElements.ONINCOMING_CALL_METHOD, notify);
+                    calleer.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, notify);
         }
     }
 

@@ -130,12 +130,12 @@ function handlerMethod(message) {
         case 'incomingCall':
             incomingCall(paramsMessage);
             break;
-        case 'onIncomingCall':
-            onIncomingCall(paramsMessage);
+        case 'onCall':
+            onCall(paramsMessage);
             break;
-        case 'startCommunication':
+        /*case 'startCommunication':
             startCommunication(paramsMessage);
-            break;
+            break;*/
         case 'stopCommunication':
             console.info('Communication ended by remote peer');
             stop(true);
@@ -199,8 +199,29 @@ function resgisterResponse(message) {
     }
 }
 
-function onIncomingCall(message) {
-    if (message.type != 'accept') {
+function onCall(message) {
+
+    if (message.event == 'accept') {//对方已接听
+        setCallState(IN_CALL);
+        webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
+            if (error)
+                return console.error(error);
+        });
+    } else if (message.event == 'connected'){//已建立连接
+        setCallState(IN_CALL);
+        webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
+            if (error)
+                return console.error(error);
+        });
+    } else if  (message.event == 'reject') {//对方已拒绝
+        console.info('Call not accepted by peer. Closing call');
+        var errorMessage = message.reason ? message.reason
+            : 'Unknown reason for call rejection.';
+        console.log(errorMessage);
+        stop();
+    }
+
+    /*if (message.event != 'accept') {
         console.info('Call not accepted by peer. Closing call');
         var errorMessage = message.reason ? message.reason
             : 'Unknown reason for call rejection.';
@@ -212,7 +233,7 @@ function onIncomingCall(message) {
             if (error)
                 return console.error(error);
         });
-    }
+    }*/
 }
 
 function startCommunication(message) {
