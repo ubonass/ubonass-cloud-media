@@ -30,6 +30,7 @@ var webRtcPeer;
 var response;
 var callerMessage;
 var fromId;
+var sessionId;
 
 var registerName = null;
 var registerState = null;
@@ -193,39 +194,21 @@ function resgisterResponse(message) {
 
 function onCall(message) {
 
-    /*if (message.event == 'accept') {//对方已接听
+    /*if (message.event == 'accept') {//对方已接听,发送
+
+    } else */if (message.event == 'connected') {//已建立连接
         setCallState(IN_CALL);
         webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
             if (error)
                 return console.error(error);
         });
-    } else */if (message.event == 'connected'){//已建立连接
-        setCallState(IN_CALL);
-        webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
-            if (error)
-                return console.error(error);
-        });
-    } else if  (message.event == 'reject') {//对方已拒绝
+    } else if (message.event == 'reject') {//对方已拒绝
         console.info('Call not accepted by peer. Closing call');
         var errorMessage = message.reason ? message.reason
             : 'Unknown reason for call rejection.';
         console.log(errorMessage);
         stop();
     }
-
-    /*if (message.event != 'accept') {
-        console.info('Call not accepted by peer. Closing call');
-        var errorMessage = message.reason ? message.reason
-            : 'Unknown reason for call rejection.';
-        console.log(errorMessage);
-        stop();
-    } else {
-        setCallState(IN_CALL);
-        webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
-            if (error)
-                return console.error(error);
-        });
-    }*/
 }
 
 function startCommunication(message) {
@@ -255,6 +238,7 @@ function incomingCall(message) {
         showSpinner(videoInput, videoOutput);
 
         fromId = message.fromId;
+        //sessionId = message.sessionId;
         var options = {
             localVideo: videoInput,
             remoteVideo: videoOutput,
@@ -287,6 +271,7 @@ function onOfferIncomingCall(error, offerSdp) {
     var response = {
         media: 'all',
         fromId: fromId,
+        //sessionId: sessionId,
         event: 'accept',
         sdpOffer: offerSdp
     };
@@ -355,7 +340,7 @@ function stop(message) {
             var message = {
                 event: 'hangup'
             }
-            sendMessage("onCall", message,msgId++);
+            sendMessage("onCall", message, msgId++);
         }
     }
     hideSpinner(videoInput, videoOutput);

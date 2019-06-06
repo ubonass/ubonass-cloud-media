@@ -311,7 +311,7 @@ public class ProtocolElements {
     //public static final String ONCALL_TARGETUSER_PARAM = "targetId";
     public static final String ONCALL_SDPOFFER_PARAM = "sdpOffer";
     public static final String ONCALL_SDPANSWER_PARAM = "sdpAnswer";//这是服务器回复给发起者的
-    //public static final String INCOMING_CALL_SESSION_PARAM = "sessionId";//有服务器随机生成
+    //public static final String ONCALL_SESSION_PARAM = "sessionId";//有服务器随机生成
     public static final String ONCALL_MEDIA_PARAM = "media";//
     public static final String ONCALL_EVENT_PARAM = "event";
     public static final String ONCALL_EVENT_ACCEPT = "accept";//接听
