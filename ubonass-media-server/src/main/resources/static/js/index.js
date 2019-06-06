@@ -341,7 +341,7 @@ function stop(message) {
             var message = {
                 event: 'hangup'
             }
-            sendMessage("onCall", message, msgId++);
+            sendMessageParams("onCall", message, msgId++);
         }
     }
     hideSpinner(videoInput, videoOutput);
