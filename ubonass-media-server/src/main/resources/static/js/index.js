@@ -254,7 +254,7 @@ function incomingCall(message) {
             media: message.media,
             reason: 'bussy'
         };
-        return sendMessageParams("onIncomingCall", response, msgId++);
+        return sendMessageParams("onCall", response, msgId++);
     }
 
     setCallState(PROCESSING_CALL);
@@ -284,7 +284,7 @@ function incomingCall(message) {
             media: message.media,
             reason: "hangup"
         };
-        sendMessageParams("onIncomingCall", response, msgId++);
+        sendMessageParams("onCall", response, msgId++);
         stop();
     }
 }
@@ -298,7 +298,7 @@ function onOfferIncomingCall(error, offerSdp) {
         type: 'accept',
         sdpOffer: offerSdp
     };
-    sendMessageParams("onIncomingCall", response, msgId++);
+    sendMessageParams("onCall", response, msgId++);
 }
 
 function register() {
