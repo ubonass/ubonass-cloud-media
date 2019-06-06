@@ -136,14 +136,14 @@ public class CallRpcHandler extends RpcHandler {
             //rpcConnection.setSessionId(sessionId);
 
             callSessions.putIfAbsent(rpcConnection.getSession().getSessionId(), callSession);
-            callSessions.putIfAbsent(onlineClients.get(targetId).getSessionId(), callSession);
+            //callSessions.putIfAbsent(onlineClients.get(targetId).getSessionId(), callSession);
 
             WebRtcEndpoint webRtcEndpoint =
                     callSession.createWebRtcEndpoint(
                             rpcConnection.getParticipantPrivateId());
-            WebRtcEndpoint calleewebRtcEndpoint =
+            /*WebRtcEndpoint calleewebRtcEndpoint =
                     callSession.createWebRtcEndpoint(
-                            onlineClients.get(targetId).getSessionId());
+                            onlineClients.get(targetId).getSessionId());*/
 
             webRtcEndpoint.addIceCandidateFoundListener(
                     new EventListener<IceCandidateFoundEvent>() {
@@ -211,20 +211,19 @@ public class CallRpcHandler extends RpcHandler {
 
     private void onCallAcceptProcess(RpcConnection rpcConnection, Request<JsonObject> request) {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
-                .equals(ProtocolElements.ONCALL_EVENT_ACCEPT)) return;
+                .equals(ProtocolElements.ONCALL_EVENT_ACCEPT) ||
+                !request.getParams().has(ProtocolElements.ONCALL_FROMUSER_PARAM)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
-        //String targetId = getStringParam(request, ProtocolElements.ONCALL_TARGETUSER_PARAM);
-        //String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
         String media = null;//如果为null则说明,all,视频语音一体
         if (request.getParams().has(ProtocolElements.ONCALL_MEDIA_PARAM))
             media = getStringParam(request, ProtocolElements.ONCALL_MEDIA_PARAM);
 
-
         KurentoCallSession kurentoCallSession =
-                callSessions.get(rpcConnection.getSession().getSessionId());
+                callSessions.get(onlineClients.get(fromId).getSessionId());
+        callSessions.putIfAbsent(rpcConnection.getSession().getSessionId(),kurentoCallSession);
 
         WebRtcEndpoint calleewebRtcEndpoint =
-                kurentoCallSession.getWebRtcEndpointBySessionId(
+                kurentoCallSession.createWebRtcEndpoint(
                         rpcConnection.getSession().getSessionId());
 
         WebRtcEndpoint callerwebRtcEndpoint =
@@ -271,7 +270,7 @@ public class CallRpcHandler extends RpcHandler {
             accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
         //accetpObject.addProperty(ProtocolElements.ONCALL_SDPANSWER_PARAM, callerSdpAnswer);
         notificationService.sendNotification(
-                onlineClients.get(fromId).getSessionId(),ProtocolElements.ONCALL_METHOD, accetpObject);
+                onlineClients.get(fromId).getSessionId(), ProtocolElements.ONCALL_METHOD, accetpObject);
     }
 
     private void onCallRejectProcess(RpcConnection rpcConnection,
@@ -280,15 +279,17 @@ public class CallRpcHandler extends RpcHandler {
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
         /*String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         final UserSession calleer = registry.getByUserId(fromId);*/
-        String targetId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+        String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         JsonObject notify = new JsonObject();
         if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
             notify.addProperty(ProtocolElements.ONCALL_EVENT_REJECT_REASON, getStringParam(request,
                     ProtocolElements.ONCALL_EVENT_REJECT_REASON));
         }
+        KurentoCallSession session = callSessions.remove(fromId);
+        session.release();
         notify.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
         notificationService.sendNotification(
-                onlineClients.get(targetId).getSessionId(),ProtocolElements.ONCALL_METHOD, notify);
+                onlineClients.get(fromId).getSessionId(), ProtocolElements.ONCALL_METHOD, notify);
     }
 
     private void onCallHangupProcess(RpcConnection rpcConnection,
