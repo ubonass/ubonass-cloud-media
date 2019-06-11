@@ -192,14 +192,13 @@ public class CallRpcHandler extends RpcHandler {
         if (callerRpcConnection != null) {
             kurentoCallSession =
                     sessionManager.getCallSession(callerRpcConnection.getClientId());
-            //sessionManager.addCallSession(rpcConnection.getSession().getSessionId(), kurentoCallSession);
+
         } else {
             //需要重新创建KurentoCallSession
             kurentoCallSession = new KurentoCallSession(
                     kcProvider.getKurentoClient(),
                     callerCluserConnection.getClientId(),
                     rpcConnection.getClientId());
-            //sessionManager.addCallSession(rpcConnection.getSession().getSessionId(), kurentoCallSession);
         }
 
         WebRtcEndpoint calleewebRtcEndpoint =
@@ -268,7 +267,7 @@ public class CallRpcHandler extends RpcHandler {
             //将webrtcendpoint 作为rtpEndpoint的消费者
             rtpEndpoint.connect(calleewebRtcEndpoint);
         }
-        sessionManager.addCallSession(rpcConnection.getParticipantPrivateId(), kurentoCallSession);
+        sessionManager.addCallSession(rpcConnection.getClientId(), kurentoCallSession);
         /**
          * 回复给客户端
          */
