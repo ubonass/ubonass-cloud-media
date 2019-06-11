@@ -160,12 +160,12 @@ function callResponse(message) {
         //发送ice....
         for (var i = 0; i < iceCandidatesList.length; i++) {
             //console.log("Local candidate" + JSON.stringify(candidate));
-            var message = {
+            var msg = {
                 candidate: iceCandidatesList[i].candidate,
                 sdpMid: iceCandidatesList[i].sdpMid,
                 sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex
             };
-            sendMessageParams("onIceCandidate", message, msgId++);
+            sendMessageParams("onIceCandidate", msg, msgId++);
         }
         iceCandidatesList.length = 0;
         console.log("callResponse success");
@@ -198,12 +198,12 @@ function onCall(message) {
         setCallState(IN_CALL);
         for (var i = 0; i < iceCandidatesList.length; i++) {
             //console.log("Local candidate" + JSON.stringify(candidate));
-            var message = {
+            var msg = {
                 candidate: iceCandidatesList[i].candidate,
                 sdpMid: iceCandidatesList[i].sdpMid,
                 sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex
             };
-            sendMessageParams("onIceCandidate", message, msgId++);
+            sendMessageParams("onIceCandidate", msg, msgId++);
         }
         iceCandidatesList.length = 0;
         webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
