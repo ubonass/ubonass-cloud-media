@@ -1,9 +1,7 @@
 package org.ubonass.media.server.rpc;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.kurento.jsonrpc.DefaultJsonRpcHandler;
 import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
@@ -16,12 +14,12 @@ import org.springframework.http.HttpHeaders;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
+import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 
 import javax.servlet.http.HttpSession;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.List;
@@ -105,9 +103,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     rpcConnection.getSession().getAttributes().get("clientId");
             rpcConnection.setClientId(clientId);//保存client id
             rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
-            RpcConnection connection = sessionManager.addRpcConnection(clientId, rpcConnection);
-            sessionManager.addClusterConnection(clientId,
-                    new ClusterConnection(clientId,clusterRpcService.getMemberId()));
+            ClusterConnection connection =
+                    notificationService.addClusterConnection(rpcConnection);
             if (connection == null) {
                 result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
             } else {
@@ -138,9 +135,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             } else {
                 rpcConnection.setClientId(userId);//保存client id
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
-                RpcConnection connection = sessionManager.addRpcConnection(userId, rpcConnection);
-                sessionManager.addClusterConnection(userId,
-                        new ClusterConnection(userId,clusterRpcService.getMemberId()));
+                ClusterConnection connection =
+                        notificationService.addClusterConnection(rpcConnection);
                 if (connection != null) {
                     responseMsg = "rejected: user '" + userId + "' already registered";
                     result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
@@ -166,7 +162,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         JsonObject result = new JsonObject();
         JsonArray resultTargetArray = new JsonArray();
         *//** 首先判断这个target id是否在userIdAndPrivateId集合当中有
-         * 如果没有说明不在线需要返回,如果有则向目标发起通知,通知其加入房间*//*
+     * 如果没有说明不在线需要返回,如果有则向目标发起通知,通知其加入房间*//*
         if (number > 0) {
             try {
                 JsonArray targetArray =
@@ -221,9 +217,11 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             session = getStringParam(request, ProtocolElements.ONINVITED_SESSION_PARAM);
         if (request.getParams().has(ProtocolElements.ONINVITED_TYPEMEDIA_PARAM))
             typeOfMedia = getStringParam(request, ProtocolElements.ONINVITED_TYPEMEDIA_PARAM);
-        *//**
-         * 判断目标用户是否存在
-         *//*
+        */
+
+    /**
+     * 判断目标用户是否存在
+     *//*
         if (sessionManager.getOnlineConnections().containsKey(targetId)) {
             RpcConnection connection = sessionManager.getOnlineConnection(targetId);
             JsonObject notifParams = new JsonObject();
@@ -241,7 +239,6 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             }
         }
     }*/
-
     public static String getStringParam(Request<JsonObject> request, String key) {
         if (request.getParams() == null || request.getParams().get(key) == null) {
             throw new RuntimeException("Request element '" + key + "' is missing in method '" + request.getMethod()
@@ -331,8 +328,10 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
             if (rpcSession.getAttributes().containsKey("clientId")) {
                 String clientId = (String) rpcSession.getAttributes().remove("clientId");
-                sessionManager.removeRpcConnection(clientId);
-                sessionManager.removeClusterConnection(clientId);
+                //sessionManager.removeClusterConnection(clientId);
+                ClusterConnection clusterConnection =
+                        this.notificationService.closeClusterConnection(clientId);
+                if (clusterConnection != null) clusterConnection = null;
                 logger.info("afterConnectionClosed clientId:" + clientId);
             }
         }

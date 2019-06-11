@@ -18,16 +18,22 @@
 package org.ubonass.media.server.rpc;
 
 import com.google.gson.JsonObject;
+import com.hazelcast.core.IMap;
+import lombok.Data;
 import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
+import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.SessionManager;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -36,6 +42,20 @@ public class RpcNotificationService {
     private static final Logger log = LoggerFactory.getLogger(RpcNotificationService.class);
 
     private ConcurrentMap<String, RpcConnection> rpcConnections = new ConcurrentHashMap<>();
+
+    /**
+     * key为用户远程连的客户唯一标识,Value为ClusterConnection,针对所有集群
+     */
+    private IMap<String, ClusterConnection> clusterConnections;
+
+    @Autowired
+    private ClusterRpcService clusterRpcService;
+
+    @PostConstruct
+    public void init() {
+        this.clusterConnections =
+                clusterRpcService.getHazelcastInstance().getMap("clusterConnections");
+    }
 
     public RpcConnection newRpcConnection(Transaction t, Request<JsonObject> request) {
         String participantPrivateId = t.getSession().getSessionId();
@@ -46,6 +66,38 @@ public class RpcNotificationService {
             connection = oldConnection;
         }
         return connection;
+    }
+
+    public ClusterConnection newClusterConnection(RpcConnection rpcConnection) {
+        if (rpcConnection == null) return null;
+        ClusterConnection connection = new ClusterConnection(
+                rpcConnection.getClientId(),
+                rpcConnection.getParticipantPrivateId(),
+                rpcConnection.getMemberId());
+        ClusterConnection oldConnection =
+                clusterConnections.putIfAbsent(rpcConnection.getClientId(), connection);
+        if (oldConnection != null) {
+            log.warn("Concurrent initialization of rpcSession #{}", rpcConnection.getClientId());
+            connection = oldConnection;
+        }
+        return connection;
+    }
+
+    /**
+     * 返回null表示成功
+     *
+     * @param rpcConnection
+     * @return
+     */
+    public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
+        if (rpcConnection == null) return null;
+        ClusterConnection connection = new ClusterConnection(
+                rpcConnection.getClientId(),
+                rpcConnection.getParticipantPrivateId(),
+                rpcConnection.getMemberId());
+        ClusterConnection oldConnection =
+                clusterConnections.putIfAbsent(rpcConnection.getClientId(), connection);
+        return oldConnection;
     }
 
     public RpcConnection addTransaction(Transaction t, Request<JsonObject> request) {
@@ -105,31 +157,6 @@ public class RpcNotificationService {
         }
     }
 
-    /**
-     * 发送消息到clientId,需要考虑集群处理
-     *
-     * @param clusterConnection
-     * @param method
-     * @param object
-     */
-    protected void sendMemberNotification(ClusterConnection clusterConnection,
-                                          String method,
-                                          JsonObject object) {
-        if (clusterConnection == null) {
-            log.error("rpcConnection can not null");
-            return;
-        }
-        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
-
-        String clientMemberId = clusterConnection.getMemberId();
-        if (clientMemberId == null) return;
-        if (!clusterRpcService.isLocalHostMember(clientMemberId)) {
-            //需要让目标host发送消息给call=
-            clusterRpcService.executeToMember(
-                    new RpcNotificationRunnable(
-                            clusterConnection.getClientId(), method, object), clientMemberId);
-        }
-    }
 
     public RpcConnection closeRpcSession(String participantPrivateId) {
         RpcConnection rpcSession = rpcConnections.remove(participantPrivateId);
@@ -148,6 +175,17 @@ public class RpcNotificationService {
         }
         return null;
     }
+
+    public ClusterConnection closeClusterConnection(String clientId) {
+        if (!clusterConnections.containsKey(clientId)) return null;
+        ClusterConnection clusterConnection = clusterConnections.remove(clientId);
+        if (clusterConnection == null) {
+            log.error("No session found for private id {}, unable to cleanup", clientId);
+            return null;
+        }
+        return clusterConnection;
+    }
+
 
     private Transaction getAndRemoveTransaction(String participantPrivateId, Integer transactionId) {
         RpcConnection rpcSession = rpcConnections.get(participantPrivateId);
@@ -170,6 +208,91 @@ public class RpcNotificationService {
             return this.rpcConnections.get(participantPrivateId);
         } else {
             return null;
+        }
+    }
+
+    /*public RpcConnection getRpcConnectionByClientId(String clientId) {
+        if (clusterConnections.containsKey(clientId)) {
+            ClusterConnection clusterConnection =
+                    clusterConnections.get(clientId);
+            return this.getRpcConnection(clusterConnection.getSessionId());
+        } else {
+            *//*throw new CloudMediaException(Code.FILTER_NOT_APPLIED_ERROR_CODE,
+                    "'filter' parameter wrong");*//*
+            return null;
+        }
+    }*/
+
+    public ClusterConnection getClusterConnection(String clientId) {
+        if (clusterConnections.containsKey(clientId)) {
+            return this.clusterConnections.get(clientId);
+        } else {
+            return null;
+        }
+    }
+
+
+    public boolean connectionExist(String clientId) {
+        return clusterConnections.containsKey(clientId);
+    }
+
+    /**
+     * @param clientId
+     * @param method
+     * @param object
+     */
+    public void sendMemberNotification(String clientId,
+                                 String method,
+                                 JsonObject object) {
+        if (clientId == null) {
+            log.error("clientId can not null");
+            return;
+        }
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+        if (clusterConnections.containsKey(clientId)) {
+            ClusterConnection clusterConnection =
+                    clusterConnections.get(clientId);
+            //发送到集群主机
+            clusterRpcService.executeToMember(
+                    new RpcNotificationRunnable(
+                            clientId, method, object), clusterConnection.getMemberId());
+        }
+
+    }
+
+    @Data
+    private class RpcNotificationRunnable implements Runnable, Serializable {
+
+        private static final long serialVersionUID = -3246285197224927455L;
+
+        private String clientId;
+        private String method;
+        private JsonObject object;
+
+        public RpcNotificationRunnable(
+                String clientId,
+                String method,
+                JsonObject object) {
+            this.clientId = clientId;
+            this.method = method;
+            this.object = object;
+        }
+
+        @Override
+        public void run() {
+            if (clientId == null || method == null) return;
+            RpcConnection rpcConnection =
+                    getRpcConnection(getClusterConnection(clientId).getSessionId());
+            if (rpcConnection == null) return;
+            try {
+                if (object != null) {
+                    rpcConnection.getSession().sendNotification(method, object);
+                } else {
+                    rpcConnection.getSession().sendNotification(method);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

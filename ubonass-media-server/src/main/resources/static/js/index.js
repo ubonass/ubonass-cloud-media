@@ -157,6 +157,16 @@ function callResponse(message) {
         alert('Error registering user. See console for further information.');
     } else {
         //发送ice....
+        for (var i = 0; i < iceCandidatesList.length; i++) {
+            //console.log("Local candidate" + JSON.stringify(candidate));
+            var message = {
+                candidate: iceCandidatesList[i].candidate,
+                sdpMid: iceCandidatesList[i].sdpMid,
+                sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex
+            };
+            sendMessageParams("onIceCandidate", message, msgId++);
+        }
+        iceCandidatesList.length = 0;
         console.log("callResponse success");
         setCallState(IN_CALL);
         webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
@@ -182,8 +192,19 @@ function onCall(message) {
 
     /*if (message.event == 'accept') {//对方已接听,发送
 
-    } else */if (message.event == 'connected') {//已建立连接
+    } else */
+    if (message.event == 'connected') {//已建立连接
         setCallState(IN_CALL);
+        for (var i = 0; i < iceCandidatesList.length; i++) {
+            //console.log("Local candidate" + JSON.stringify(candidate));
+            var message = {
+                candidate: iceCandidatesList[i].candidate,
+                sdpMid: iceCandidatesList[i].sdpMid,
+                sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex
+            };
+            sendMessageParams("onIceCandidate", message, msgId++);
+        }
+        iceCandidatesList.length = 0;
         webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
             if (error)
                 return console.error(error);
@@ -342,14 +363,14 @@ function onError() {
  * @param candidate
  */
 function onIceCandidate(candidate) {
-    //iceCandidatesList.push(candidate);
-    console.log("Local candidate" + JSON.stringify(candidate));
+    iceCandidatesList.push(candidate);
+    /*console.log("Local candidate" + JSON.stringify(candidate));
     var message = {
         candidate: candidate.candidate,
         sdpMid: candidate.sdpMid,
         sdpMLineIndex: candidate.sdpMLineIndex
     };
-    sendMessageParams("onIceCandidate", message, msgId++);
+    sendMessageParams("onIceCandidate", message, msgId++);*/
 }
 
 function sendMessage(message) {

@@ -8,6 +8,7 @@ import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.internal.ProtocolElements;
+import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.kurento.core.KurentoCallSession;
 
 import java.util.concurrent.Callable;
@@ -52,12 +53,12 @@ public class CallRpcHandler extends RpcHandler {
             media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         JsonObject result = new JsonObject();
         //判断targetId在当前主机上是否存在
-        RpcConnection calleeRpcConnection = sessionManager.getRpcConnection(targetId);
-        ClusterConnection calleeCluserConnection = sessionManager.getCluserConnection(targetId);
+        /*RpcConnection calleeRpcConnection = sessionManager.getRpcConnection(targetId);
+        ClusterConnection calleeCluserConnection = sessionManager.getCluserConnection(targetId);*/
         /**
-         * 本机没有集群主机上也没有
+         * 如果callee不存在
          */
-        if (calleeRpcConnection == null && calleeCluserConnection == null) {
+        if (!notificationService.connectionExist(targetId)) {
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");
@@ -66,6 +67,12 @@ public class CallRpcHandler extends RpcHandler {
                     rpcConnection.getParticipantPrivateId(), request.getId(), result);
             return;
         }
+
+        ClusterConnection calleeClusterConnection =
+                notificationService.getClusterConnection(targetId);
+        RpcConnection calleeRpcConnection =
+                notificationService.getRpcConnection(calleeClusterConnection.getSessionId());
+
         logger.info("exists target user {} in {}",
                 targetId, calleeRpcConnection == null ? "cluster remote" : "local");
 
@@ -105,8 +112,6 @@ public class CallRpcHandler extends RpcHandler {
         //表示在本机上
         if (calleeRpcConnection != null) {
 
-            sessionManager.addCallSession(clientId, callSession);
-
             notificationService.sendNotification(
                     calleeRpcConnection.getParticipantPrivateId(),
                     ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
@@ -131,15 +136,16 @@ public class CallRpcHandler extends RpcHandler {
                             logger.warn("---nuevo estado del RTP {}", event.getNewState());
                         }
                     });
-            sessionManager.addCallSession(clientId, callSession);
 
             notificationService.sendMemberNotification(
-                    calleeCluserConnection, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
+                    calleeClusterConnection.getClientId(),ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
             /**
              * 将webrtcEnd
              */
             webRtcEndpoint.connect(rtpEndPoint);
         }
+
+        sessionManager.addCallSession(clientId, callSession);
 
         result.addProperty("method", ProtocolElements.CALL_METHOD);
         result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");
@@ -172,11 +178,17 @@ public class CallRpcHandler extends RpcHandler {
                 .equals(ProtocolElements.ONCALL_EVENT_ACCEPT) ||
                 !request.getParams().has(ProtocolElements.ONCALL_FROMUSER_PARAM)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+
+        if (!notificationService.connectionExist(fromId)) {
+            //用户不存在
+            return;
+        }
         //判断caller是否还在线
-        ClusterConnection callerCluserConnection = sessionManager.getCluserConnection(fromId);
-        RpcConnection callerRpcConnection = sessionManager.getRpcConnection(fromId);
-        if (callerCluserConnection == null
-                && callerRpcConnection == null) return;
+        ClusterConnection callerCluserConnection =
+                notificationService.getClusterConnection(fromId);
+
+        RpcConnection callerRpcConnection =
+                notificationService.getRpcConnection(callerCluserConnection.getSessionId());
 
         String media = null;//如果为null则说明,all,视频语音一体
         if (request.getParams().has(ProtocolElements.ONCALL_MEDIA_PARAM))
@@ -197,7 +209,7 @@ public class CallRpcHandler extends RpcHandler {
             //需要重新创建KurentoCallSession
             kurentoCallSession = new KurentoCallSession(
                     kcProvider.getKurentoClient(),
-                    callerCluserConnection.getClientId(),
+                    fromId,
                     rpcConnection.getClientId());
         }
 
@@ -252,7 +264,7 @@ public class CallRpcHandler extends RpcHandler {
              * 提交一个异步任务
              */
             Callable callable = new KurentoCallSession.RtpOfferProcessCallable(
-                    callerCluserConnection.getClientId(), callerCluserConnection.getMemberId());
+                    fromId, callerCluserConnection.getMemberId());
 
             Future<String> processAnswer = (Future<String>)
                     clusterRpcService.submitTaskToMembers(callable, rtpOffer);
@@ -299,7 +311,7 @@ public class CallRpcHandler extends RpcHandler {
                     callerRpcConnection.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, accetpObject);
         } else {
             notificationService.sendMemberNotification(
-                    callerCluserConnection, ProtocolElements.ONCALL_METHOD, accetpObject);
+                    fromId, ProtocolElements.ONCALL_METHOD, accetpObject);
         }
     }
 
@@ -308,10 +320,17 @@ public class CallRpcHandler extends RpcHandler {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
-        RpcConnection callerRpcConnection = sessionManager.getRpcConnection(fromId);
-        ClusterConnection callerCluserConnection = sessionManager.getCluserConnection(fromId);
-        if (callerRpcConnection == null
-                && callerCluserConnection == null) return;
+
+        if (!notificationService.connectionExist(fromId)) {
+            //用户不存在
+            return;
+        }
+        //判断caller是否还在线
+        ClusterConnection callerCluserConnection =
+                notificationService.getClusterConnection(fromId);
+
+        RpcConnection callerRpcConnection =
+                notificationService.getRpcConnection(callerCluserConnection.getSessionId());
 
         if (callerRpcConnection != null) {
             KurentoCallSession session =
