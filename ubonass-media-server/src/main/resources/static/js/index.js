@@ -63,17 +63,17 @@ const IN_CALL = 2;
 function setCallState(nextState) {
     switch (nextState) {
         case NO_CALL:
-            enableButton('#cluster', 'cluster()');
+            enableButton('#call', 'call()');
             disableButton('#terminate');
             disableButton('#play');
             break;
         case PROCESSING_CALL:
-            disableButton('#cluster');
+            disableButton('#call');
             disableButton('#terminate');
             disableButton('#play');
             break;
         case IN_CALL:
-            disableButton('#cluster');
+            disableButton('#call');
             enableButton('#terminate', 'stop()');
             disableButton('#play');
             break;
@@ -189,9 +189,9 @@ function onCall(message) {
                 return console.error(error);
         });
     } else if (message.event == 'reject') {//对方已拒绝
-        console.info('Call not accepted by peer. Closing cluster');
+        console.info('Call not accepted by peer. Closing call');
         var errorMessage = message.reason ? message.reason
-            : 'Unknown reason for cluster rejection.';
+            : 'Unknown reason for call rejection.';
         console.log(errorMessage);
         stop(true);
     } else if (message.event == 'hangup') {//对方已挂断
@@ -222,7 +222,7 @@ function incomingCall(message) {
 
     setCallState(PROCESSING_CALL);
     if (confirm('User ' + message.fromId
-        + ' is calling you. Do you accept the cluster?')) {
+        + ' is calling you. Do you accept the call?')) {
         showSpinner(videoInput, videoOutput);
 
         fromId = message.fromId;
