@@ -379,9 +379,9 @@ public class CallRpcHandler extends RpcHandler {
         String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
         int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
         KurentoCallSession kurentoCallSession =
-                sessionManager.getCallSession(rpcConnection.getSession().getSessionId());
+                sessionManager.getCallSession(rpcConnection.getClientId());
         WebRtcEndpoint webRtcEndpoint =
-                kurentoCallSession.getWebRtcEndpointById(rpcConnection.getSession().getSessionId());
+                kurentoCallSession.getWebRtcEndpointById(rpcConnection.getClientId());
         webRtcEndpoint.addIceCandidate(new IceCandidate(candidate, sdpMid, sdpMLineIndex));
     }
 
