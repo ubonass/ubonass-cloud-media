@@ -111,7 +111,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         registry.addHandler(rpcHandler().withPingWatchdog(true)
                 .withInterceptors(new HttpHandshakeInterceptor()), "/media");
         registry.addHandler(callRpcHandler().withPingWatchdog(true)
-                .withInterceptors(new HttpHandshakeInterceptor()), "/call");
+                /*.withInterceptors(new HttpHandshakeInterceptor())*/, "/call");
     }
 
     public static void main(String[] args) {

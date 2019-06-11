@@ -51,7 +51,7 @@
             </discovery-strategies>
         </join>
         <interfaces enabled="true">
-            <interface>192.168.100.*</interface>
+            <!--<interface>192.168.100.*</interface>-->
             <!--<interface>192.168.43.*</interface>-->
             <interface>172.16.1.113</interface>
         </interfaces>
