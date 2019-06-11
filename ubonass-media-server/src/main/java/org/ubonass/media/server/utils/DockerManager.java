@@ -100,7 +100,7 @@ public class DockerManager {
                         + "    -e MY_UID=$(id -u $USER)" + NEW_LINE + "    -v /var/run/docker.sock:/var/run/docker.sock"
                         + NEW_LINE + "    -v /YOUR/PATH/TO/VIDEO/FILES:/YOUR/PATH/TO/VIDEO/FILES" + NEW_LINE;
             } else {
-                message += "you need Docker CE installed in this machine to enable OpenVidu recording call. "
+                message += "you need Docker CE installed in this machine to enable OpenVidu recording cluster. "
                         + "If Docker CE is already installed, make sure to add OpenVidu Server user to "
                         + "\"docker\" group: " + System.lineSeparator() + "   1) $ sudo usermod -aG docker $USER"
                         + System.lineSeparator()

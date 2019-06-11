@@ -42,11 +42,11 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
                     .getServletRequest().getSession();
             session.setMaxInactiveInterval(1800); // HttpSession will expire in 30 minutes
             attributes.put("httpSession", session);
-            String userId = ((ServletServerHttpRequest) request)
-                    .getServletRequest().getParameter("userId");
-            if (userId != null)
-                attributes.put("userId", userId);
-            log.info("user:" + userId + " attempting connection.......");
+            String clientId = ((ServletServerHttpRequest) request)
+                    .getServletRequest().getParameter("clientId");
+            if (clientId != null)
+                attributes.put("clientId", clientId);
+            log.info("user:" + clientId + " attempting connection.......");
         }
         return true;
     }

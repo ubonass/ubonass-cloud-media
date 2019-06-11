@@ -13,7 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.ubonass.media.client.CloudMediaException;
+import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
+import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 
 import javax.servlet.http.HttpSession;
@@ -28,25 +32,31 @@ import java.util.concurrent.ConcurrentMap;
 public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
     private static final Logger logger = LoggerFactory.getLogger(RpcHandler.class);
-    private ConcurrentMap<String, Boolean> webSocketEOFTransportError = new ConcurrentHashMap<>();
-    /**
-     * key为用户远程连的客户唯一标识,Value为Session
-     */
-    protected Map<String, Session> onlineClients = new ConcurrentHashMap<>();
-    @Autowired
-    private RpcNotificationService notificationService;
+
+    private ConcurrentMap<String, Boolean> webSocketEOFTransportError =
+            new ConcurrentHashMap<>();
 
     @Autowired
-    private KurentoClientProvider kcProvider;
+    protected RpcNotificationService notificationService;
+
+    @Autowired
+    protected KurentoClientProvider kcProvider;
+
+    @Autowired
+    protected ClusterRpcService clusterRpcService;
+
+    @Autowired
+    protected SessionManager sessionManager;
 
     @Override
     public void handleRequest(Transaction transaction, Request<JsonObject> request)
             throws Exception {
-        /*String participantPrivateId =
+        String participantPrivateId =
                 getParticipantPrivateIdByTransaction(transaction);
         logger.info("WebSocket session #{} - Request: {}", participantPrivateId, request);
         RpcConnection rpcConnection;
-        if (ProtocolElements.KEEPLIVE_METHOD.equals(request.getMethod())) {
+        if (ProtocolElements.KEEPLIVE_METHOD.equals(request.getMethod()) ||
+                ProtocolElements.REGISTER_METHOD.equals(request.getMethod())) {
             // Store new RpcConnection information if method 'keepLive'
             rpcConnection = notificationService.newRpcConnection(transaction, request);
         } else if (notificationService.getRpcConnection(participantPrivateId) == null) {
@@ -67,32 +77,77 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             case ProtocolElements.KEEPLIVE_METHOD:
                 keepLive(rpcConnection, request);
                 break;
+            case ProtocolElements.REGISTER_METHOD:
+                register(rpcConnection, request);
+                break;
             case ProtocolElements.INVITED_METHOD:
                 invited(rpcConnection, request);
                 break;
             case ProtocolElements.ONINVITED_METHOD:
                 onInvited(rpcConnection, request);
                 break;
-            case ProtocolElements.VOIP_CALL_METHOD:
-                call(rpcConnection, request);
+            /*case ProtocolElements.VOIP_CALL_METHOD:
+                cluster(rpcConnection, request);
                 break;
             case ProtocolElements.VOIP_CALLANSWER_METHOD:
                 callAnswer(rpcConnection, request);
-                break;
+                break;*/
             default:
                 //log.error("Unrecognized request {}", request);
                 break;
-        }*/
+        }
     }
 
     private void keepLive(RpcConnection rpcConnection, Request<JsonObject> request) {
         JsonObject result = new JsonObject();
-        result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
-        notificationService.sendResponse(rpcConnection.getParticipantPrivateId(),
-                request.getId(), result);
-
+        if (rpcConnection.getSession().getAttributes().containsKey("clientId")) {
+            String clientId = (String)
+                    rpcConnection.getSession().getAttributes().get("clientId");
+            rpcConnection.setClientId(clientId);//保存client id
+            rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
+            RpcConnection connection = sessionManager.addOnlineConnection(clientId, rpcConnection);
+            if (connection == null) {
+                result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
+            } else {
+                result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "Error");
+            }
+        }
+        notificationService.sendResponse(
+                rpcConnection.getParticipantPrivateId(), request.getId(), result);
     }
 
+    protected void register(RpcConnection rpcConnection, Request<JsonObject> request) {
+        JsonObject result = new JsonObject();
+        String userId = getStringParam(request, ProtocolElements.REGISTER_USER_PARAM);
+        result.addProperty("method", ProtocolElements.REGISTER_METHOD);
+        result.addProperty(ProtocolElements.REGISTER_USER_PARAM, userId);
+        String responseMsg = null;
+        if (!request.getParams().has(ProtocolElements.REGISTER_USER_PARAM)) {
+            responseMsg = "rejected: empty user key";
+            //result.addProperty("method", ProtocolElements.REGISTER_METHOD);
+            result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
+            result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
+        } else {
+            //UserSession user = new UserSession(rpcConnection, userId);
+            if (userId.isEmpty()) {
+                responseMsg = "rejected: empty user name";
+                result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
+                result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
+            } else {
+                rpcConnection.setClientId(userId);//保存client id
+                rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
+                RpcConnection connection = sessionManager.addOnlineConnection(userId, rpcConnection);
+                if (connection != null) {
+                    responseMsg = "rejected: user '" + userId + "' already registered";
+                    result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
+                    result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
+                } else {
+                    result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_ACCEPTD);
+                }
+            }
+        }
+        notificationService.sendResponse(rpcConnection.getParticipantPrivateId(), request.getId(), result);
+    }
 
     private void invited(RpcConnection rpcConnection, Request<JsonObject> request) {
         logger.info("Params :" + request.getParams().toString());
@@ -118,9 +173,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     JsonObject target = targetArray.get(i).getAsJsonObject();
                     String targetId = target.get("userId").getAsString();
                     //判断targetId是否在sessions集合当中
-                    boolean targetOnline = onlineClients.containsKey(targetId);
+                    boolean targetOnline = sessionManager.getOnlineConnections().containsKey(targetId);
                     if (targetOnline) {
-                        Session targetSession = onlineClients.get(targetId);
+                        RpcConnection connection = sessionManager.getOnlineConnection(targetId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_FROMUSER_PARAM, fromId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_TARGETUSER_PARAM, targetId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_TYPEMEDIA_PARAM, typeOfMedia);
@@ -128,7 +183,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                                 ProtocolElements.ONINVITED_EVENT_CALL);
                         if (session != null)
                             notifParams.addProperty(ProtocolElements.ONINVITED_SESSION_PARAM, session);
-                        targetSession.sendNotification(ProtocolElements.ONINVITED_METHOD, notifParams);
+                        connection.getSession().sendNotification(ProtocolElements.ONINVITED_METHOD, notifParams);
                     }
                     //回復客戶端端
                     JsonObject object = new JsonObject();
@@ -165,8 +220,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         /**
          * 判断目标用户是否存在
          */
-        if (onlineClients.containsKey(targetId)) {
-            Session targetSession = onlineClients.get(targetId);
+        if (sessionManager.getOnlineConnections().containsKey(targetId)) {
+            RpcConnection connection = sessionManager.getOnlineConnection(targetId);
             JsonObject notifParams = new JsonObject();
             notifParams.addProperty(ProtocolElements.ONINVITED_TARGETUSER_PARAM, targetId);
             notifParams.addProperty(ProtocolElements.ONINVITED_FROMUSER_PARAM, fromId);
@@ -176,13 +231,12 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 notifParams.addProperty(ProtocolElements.ONINVITED_SESSION_PARAM, session);
             notifParams.addProperty(ProtocolElements.ONINVITED_TYPEEVENT_PARAM, event);
             try {
-                targetSession.sendNotification(ProtocolElements.ONINVITED_METHOD, notifParams);
+                connection.getSession().sendNotification(ProtocolElements.ONINVITED_METHOD, notifParams);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-
 
     public static String getStringParam(Request<JsonObject> request, String key) {
         if (request.getParams() == null || request.getParams().get(key) == null) {
@@ -227,6 +281,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         return participantPrivateId;
     }
 
+
     @Override
     public void afterConnectionEstablished(Session rpcSession) throws Exception {
         super.afterConnectionEstablished(rpcSession);
@@ -248,13 +303,13 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                         .getAttributes().get("httpSession");
                 rpcSession.getAttributes().put("httpSession", httpSession);
             }
-            if (attributes.containsKey("userId")) {
-                String userId =
+            if (attributes.containsKey("clientId")) {
+                String clientId =
                         (String) ((WebSocketServerSession) rpcSession)
-                                .getWebSocketSession()
-                                .getAttributes()
-                                .get("userId");
-                onlineClients.put(userId, rpcSession);
+                                .getWebSocketSession().getAttributes().get("clientId");
+                rpcSession.getAttributes().putIfAbsent("clientId", clientId);
+                //RpcConnection rpcConnection = new RpcConnection(clientId, clusterRpcService.getMemberId(), rpcSession);
+                //sessionManager.addOnlineConnection(clientId, rpcConnection);
             }
         }
     }
@@ -267,13 +322,13 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         if (rpcSession instanceof WebSocketServerSession) {
             Map<String, Object> attributes =
                     ((WebSocketServerSession) rpcSession).getWebSocketSession().getAttributes();
-            if (attributes.containsKey("userId")) {
-                String userId = (String) ((WebSocketServerSession) rpcSession)
-                        .getWebSocketSession()
-                        .getAttributes()
-                        .get("userId");
-                onlineClients.remove(userId);
-                logger.info("afterConnectionClosed userId:" + userId);
+            if (attributes.containsKey("clientId"))
+                attributes.remove("clientId");
+
+            if (rpcSession.getAttributes().containsKey("clientId")) {
+                String clientId = (String) rpcSession.getAttributes().remove("clientId");
+                sessionManager.removeOnlineConnection(clientId);
+                logger.info("afterConnectionClosed clientId:" + clientId);
             }
         }
         RpcConnection rpc =

@@ -3,6 +3,9 @@ package org.ubonass.media.server;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.XmlConfigBuilder;
+import com.hazelcast.core.Hazelcast;
 import org.kurento.jsonrpc.JsonUtils;
 import org.kurento.jsonrpc.internal.server.config.JsonRpcConfiguration;
 import org.kurento.jsonrpc.server.JsonRpcConfigurer;
@@ -16,6 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.HttpHandshakeInterceptor;
 import org.ubonass.media.server.kurento.AutodiscoveryKurentoClientProvider;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
@@ -24,6 +28,7 @@ import org.ubonass.media.server.rpc.CallRpcHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
+import java.io.IOException;
 import java.util.List;
 
 @Import({JsonRpcConfiguration.class})
@@ -63,6 +68,26 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         }
     }
 
+    @Bean
+    public Config config() {
+        //如果有集群管理中心，可以配置
+        Config confg = null;
+        try {
+            confg = new XmlConfigBuilder(
+                    RpcHandler.class
+                            .getResource("/ubonass-media-hazelcast.xml")
+                            .openStream()).build();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return confg;
+    }
+
+    @ConditionalOnMissingBean
+    @Bean
+    public ClusterRpcService clusterRpcService() {
+        return new ClusterRpcService(config());
+    }
 
     @Bean
     public RpcHandler rpcHandler() {
@@ -84,9 +109,9 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     @Override
     public void registerJsonRpcHandlers(JsonRpcHandlerRegistry registry) {
         registry.addHandler(rpcHandler().withPingWatchdog(true)
-                        /*.withInterceptors(new HttpHandshakeInterceptor())*/, "/media");
+                .withInterceptors(new HttpHandshakeInterceptor()), "/media");
         registry.addHandler(callRpcHandler().withPingWatchdog(true)
-                        /*.withInterceptors(new HttpHandshakeInterceptor())*/, "/call");
+                .withInterceptors(new HttpHandshakeInterceptor()), "/call");
     }
 
     public static void main(String[] args) {

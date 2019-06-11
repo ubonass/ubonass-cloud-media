@@ -21,7 +21,7 @@ import org.kurento.client.KurentoClient;
 import org.ubonass.media.client.CloudMediaException;
 
 /**
- * This call interface was designed so that the room manager could obtain a {@link KurentoClient}
+ * This cluster interface was designed so that the room manager could obtain a {@link KurentoClient}
  * instance at any time, without requiring knowledge about the placement of the media server
  * instances. It is left for the developer to provide an implementation for this API.
  *

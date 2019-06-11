@@ -15,15 +15,8 @@
  *
  */
 
-ws = new WebSocket('wss://ubonass.com:8443/call');
+ws = new WebSocket('wss://ubonass.com:8443/cluster');
 
-/*ws.onmessage = function (message) {
-    onmessage(message);
-}
-ws.onopen = function() {
-    onopen();
-}
-var ws;/!* = new WebSocket('ws://localhost:8443/call');*!/*/
 var videoInput;
 var videoOutput;
 var webRtcPeer;
@@ -70,17 +63,17 @@ const IN_CALL = 2;
 function setCallState(nextState) {
     switch (nextState) {
         case NO_CALL:
-            enableButton('#call', 'call()');
+            enableButton('#cluster', 'cluster()');
             disableButton('#terminate');
             disableButton('#play');
             break;
         case PROCESSING_CALL:
-            disableButton('#call');
+            disableButton('#cluster');
             disableButton('#terminate');
             disableButton('#play');
             break;
         case IN_CALL:
-            disableButton('#call');
+            disableButton('#cluster');
             enableButton('#terminate', 'stop()');
             disableButton('#play');
             break;
@@ -133,13 +126,6 @@ function handlerMethod(message) {
             break;
         case 'onCall':
             onCall(paramsMessage);
-            break;
-        /*case 'startCommunication':
-            startCommunication(paramsMessage);
-            break;*/
-        case 'stopCommunication':
-            console.info('Communication ended by remote peer');
-            stop(true);
             break;
         case 'iceCandidate':
             var candidate = paramsMessage.candidate;
@@ -203,9 +189,9 @@ function onCall(message) {
                 return console.error(error);
         });
     } else if (message.event == 'reject') {//对方已拒绝
-        console.info('Call not accepted by peer. Closing call');
+        console.info('Call not accepted by peer. Closing cluster');
         var errorMessage = message.reason ? message.reason
-            : 'Unknown reason for call rejection.';
+            : 'Unknown reason for cluster rejection.';
         console.log(errorMessage);
         stop(true);
     } else if (message.event == 'hangup') {//对方已挂断
@@ -236,7 +222,7 @@ function incomingCall(message) {
 
     setCallState(PROCESSING_CALL);
     if (confirm('User ' + message.fromId
-        + ' is calling you. Do you accept the call?')) {
+        + ' is calling you. Do you accept the cluster?')) {
         showSpinner(videoInput, videoOutput);
 
         fromId = message.fromId;

@@ -24,6 +24,8 @@ import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
+import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.core.SessionManager;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -103,6 +105,32 @@ public class RpcNotificationService {
         }
     }
 
+    /**
+     * 发送消息到clientId,需要考虑集群处理
+     *
+     * @param clientId
+     * @param method
+     * @param object
+     */
+    protected void sendMemberNotification(RpcConnection rpcConnection,
+                                          String method,
+                                          JsonObject object) {
+        if (rpcConnection == null) {
+            log.error("rpcConnection can not null");
+            return;
+        }
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+
+        String clientMemberId = rpcConnection.getMemberId();
+        if (clientMemberId == null) return;
+        if (!clusterRpcService.isLocalHostMember(clientMemberId)) {
+            //需要让目标host发送消息给call=
+            clusterRpcService.executeToMember(
+                    new RpcNotificationRunnable(
+                            rpcConnection.getClientId(), method, object), clientMemberId);
+        }
+    }
+
     public RpcConnection closeRpcSession(String participantPrivateId) {
         RpcConnection rpcSession = rpcConnections.remove(participantPrivateId);
         if (rpcSession == null || rpcSession.getSession() == null) {
@@ -138,7 +166,11 @@ public class RpcNotificationService {
     }
 
     public RpcConnection getRpcConnection(String participantPrivateId) {
-        return this.rpcConnections.get(participantPrivateId);
+        if (rpcConnections.containsKey(participantPrivateId)) {
+            return this.rpcConnections.get(participantPrivateId);
+        } else {
+            return null;
+        }
     }
 
 }

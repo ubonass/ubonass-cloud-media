@@ -84,6 +84,18 @@
             <version>${version.netty}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast</artifactId>
+            <version>${version.hazelcast}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-client</artifactId>
+            <version>${version.hazelcast}</version>
+        </dependency>
+
         <!-- WebJars -->
         <dependency>
             <groupId>org.webjars</groupId>

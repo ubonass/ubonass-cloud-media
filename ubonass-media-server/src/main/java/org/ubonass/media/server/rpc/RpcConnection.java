@@ -22,11 +22,12 @@ import org.kurento.jsonrpc.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class RpcConnection {
+public class RpcConnection implements Serializable {
 
     private static final Logger log =
             LoggerFactory.getLogger(RpcConnection.class);
@@ -35,11 +36,45 @@ public class RpcConnection {
     private ConcurrentMap<Integer, Transaction> transactions;
     private String sessionId;
     private String participantPrivateId;
+    private String memberId;//当前连接位于集群中的那台主机,该ID以uuid进行标识
+    private String clientId;//当前客户端的客户唯一标识码
+
+    //add by jeffrey
+    public RpcConnection(String clientId, Session session) {
+        this.clientId = clientId;
+        this.session = session;
+        this.transactions = new ConcurrentHashMap<>();
+        this.participantPrivateId = session.getSessionId();
+    }
+
+    public RpcConnection(String clientId, String memberId, Session session) {
+        this.clientId = clientId;
+        this.memberId = memberId;
+        this.session = session;
+        this.transactions = new ConcurrentHashMap<>();
+        this.participantPrivateId = session.getSessionId();
+    }
 
     public RpcConnection(Session session) {
         this.session = session;
         this.transactions = new ConcurrentHashMap<>();
         this.participantPrivateId = session.getSessionId();
+    }
+
+    public String getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(String memberId) {
+        this.memberId = memberId;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
     public Session getSession() {
