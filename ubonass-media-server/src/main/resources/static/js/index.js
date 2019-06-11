@@ -15,7 +15,8 @@
  *
  */
 
-ws = new WebSocket('wss://ubonass.com:8443/call');
+//ws = new WebSocket('wss://ubonass.com:8443/call');
+ws = new WebSocket('wss://localhost:8443/call');
 
 var videoInput;
 var videoOutput;

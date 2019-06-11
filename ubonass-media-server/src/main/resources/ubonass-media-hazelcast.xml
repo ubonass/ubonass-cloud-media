@@ -61,7 +61,7 @@
     </network>
 
     <!---->
-    <multimap name="onlineConnections">
+    <multimap name="clusterConnections">
         <backup-count>1</backup-count>
         <async-backup-count>1</async-backup-count>
         <value-collection-type>SET</value-collection-type>

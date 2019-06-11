@@ -53,8 +53,6 @@ public class CallRpcHandler extends RpcHandler {
             media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         JsonObject result = new JsonObject();
         //判断targetId在当前主机上是否存在
-        /*RpcConnection calleeRpcConnection = sessionManager.getRpcConnection(targetId);
-        ClusterConnection calleeCluserConnection = sessionManager.getCluserConnection(targetId);*/
         /**
          * 如果callee不存在
          */

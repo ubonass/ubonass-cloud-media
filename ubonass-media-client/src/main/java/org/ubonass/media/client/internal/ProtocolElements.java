@@ -222,7 +222,7 @@ public class ProtocolElements {
 /*
 	用户AAA发来的信息
 	typeOfMedia：[audio/media/video]
-	typeOfSession :"{"type":room,"session":"AA"}",或 "{"type":cluster}",如果是单人通话就不带session
+	typeOfSession :"{"type":room,"session":"AA"}",或 "{"type":call}",如果是单人通话就不带session
 	{
 	"id":1,
 		"method":"invited",
@@ -243,7 +243,7 @@ public class ProtocolElements {
 			"fromId": "AAA",
 			"typeOfSession": "{"type":room,"session":"AA"}",
 			"typeOfMedia": “all”,
-			"event":"cluster,accept,refuse,hangup,busy"
+			"event":"call,accept,refuse,hangup,busy"
 		},
 		"jsonrpc":"2.0"
 	}
@@ -271,7 +271,7 @@ public class ProtocolElements {
 			"fromId":"邀请发起者ID"
 			"userId": "回复者的userId",
 			"typeOfMedia": “all”,指定媒体类型
-			"event":"cluster,accept,refuse,hangup,busy"
+			"event":"call,accept,refuse,hangup,busy"
 			},
 	"jsonrpc":"2.0"
 	}
@@ -286,7 +286,7 @@ public class ProtocolElements {
     /**
      * A->服务器
      */
-    public static final String CALL_METHOD = "cluster";//去电由A发给服务端的请求
+    public static final String CALL_METHOD = "call";//去电由A发给服务端的请求
     public static final String CALL_FROMUSER_PARAM = "fromId";//
     public static final String CALL_TARGETUSER_PARAM = "targetId";
     public static final String CALL_MEDIA_PARAM = "media";//
