@@ -22,12 +22,11 @@ import org.kurento.jsonrpc.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class RpcConnection implements Serializable {
+public class RpcConnection{
 
     private static final Logger log =
             LoggerFactory.getLogger(RpcConnection.class);
@@ -115,4 +114,5 @@ public class RpcConnection implements Serializable {
     public Collection<Transaction> getTransactions() {
         return transactions.values();
     }
+
 }

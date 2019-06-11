@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.kurento.core.KurentoCallSession;
+import org.ubonass.media.server.rpc.ClusterConnection;
 import org.ubonass.media.server.rpc.RpcConnection;
 
 import javax.annotation.PostConstruct;
@@ -20,8 +21,13 @@ public class SessionManager {
     private static final Logger logger = LoggerFactory.getLogger(SessionManager.class);
     /**
      * key为用户远程连的客户唯一标识,Value为RpcConnection
+     * 只针对本机的连接
      */
-    private IMap<String, RpcConnection> onlineConnections /*= new ConcurrentHashMap<>()*/;
+    private Map<String, RpcConnection> rpcConnections = new ConcurrentHashMap<>();
+    /**
+     * key为用户远程连的客户唯一标识,Value为RpcConnection,针对所有集群
+     */
+    private IMap<String, ClusterConnection> clusterConnections;/* = new ConcurrentHashMap<>();*/
     /**
      * 用于管理1V1通信
      *
@@ -35,7 +41,8 @@ public class SessionManager {
     @Autowired
     private ClusterRpcService clusterRpcService;
 
-    private SessionManager() { }
+    private SessionManager() {
+    }
 
     public static SessionManager getContext() {
         return context;
@@ -43,26 +50,26 @@ public class SessionManager {
 
     @PostConstruct
     public void init() {
-        this.onlineConnections =
-                clusterRpcService.getHazelcastInstance().getMap("onlineConnections");
+        this.clusterConnections =
+                clusterRpcService.getHazelcastInstance().getMap("clusterConnections");
         context = this;
     }
 
     /**
      * @return
      */
-    public IMap<String, RpcConnection> getOnlineConnections() {
-        return onlineConnections;
+    public IMap<String, ClusterConnection> getClusterConnections() {
+        return clusterConnections;
     }
 
     /**
      * @param clientId
-     * @param rpcConnection
-     * 返回null表示插入成功,否则表示集合中已经有了
+     * @param onlineConnection 返回null表示插入成功,否则表示集合中已经有了
      */
-    public RpcConnection addOnlineConnection(String clientId, RpcConnection rpcConnection) {
-        RpcConnection oldSession =
-                onlineConnections.putIfAbsent(clientId, rpcConnection);
+    public ClusterConnection addClusterConnection(
+            String clientId, ClusterConnection onlineConnection) {
+        ClusterConnection oldSession =
+                clusterConnections.putIfAbsent(clientId, onlineConnection);
         if (oldSession != null)
             logger.warn("Session '{}' has just been created by another thread", clientId);
         return oldSession;
@@ -72,22 +79,92 @@ public class SessionManager {
      * @param clientId
      * @return
      */
-    public RpcConnection getOnlineConnection(String clientId) {
-        if (!onlineConnections.containsKey(clientId)) {
-            logger.error("onlineConnections not have {} value", clientId);
+    public ClusterConnection getCluserConnection(String clientId) {
+        if (!clusterConnections.containsKey(clientId)) {
+            logger.error("clusterConnections not have {} value", clientId);
             return null;
         }
-        return onlineConnections.get(clientId);
+        return clusterConnections.get(clientId);
     }
 
     /**
      * @param clientId
      * @return
      */
-    public RpcConnection removeOnlineConnection(String clientId) {
+    public ClusterConnection removeClusterConnection(String clientId) {
+        ClusterConnection remove = null;
+        if (clusterConnections.containsKey(clientId))
+            remove = clusterConnections.remove(clientId);
+        return remove;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @return
+     */
+    public Map<String, RpcConnection> getRpcConnections() {
+        return rpcConnections;
+    }
+
+    /**
+     * @param clientId
+     * @param rpcConnection 返回null表示插入成功,否则表示集合中已经有了
+     */
+    public RpcConnection addRpcConnection(
+            String clientId, RpcConnection rpcConnection) {
+        RpcConnection oldSession =
+                rpcConnections.putIfAbsent(clientId, rpcConnection);
+        if (oldSession != null)
+            logger.warn("Session '{}' has just been created by another thread", clientId);
+        return oldSession;
+    }
+
+    /**
+     * @param clientId
+     * @return
+     */
+    public RpcConnection getRpcConnection(String clientId) {
+        if (!rpcConnections.containsKey(clientId)) {
+            logger.error("rpcConnections not have {} value", clientId);
+            return null;
+        }
+        return rpcConnections.get(clientId);
+    }
+
+    /**
+     * 根据集群ClusterConnection获取本地rpcConnections中所管理的RpcConnection
+     *
+     * @param clusterConnection
+     * @return
+     */
+    public RpcConnection getRpcConnection(ClusterConnection clusterConnection) {
+        if (clusterConnection == null
+                || clusterConnection.getClientId() == null
+                || clusterConnection.getMemberId() == null) return null;
+        if (!rpcConnections.containsKey(clusterConnection.getClientId())) {
+            logger.error("rpcConnections not have {} value",
+                    clusterConnection.getClientId());
+            return null;
+        }
+        RpcConnection rpcConnection =
+                rpcConnections.get(clusterConnection.getClientId());
+        if (rpcConnection == null) return null;
+        if (rpcConnection.getMemberId().equals(clusterConnection.getMemberId())) {
+            return rpcConnection;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @param clientId
+     * @return
+     */
+    public RpcConnection removeRpcConnection(String clientId) {
         RpcConnection remove = null;
-        if (onlineConnections.containsKey(clientId))
-            remove = onlineConnections.remove(clientId);
+        if (rpcConnections.containsKey(clientId))
+            remove = rpcConnections.remove(clientId);
         return remove;
     }
 

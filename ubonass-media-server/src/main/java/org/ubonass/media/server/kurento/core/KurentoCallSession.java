@@ -1,5 +1,6 @@
 package org.ubonass.media.server.kurento.core;
 
+import lombok.Data;
 import org.kurento.client.*;
 import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.rpc.RpcConnection;
@@ -99,37 +100,28 @@ public class KurentoCallSession {
         return callingFrom;
     }
 
-
+    @Data
     public static class RtpOfferProcessCallable
             implements Callable<String>, Serializable {
         private String clientId;
         private String offer;
-        private SessionManager sessionManager;
-        private RpcConnection rpcConnection;
 
         public RtpOfferProcessCallable(
                 String clientId, String offer) {
             this.clientId = clientId;
             this.offer = offer;
-            sessionManager = SessionManager.getContext();
-            rpcConnection = sessionManager.getOnlineConnection(clientId);
         }
 
         @Override
         public String call() throws Exception {
             // ambito del otro pc
-            if (clientId == null
-                    || offer == null
-                    || sessionManager == null
-                    || rpcConnection == null) return null;
+            if (clientId == null || offer == null) return null;
             //由client找到对应的KurentoCallSession
-            String sessionId =
-                    rpcConnection.getParticipantPrivateId();
-            if (sessionId == null) return null;
+            SessionManager sessionManager = SessionManager.getContext();
             KurentoCallSession callSession =
-                    sessionManager.getCallSession(sessionId);
+                    sessionManager.getCallSession(clientId);
             if (callSession == null) return null;
-            RtpEndpoint rtpEndpoint = callSession.getRtpEndpointById(sessionId);
+            RtpEndpoint rtpEndpoint = callSession.getRtpEndpointById(clientId);
             if (rtpEndpoint == null) return null;
             return rtpEndpoint.processOffer(offer);
         }

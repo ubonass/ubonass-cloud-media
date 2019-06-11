@@ -108,26 +108,26 @@ public class RpcNotificationService {
     /**
      * 发送消息到clientId,需要考虑集群处理
      *
-     * @param clientId
+     * @param clusterConnection
      * @param method
      * @param object
      */
-    protected void sendMemberNotification(RpcConnection rpcConnection,
+    protected void sendMemberNotification(ClusterConnection clusterConnection,
                                           String method,
                                           JsonObject object) {
-        if (rpcConnection == null) {
+        if (clusterConnection == null) {
             log.error("rpcConnection can not null");
             return;
         }
         ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
 
-        String clientMemberId = rpcConnection.getMemberId();
+        String clientMemberId = clusterConnection.getMemberId();
         if (clientMemberId == null) return;
         if (!clusterRpcService.isLocalHostMember(clientMemberId)) {
             //需要让目标host发送消息给call=
             clusterRpcService.executeToMember(
                     new RpcNotificationRunnable(
-                            rpcConnection.getClientId(), method, object), clientMemberId);
+                            clusterConnection.getClientId(), method, object), clientMemberId);
         }
     }
 
