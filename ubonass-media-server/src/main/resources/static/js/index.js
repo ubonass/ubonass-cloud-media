@@ -15,7 +15,7 @@
  *
  */
 
-ws = new WebSocket('wss://ubonass.com:8443/cluster');
+ws = new WebSocket('wss://ubonass.com:8443/call');
 
 var videoInput;
 var videoOutput;
