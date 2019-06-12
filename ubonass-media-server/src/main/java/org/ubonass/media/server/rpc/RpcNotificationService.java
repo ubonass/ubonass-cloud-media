@@ -18,6 +18,7 @@
 package org.ubonass.media.server.rpc;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.hazelcast.core.IMap;
 import lombok.Data;
 import org.kurento.jsonrpc.Session;
@@ -269,7 +270,7 @@ public class RpcNotificationService {
             if (clusterConnections.containsKey(clientId)) {
                 clusterRpcService.executeToMember(
                         new RpcNotificationRunnable(
-                                clientId, method, object),
+                                clientId, method, object.toString()),
                         clusterConnections.get(clientId).getMemberId());
             }
         }
@@ -282,12 +283,12 @@ public class RpcNotificationService {
 
         private String clientId;
         private String method;
-        private JsonObject object;
+        private String object;
 
         public RpcNotificationRunnable(
                 String clientId,
                 String method,
-                JsonObject object) {
+                String object) {
             this.clientId = clientId;
             this.method = method;
             this.object = object;
@@ -301,7 +302,9 @@ public class RpcNotificationService {
             if (rpcConnection == null) return;
             try {
                 if (object != null) {
-                    rpcConnection.getSession().sendNotification(method, object);
+                    JsonParser parser = new JsonParser();
+                    JsonObject jsonObject = parser.parse(object).getAsJsonObject();
+                    rpcConnection.getSession().sendNotification(method, jsonObject);
                 } else {
                     rpcConnection.getSession().sendNotification(method);
                 }
