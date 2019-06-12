@@ -18,9 +18,7 @@
 package org.ubonass.media.server.rpc;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.hazelcast.core.IMap;
-import lombok.Data;
 import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
@@ -30,11 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
-import org.ubonass.media.server.core.SessionManager;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -49,6 +45,12 @@ public class RpcNotificationService {
      */
     private IMap<String, ClusterConnection> clusterConnections;
 
+    private static RpcNotificationService context;
+
+    public static RpcNotificationService getContext() {
+        return context;
+    }
+
     @Autowired
     private ClusterRpcService clusterRpcService;
 
@@ -56,6 +58,7 @@ public class RpcNotificationService {
     public void init() {
         this.clusterConnections =
                 clusterRpcService.getHazelcastInstance().getMap("clusterConnections");
+        context = this;
     }
 
     public RpcConnection newRpcConnection(Transaction t, Request<JsonObject> request) {
@@ -273,47 +276,9 @@ public class RpcNotificationService {
             }
             if (clusterConnections.containsKey(clientId)) {
                 clusterRpcService.executeToMember(
-                        new RpcNotificationRunnable(
+                        new RpcNotificationTask(
                                 clientId, method, message),
                         clusterConnections.get(clientId).getMemberId());
-            }
-        }
-    }
-
-    @Data
-    private class RpcNotificationRunnable implements Runnable, Serializable {
-
-        private static final long serialVersionUID = -3246285197224927455L;
-
-        private String clientId;
-        private String method;
-        private String object;
-
-        public RpcNotificationRunnable(
-                String clientId,
-                String method,
-                String object) {
-            this.clientId = clientId;
-            this.method = method;
-            this.object = object;
-        }
-
-        @Override
-        public void run() {
-            if (clientId == null || method == null) return;
-            RpcConnection rpcConnection =
-                    getRpcConnection(getClusterConnection(clientId).getSessionId());
-            if (rpcConnection == null) return;
-            try {
-                if (object != null) {
-                    JsonParser parser = new JsonParser();
-                    JsonObject jsonObject = parser.parse(object).getAsJsonObject();
-                    rpcConnection.getSession().sendNotification(method, jsonObject);
-                } else {
-                    rpcConnection.getSession().sendNotification(method);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }
