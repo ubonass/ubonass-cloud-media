@@ -211,17 +211,13 @@ public class RpcNotificationService {
         }
     }
 
-    /*public RpcConnection getRpcConnectionByClientId(String clientId) {
-        if (clusterConnections.containsKey(clientId)) {
-            ClusterConnection clusterConnection =
-                    clusterConnections.get(clientId);
-            return this.getRpcConnection(clusterConnection.getSessionId());
+    public RpcConnection getRpcConnectionByClientId(String clientId) {
+        if (connectionIsLocalMember(clientId)) {
+            return rpcConnections.get(clusterConnections.get(clientId).getSessionId());
         } else {
-            *//*throw new CloudMediaException(Code.FILTER_NOT_APPLIED_ERROR_CODE,
-                    "'filter' parameter wrong");*//*
             return null;
         }
-    }*/
+    }
 
     public ClusterConnection getClusterConnection(String clientId) {
         if (clusterConnections.containsKey(clientId)) {
@@ -236,28 +232,47 @@ public class RpcNotificationService {
         return clusterConnections.containsKey(clientId);
     }
 
+    public boolean connectionIsLocalMember(String clientId) {
+        if (connectionExist(clientId)) {
+            ClusterConnection clusterConnection =
+                    clusterConnections.get(clientId);
+            if (rpcConnections.containsKey(
+                    clusterConnection.getSessionId())) {
+                return clusterRpcService
+                        .isLocalHostMember(
+                                rpcConnections.get(clusterConnection.getSessionId()).getMemberId());
+            } else {
+                return false;
+            }
+        } else {
+            throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
+                    "clientId : {" + clientId + "} connection not Exist in local and remote member");
+        }
+    }
+
     /**
      * @param clientId
      * @param method
      * @param object
      */
-    public void sendMemberNotification(String clientId,
-                                 String method,
-                                 JsonObject object) {
+    public void sendNotificationByClientId(String clientId,
+                                           String method,
+                                           JsonObject object) {
         if (clientId == null) {
             log.error("clientId can not null");
             return;
         }
-        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
-        if (clusterConnections.containsKey(clientId)) {
-            ClusterConnection clusterConnection =
-                    clusterConnections.get(clientId);
-            //发送到集群主机
-            clusterRpcService.executeToMember(
-                    new RpcNotificationRunnable(
-                            clientId, method, object), clusterConnection.getMemberId());
+        if (connectionIsLocalMember(clientId)) {
+            sendNotification(
+                    clusterConnections.get(clientId).getSessionId(), method, object);
+        } else {
+            if (clusterConnections.containsKey(clientId)) {
+                clusterRpcService.executeToMember(
+                        new RpcNotificationRunnable(
+                                clientId, method, object),
+                        clusterConnections.get(clientId).getMemberId());
+            }
         }
-
     }
 
     @Data

@@ -105,6 +105,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
             ClusterConnection connection =
                     notificationService.addClusterConnection(rpcConnection);
+            result.addProperty("clientId",clientId);
             if (connection == null) {
                 result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
             } else {

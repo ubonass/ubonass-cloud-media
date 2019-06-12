@@ -3,7 +3,7 @@ package org.ubonass.media.server.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.ubonass.media.server.kurento.core.KurentoCallSession;
+import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
@@ -19,7 +19,7 @@ public class SessionManager {
      * @Key:为客户端的privateId
      * @Value:为KurentoCallSession
      */
-    private Map<String, KurentoCallSession> callSessions = new ConcurrentHashMap<>();
+    private Map<String, KurentoCallMediaStream> callSessions = new ConcurrentHashMap<>();
 
     private static SessionManager context;
 
@@ -37,7 +37,7 @@ public class SessionManager {
     /**
      * @return
      */
-    public Map<String, KurentoCallSession> getCallSessions() {
+    public Map<String, KurentoCallMediaStream> getCallSessions() {
         return callSessions;
     }
 
@@ -45,8 +45,8 @@ public class SessionManager {
      * @param sessionId
      * @param callSession
      */
-    public KurentoCallSession addCallSession(String sessionId, KurentoCallSession callSession) {
-        KurentoCallSession oldCallSession =
+    public KurentoCallMediaStream addCallSession(String sessionId, KurentoCallMediaStream callSession) {
+        KurentoCallMediaStream oldCallSession =
                 callSessions.putIfAbsent(sessionId, callSession);
         if (oldCallSession != null)
             logger.warn("callSession '{}' has just been added by another thread", sessionId);
@@ -57,8 +57,8 @@ public class SessionManager {
      * @param sessionId
      * @return
      */
-    public KurentoCallSession removeCallSession(String sessionId) {
-        KurentoCallSession remove = null;
+    public KurentoCallMediaStream removeCallSession(String sessionId) {
+        KurentoCallMediaStream remove = null;
         if (callSessions.containsKey(sessionId))
             remove = callSessions.remove(sessionId);
         return remove;
@@ -68,7 +68,7 @@ public class SessionManager {
      * @param sessionId
      * @return
      */
-    public KurentoCallSession getCallSession(String sessionId) {
+    public KurentoCallMediaStream getCallSession(String sessionId) {
         if (!callSessions.containsKey(sessionId)) {
             logger.error("callSessions not have {} value", sessionId);
             return null;

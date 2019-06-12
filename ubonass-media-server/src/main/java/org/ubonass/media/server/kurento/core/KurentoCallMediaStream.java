@@ -1,16 +1,10 @@
 package org.ubonass.media.server.kurento.core;
 
-import lombok.Data;
 import org.kurento.client.*;
-import org.ubonass.media.server.core.SessionManager;
-import org.ubonass.media.server.rpc.RpcConnection;
-
-import java.io.Serializable;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class KurentoCallSession {
+public class KurentoCallMediaStream {
 
     private MediaPipeline pipeline;
     /**
@@ -28,9 +22,9 @@ public class KurentoCallSession {
     private Map<String, WebRtcEndpoint> webRtcEndpointMap = new ConcurrentHashMap<>();
     private Map<String, RtpEndpoint> rtpEndpointMap = new ConcurrentHashMap<>();
 
-    public KurentoCallSession(KurentoClient kurento,
-                              String callingFrom,
-                              String callingTo) {
+    public KurentoCallMediaStream(KurentoClient kurento,
+                                  String callingFrom,
+                                  String callingTo) {
         try {
             this.callingFrom = callingFrom;
             this.callingTo = callingTo;
@@ -100,30 +94,4 @@ public class KurentoCallSession {
         return callingFrom;
     }
 
-    @Data
-    public static class RtpOfferProcessCallable
-            implements Callable<String>, Serializable {
-        private String clientId;
-        private String offer;
-
-        public RtpOfferProcessCallable(
-                String clientId, String offer) {
-            this.clientId = clientId;
-            this.offer = offer;
-        }
-
-        @Override
-        public String call() throws Exception {
-            // ambito del otro pc
-            if (clientId == null || offer == null) return null;
-            //由client找到对应的KurentoCallSession
-            SessionManager sessionManager = SessionManager.getContext();
-            KurentoCallSession callSession =
-                    sessionManager.getCallSession(clientId);
-            if (callSession == null) return null;
-            RtpEndpoint rtpEndpoint = callSession.getRtpEndpointById(clientId);
-            if (rtpEndpoint == null) return null;
-            return rtpEndpoint.processOffer(offer);
-        }
-    }
 }
