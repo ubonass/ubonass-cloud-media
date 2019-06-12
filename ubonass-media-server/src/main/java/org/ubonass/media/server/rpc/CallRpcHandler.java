@@ -174,11 +174,10 @@ public class CallRpcHandler extends RpcHandler {
         /**
          * 判断callerConnection是否处于本host,如果不在本机上则需要自主创建一个kurentoCallSession
          */
-        if (!notificationService.connectionIsLocalMember(fromId)) {
-            RpcConnection callerRpcConnection =
-                    notificationService.getRpcConnectionByClientId(fromId);
+        if (notificationService.connectionIsLocalMember(fromId)) {
             calleeStream =
-                    sessionManager.getCallSession(callerRpcConnection.getClientId());
+                    sessionManager.getCallSession(fromId);
+            logger.info("create calleeStream success ....");
 
         } else {
             //需要重新创建KurentoCallSession
@@ -186,6 +185,7 @@ public class CallRpcHandler extends RpcHandler {
                     kcProvider.getKurentoClient(),
                     fromId,
                     rpcConnection.getClientId());
+            logger.info("create calleeStream success ..........");
         }
 
         WebRtcEndpoint calleewebRtcEndpoint =
