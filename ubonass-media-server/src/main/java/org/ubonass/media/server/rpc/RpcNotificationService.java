@@ -270,7 +270,7 @@ public class RpcNotificationService {
             if (clusterConnections.containsKey(clientId)) {
                 clusterRpcService.executeToMember(
                         new RpcNotificationRunnable(
-                                clientId, method, object != null ? object.getAsString() : ""),
+                                clientId, method, object != null ? object.toString() : ""),
                         clusterConnections.get(clientId).getMemberId());
             }
         }
