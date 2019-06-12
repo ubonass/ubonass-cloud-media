@@ -44,9 +44,10 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
             attributes.put("httpSession", session);
             String clientId = ((ServletServerHttpRequest) request)
                     .getServletRequest().getParameter("clientId");
-            if (clientId != null)
+            if (clientId != null) {
                 attributes.put("clientId", clientId);
-            log.info("user:" + clientId + " attempting connection.......");
+                log.info("user:" + clientId + " attempting connection.......");
+            }
         }
         return true;
     }

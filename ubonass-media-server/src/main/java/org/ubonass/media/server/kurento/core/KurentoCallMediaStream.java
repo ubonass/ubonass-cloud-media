@@ -1,15 +1,14 @@
 package org.ubonass.media.server.kurento.core;
 
 import org.kurento.client.*;
-import org.ubonass.media.server.cluster.ClusterConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 
 public class KurentoCallMediaStream {
-
+    private static final Logger logger = LoggerFactory.getLogger(KurentoCallMediaStream.class);
     private MediaPipeline pipeline;
     /**
      * callee的sessionId,也就是ParticipantPrivateId
@@ -80,6 +79,7 @@ public class KurentoCallMediaStream {
     }
 
     public void release() {
+        logger.info("enter release....");
         if (webRtcEndpointMap != null) {
             webRtcEndpointMap.clear();
             webRtcEndpointMap = null;
