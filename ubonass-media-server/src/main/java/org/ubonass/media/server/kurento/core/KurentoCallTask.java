@@ -30,11 +30,12 @@ public class KurentoCallTask
         if (event.equals("rtpProcessOffer")) {
             logger.info("do rtpProcessOffer.....");
             //由client找到对应的KurentoCallSession
-            KurentoCallMediaStream callSession =
+            KurentoCallMediaStream callStream =
                     SessionManager.getContext().getCallSession(clientId);
-            if (callSession == null) return null;
-            RtpEndpoint rtpEndpoint = callSession.getRtpEndpointById(clientId);
+            if (callStream == null) return null;
+            RtpEndpoint rtpEndpoint = callStream.getRtpEndpointById(clientId);
             if (rtpEndpoint == null) return null;
+            logger.info("rtpEndpoint processOffer success..");
             return rtpEndpoint.processOffer(offer);
         } else if (event.equals("releaseMediaStream")) {
             logger.info("do releaseMediaStream.....");

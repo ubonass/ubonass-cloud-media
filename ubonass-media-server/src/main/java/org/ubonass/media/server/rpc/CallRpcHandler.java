@@ -102,8 +102,7 @@ public class CallRpcHandler extends RpcHandler {
 
         if (!notificationService.connectionIsLocalMember(targetId)) {
             //创建rtpEndpoint
-            RtpEndpoint rtpEndPoint = callerStream.createRtpEndPoint(
-                    rpcConnection.getParticipantPrivateId());
+            RtpEndpoint rtpEndPoint = callerStream.createRtpEndPoint(clientId);
 
             rtpEndPoint.addErrorListener(new EventListener<ErrorEvent>() {
 
