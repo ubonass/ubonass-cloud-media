@@ -121,6 +121,7 @@ public class CallRpcHandler extends RpcHandler {
                         }
                     });
             webRtcEndpoint.connect(rtpEndPoint);
+            rtpEndPoint.connect(webRtcEndpoint);
         }
 
         sessionManager.addCallSession(clientId, callerStream);
