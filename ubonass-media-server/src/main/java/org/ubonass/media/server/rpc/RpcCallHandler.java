@@ -100,9 +100,9 @@ public class RpcCallHandler extends RpcHandler {
 
         if (!notificationService.connectionIsLocalMember(targetId)) {
             //创建rtpEndpoint
-            RtpEndpoint rtpEndPoint = callerStream.createRtpEndPoint(clientId);
+            RtpEndpoint callerRtpEndPoint = callerStream.createRtpEndPoint(clientId);
 
-            rtpEndPoint.addErrorListener(new EventListener<ErrorEvent>() {
+            callerRtpEndPoint.addErrorListener(new EventListener<ErrorEvent>() {
 
                 @Override
                 public void onEvent(ErrorEvent event) {
@@ -110,16 +110,16 @@ public class RpcCallHandler extends RpcHandler {
 
                 }
             });
-            rtpEndPoint.addConnectionStateChangedListener(
+            callerRtpEndPoint.addConnectionStateChangedListener(
                     new EventListener<ConnectionStateChangedEvent>() {
 
                         @Override
                         public void onEvent(ConnectionStateChangedEvent event) {
-                            logger.warn("---nuevo estado del RTP {}", event.getNewState());
+                            logger.warn("---Caller RTP {}", event.getNewState());
                         }
                     });
-            callerWebRtcEndpoint.connect(rtpEndPoint);
-            rtpEndPoint.connect(callerWebRtcEndpoint);
+            callerWebRtcEndpoint.connect(callerRtpEndPoint);
+            callerRtpEndPoint.connect(callerWebRtcEndpoint);
         }
 
         sessionManager.addCallSession(clientId, callerStream);
@@ -183,7 +183,6 @@ public class RpcCallHandler extends RpcHandler {
                     kcProvider.getKurentoClient(),
                     fromId,
                     rpcConnection.getClientId());
-            logger.info("create calleeStream success ..........");
         }
 
         WebRtcEndpoint calleewebRtcEndpoint =
@@ -249,29 +248,10 @@ public class RpcCallHandler extends RpcHandler {
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
-            //将webrtcendpoint 作为rtpEndpoint的消费者
+            //将webrtcendpoint作为rtpEndpoint的消费者
             rtpEndpoint.connect(calleewebRtcEndpoint);
-            //2.
-            //让caller的rtpEndpoint生成rtpOffer发送到callee实现双端视频
-            KurentoCallMediaTask callable2 = new KurentoCallMediaTask(
-                    fromId, "xxxx", "createOffer");
-            Future<String> remoteOfferCreate = (Future<String>)
-                    clusterRpcService.submitTaskToMembers(callable2,
-                            callerCluserConnection.getMemberId());
-            String rtpsdpAnswer = null;
-            try {
-                String remoteOffer = remoteOfferCreate.get();
-                rtpsdpAnswer = rtpEndpoint.processOffer(remoteOffer);
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-            //3.
-            //让caller处理sdpAnswer
-            KurentoCallMediaTask callable3 = new KurentoCallMediaTask(
-                    fromId, rtpsdpAnswer, "rtpProcessAnswer");
-            clusterRpcService.submitTaskToMembers(callable3,
-                    callerCluserConnection.getMemberId());
-
+            //将rtpEndpoint作为calleewebRtcEndpoint的消费者实现推流
+            calleewebRtcEndpoint.connect(rtpEndpoint);
         }
         sessionManager.addCallSession(rpcConnection.getClientId(), calleeStream);
         /**

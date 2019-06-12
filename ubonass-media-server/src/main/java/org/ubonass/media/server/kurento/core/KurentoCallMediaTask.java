@@ -38,29 +38,6 @@ public class KurentoCallMediaTask
             logger.info("rtpEndpoint processOffer success..");
             String sdpAnswer = rtpEndpoint.processOffer(sdp);
             return sdpAnswer;
-        } else if (event.equals("createOffer")) {
-            logger.info("do createOffer...1..");
-            KurentoCallMediaStream callStream =
-                    SessionManager.getContext().getCallSession(clientId);
-            logger.info("do createOffer...2..");
-            if (callStream == null) return null;
-            logger.info("do createOffer...3..");
-            RtpEndpoint rtpEndpoint = callStream.getRtpEndpointById(clientId);
-            logger.info("do createOffer...4..");
-            String sdpOffer = rtpEndpoint.generateOffer();
-            logger.info("do createOffer...5..");
-            logger.info("do createOffer..success..." + sdpOffer);
-            return sdpOffer;
-        } else if (event.equals("rtpProcessAnswer")) {
-            logger.info("do rtpProcessAnswer.....");
-            KurentoCallMediaStream callStream =
-                    SessionManager.getContext().getCallSession(clientId);
-            if (callStream == null) return null;
-            RtpEndpoint rtpEndpoint = callStream.getRtpEndpointById(clientId);
-            if (rtpEndpoint == null) return null;
-            String proceeAnswer = rtpEndpoint.processAnswer(sdp);
-            logger.info("do rtpProcessAnswer success....." + proceeAnswer);
-            return proceeAnswer;
         } else if (event.equals("releaseMediaStream")) {
             logger.info("do releaseMediaStream.....");
             KurentoCallMediaStream session =
