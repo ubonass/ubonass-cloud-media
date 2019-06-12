@@ -19,7 +19,7 @@ public class SessionManager {
      * @Key:为客户端的privateId
      * @Value:为KurentoCallSession
      */
-    private Map<String, KurentoCallMediaStream> callSessions = new ConcurrentHashMap<>();
+    private Map<String, KurentoCallMediaStream> callMediaStreams = new ConcurrentHashMap<>();
 
     private static SessionManager context;
 
@@ -37,17 +37,18 @@ public class SessionManager {
     /**
      * @return
      */
-    public Map<String, KurentoCallMediaStream> getCallSessions() {
-        return callSessions;
+    public Map<String, KurentoCallMediaStream> getCallMediaStreams() {
+        return callMediaStreams;
     }
 
     /**
      * @param sessionId
      * @param callSession
      */
-    public KurentoCallMediaStream addCallSession(String sessionId, KurentoCallMediaStream callSession) {
+    public KurentoCallMediaStream addCallMediaStream(String sessionId,
+                                                     KurentoCallMediaStream callSession) {
         KurentoCallMediaStream oldCallSession =
-                callSessions.putIfAbsent(sessionId, callSession);
+                callMediaStreams.putIfAbsent(sessionId, callSession);
         if (oldCallSession != null)
             logger.warn("callSession '{}' has just been added by another thread", sessionId);
         return oldCallSession;
@@ -57,10 +58,10 @@ public class SessionManager {
      * @param sessionId
      * @return
      */
-    public KurentoCallMediaStream removeCallSession(String sessionId) {
+    public KurentoCallMediaStream removeCallMediaStream(String sessionId) {
         KurentoCallMediaStream remove = null;
-        if (callSessions.containsKey(sessionId))
-            remove = callSessions.remove(sessionId);
+        if (callMediaStreams.containsKey(sessionId))
+            remove = callMediaStreams.remove(sessionId);
         return remove;
     }
 
@@ -68,11 +69,11 @@ public class SessionManager {
      * @param sessionId
      * @return
      */
-    public KurentoCallMediaStream getCallSession(String sessionId) {
-        if (!callSessions.containsKey(sessionId)) {
-            logger.error("callSessions not have {} value", sessionId);
+    public KurentoCallMediaStream getCallMediaStream(String sessionId) {
+        if (!callMediaStreams.containsKey(sessionId)) {
+            logger.error("callMediaStreams not have {} value", sessionId);
             return null;
         }
-        return callSessions.get(sessionId);
+        return callMediaStreams.get(sessionId);
     }
 }

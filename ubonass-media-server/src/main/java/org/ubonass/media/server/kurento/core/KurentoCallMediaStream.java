@@ -1,8 +1,12 @@
 package org.ubonass.media.server.kurento.core;
 
 import org.kurento.client.*;
+import org.ubonass.media.server.cluster.ClusterConnection;
+
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 
 public class KurentoCallMediaStream {
 
@@ -20,6 +24,7 @@ public class KurentoCallMediaStream {
      * value为WebRtcEndpoint
      */
     private Map<String, WebRtcEndpoint> webRtcEndpointMap = new ConcurrentHashMap<>();
+
     private Map<String, RtpEndpoint> rtpEndpointMap = new ConcurrentHashMap<>();
 
     public KurentoCallMediaStream(KurentoClient kurento,
@@ -66,13 +71,15 @@ public class KurentoCallMediaStream {
         return rtpEndpointMap.get(sessionId);
     }
 
+    public String getCallingTo() {
+        return callingTo;
+    }
+
+    public String getCallingFrom() {
+        return callingFrom;
+    }
+
     public void release() {
-        /*Iterator<Map.Entry<String, WebRtcEndpoint>> it =
-                webRtcEndpointMap.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, WebRtcEndpoint> entry = it.next();
-            it.remove();
-        }*/
         if (webRtcEndpointMap != null) {
             webRtcEndpointMap.clear();
             webRtcEndpointMap = null;
@@ -83,15 +90,8 @@ public class KurentoCallMediaStream {
         }
         if (pipeline != null) {
             pipeline.release();
+            pipeline = null;
         }
-    }
-
-    public String getCallingTo() {
-        return callingTo;
-    }
-
-    public String getCallingFrom() {
-        return callingFrom;
     }
 
 }
