@@ -10,15 +10,15 @@ import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
-import org.ubonass.media.server.kurento.core.KurentoCallTask;
+import org.ubonass.media.server.kurento.core.KurentoCallMediaTask;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class CallRpcHandler extends RpcHandler {
+public class RpcCallHandler extends RpcHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(CallRpcHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(RpcCallHandler.class);
 
     @Override
     public void handleRequest(Transaction transaction,
@@ -45,7 +45,6 @@ public class CallRpcHandler extends RpcHandler {
         }
     }
 
-
     private void call(RpcConnection rpcConnection, Request<JsonObject> request) {
         String targetId = getStringParam(request, ProtocolElements.CALL_TARGETUSER_PARAM);
         String clientId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
@@ -53,7 +52,6 @@ public class CallRpcHandler extends RpcHandler {
         if (request.getParams().has(ProtocolElements.CALL_MEDIA_PARAM))
             media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         JsonObject result = new JsonObject();
-        //判断targetId在当前主机上是否存在
         /**
          * 如果callee不存在
          */
@@ -74,10 +72,10 @@ public class CallRpcHandler extends RpcHandler {
                 new KurentoCallMediaStream(
                         kcProvider.getKurentoClient(), clientId, targetId);
 
-        WebRtcEndpoint webRtcEndpoint =
+        WebRtcEndpoint callerWebRtcEndpoint =
                 callerStream.createWebRtcEndpoint(clientId);
 
-        webRtcEndpoint.addIceCandidateFoundListener(
+        callerWebRtcEndpoint.addIceCandidateFoundListener(
                 new EventListener<IceCandidateFoundEvent>() {
                     @Override
                     public void onEvent(IceCandidateFoundEvent event) {
@@ -93,7 +91,7 @@ public class CallRpcHandler extends RpcHandler {
                 });
 
         String sdpOffer = getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM);
-        String sdpAnswer = webRtcEndpoint.processOffer(sdpOffer);
+        String sdpAnswer = callerWebRtcEndpoint.processOffer(sdpOffer);
         JsonObject notifyInCallObject = new JsonObject();
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, clientId);
         //notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, sessionId);
@@ -120,8 +118,8 @@ public class CallRpcHandler extends RpcHandler {
                             logger.warn("---nuevo estado del RTP {}", event.getNewState());
                         }
                     });
-            webRtcEndpoint.connect(rtpEndPoint);
-            rtpEndPoint.connect(webRtcEndpoint);
+            callerWebRtcEndpoint.connect(rtpEndPoint);
+            rtpEndPoint.connect(callerWebRtcEndpoint);
         }
 
         sessionManager.addCallSession(clientId, callerStream);
@@ -136,7 +134,7 @@ public class CallRpcHandler extends RpcHandler {
         notificationService.sendResponse(
                 rpcConnection.getParticipantPrivateId(), request.getId(), result);
 
-        webRtcEndpoint.gatherCandidates();
+        callerWebRtcEndpoint.gatherCandidates();
 
     }
 
@@ -234,10 +232,10 @@ public class CallRpcHandler extends RpcHandler {
             });
             String rtpOffer = rtpEndpoint.generateOffer();
             /**
-             * 将sdpOffer发送到Caller的RTP进行处理,同时接受sdpAnswer
+             * 1.将sdpOffer发送到Caller的RTP进行处理,同时接受sdpAnswer
              * 提交一个异步任务
              */
-            Callable callable = new KurentoCallTask(
+            Callable callable = new KurentoCallMediaTask(
                     fromId, rtpOffer, "rtpProcessOffer");
             ClusterConnection callerCluserConnection =
                     notificationService.getClusterConnection(fromId);
@@ -253,6 +251,27 @@ public class CallRpcHandler extends RpcHandler {
             }
             //将webrtcendpoint 作为rtpEndpoint的消费者
             rtpEndpoint.connect(calleewebRtcEndpoint);
+            //2.
+            //让caller的rtpEndpoint生成rtpOffer发送到callee实现双端视频
+            callable = new KurentoCallMediaTask(
+                    fromId, null, "createOffer");
+            Future<String> remoteOfferCreate = (Future<String>)
+                    clusterRpcService.submitTaskToMembers(callable,
+                            callerCluserConnection.getMemberId());
+            String rtpsdpAnswer = null;
+            try {
+                String remoteOffer = remoteOfferCreate.get();
+                rtpsdpAnswer = rtpEndpoint.processOffer(remoteOffer);
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            //3.
+            //让caller处理sdpAnswer
+            callable = new KurentoCallMediaTask(
+                    fromId, rtpsdpAnswer, "rtpProcessAnswer");
+            clusterRpcService.submitTaskToMembers(callable,
+                    callerCluserConnection.getMemberId());
+
         }
         sessionManager.addCallSession(rpcConnection.getClientId(), calleeStream);
         /**
@@ -279,7 +298,7 @@ public class CallRpcHandler extends RpcHandler {
             accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
 
         notificationService.sendNotificationByClientId(
-                fromId,ProtocolElements.ONCALL_METHOD, accetpObject);
+                fromId, ProtocolElements.ONCALL_METHOD, accetpObject);
 
     }
 
@@ -300,7 +319,7 @@ public class CallRpcHandler extends RpcHandler {
             //远程要移除掉
             ClusterConnection callerCluserConnection =
                     notificationService.getClusterConnection(fromId);
-            Callable callable = new KurentoCallTask(
+            Callable callable = new KurentoCallMediaTask(
                     fromId, null, "releaseMediaStream");
             clusterRpcService.submitTaskToMembers(callable,
                     callerCluserConnection.getMemberId());

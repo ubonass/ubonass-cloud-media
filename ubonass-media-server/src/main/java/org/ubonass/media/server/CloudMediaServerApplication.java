@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.Hazelcast;
 import org.kurento.jsonrpc.JsonUtils;
 import org.kurento.jsonrpc.internal.server.config.JsonRpcConfiguration;
 import org.kurento.jsonrpc.server.JsonRpcConfigurer;
@@ -24,7 +23,7 @@ import org.ubonass.media.server.config.HttpHandshakeInterceptor;
 import org.ubonass.media.server.kurento.AutodiscoveryKurentoClientProvider;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 import org.ubonass.media.server.kurento.kms.FixedOneKmsManager;
-import org.ubonass.media.server.rpc.CallRpcHandler;
+import org.ubonass.media.server.rpc.RpcCallHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
@@ -96,7 +95,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @Bean
     public RpcHandler callRpcHandler() {
-        return new CallRpcHandler();
+        return new RpcCallHandler();
     }
 
     @Bean

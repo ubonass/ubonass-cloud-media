@@ -10,18 +10,18 @@ import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 @Data
-public class KurentoCallTask
+public class KurentoCallMediaTask
         implements Callable<String>, Serializable {
-    private static final Logger logger = LoggerFactory.getLogger(KurentoCallTask.class);
+    private static final Logger logger = LoggerFactory.getLogger(KurentoCallMediaTask.class);
 
     private String clientId;
-    private String offer;
+    private String sdp;
     private String event;//rtpProcessOffer,releaseMediaStream
 
-    public KurentoCallTask(
-            String clientId, String offer, String event) {
+    public KurentoCallMediaTask(
+            String clientId, String sdp, String event) {
         this.clientId = clientId;
-        this.offer = offer;
+        this.sdp = sdp;
         this.event = event;
     }
 
@@ -36,7 +36,22 @@ public class KurentoCallTask
             RtpEndpoint rtpEndpoint = callStream.getRtpEndpointById(clientId);
             if (rtpEndpoint == null) return null;
             logger.info("rtpEndpoint processOffer success..");
-            return rtpEndpoint.processOffer(offer);
+            return rtpEndpoint.processOffer(sdp);
+        } else if (event.equals("createOffer")) {
+            logger.info("do createOffer.....");
+            KurentoCallMediaStream callStream =
+                    SessionManager.getContext().getCallSession(clientId);
+            if (callStream == null) return null;
+            RtpEndpoint rtpEndpoint = callStream.getRtpEndpointById(clientId);
+            return rtpEndpoint.generateOffer();
+        } else if (event.equals("rtpProcessAnswer")) {
+            logger.info("do rtpProcessAnswer.....");
+            KurentoCallMediaStream callStream =
+                    SessionManager.getContext().getCallSession(clientId);
+            if (callStream == null) return null;
+            RtpEndpoint rtpEndpoint = callStream.getRtpEndpointById(clientId);
+            if (rtpEndpoint == null) return null;
+            return rtpEndpoint.processAnswer(sdp);
         } else if (event.equals("releaseMediaStream")) {
             logger.info("do releaseMediaStream.....");
             KurentoCallMediaStream session =
