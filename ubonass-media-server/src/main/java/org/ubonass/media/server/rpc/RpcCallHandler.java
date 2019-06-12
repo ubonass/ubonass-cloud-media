@@ -253,10 +253,10 @@ public class RpcCallHandler extends RpcHandler {
             rtpEndpoint.connect(calleewebRtcEndpoint);
             //2.
             //让caller的rtpEndpoint生成rtpOffer发送到callee实现双端视频
-            callable = new KurentoCallMediaTask(
-                    fromId, "111", "createOffer");
+            KurentoCallMediaTask callable2 = new KurentoCallMediaTask(
+                    fromId, "xxxx", "createOffer");
             Future<String> remoteOfferCreate = (Future<String>)
-                    clusterRpcService.submitTaskToMembers(callable,
+                    clusterRpcService.submitTaskToMembers(callable2,
                             callerCluserConnection.getMemberId());
             String rtpsdpAnswer = null;
             try {
@@ -267,9 +267,9 @@ public class RpcCallHandler extends RpcHandler {
             }
             //3.
             //让caller处理sdpAnswer
-            callable = new KurentoCallMediaTask(
+            KurentoCallMediaTask callable3 = new KurentoCallMediaTask(
                     fromId, rtpsdpAnswer, "rtpProcessAnswer");
-            clusterRpcService.submitTaskToMembers(callable,
+            clusterRpcService.submitTaskToMembers(callable3,
                     callerCluserConnection.getMemberId());
 
         }
