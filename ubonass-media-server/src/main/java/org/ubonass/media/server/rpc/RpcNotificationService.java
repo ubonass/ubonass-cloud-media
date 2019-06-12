@@ -267,10 +267,14 @@ public class RpcNotificationService {
             sendNotification(
                     clusterConnections.get(clientId).getSessionId(), method, object);
         } else {
+            String message = null;
+            if (object != null) {
+                message = object.toString();
+            }
             if (clusterConnections.containsKey(clientId)) {
                 clusterRpcService.executeToMember(
                         new RpcNotificationRunnable(
-                                clientId, method, object != null ? object.toString() : ""),
+                                clientId, method, message),
                         clusterConnections.get(clientId).getMemberId());
             }
         }
@@ -301,7 +305,7 @@ public class RpcNotificationService {
                     getRpcConnection(getClusterConnection(clientId).getSessionId());
             if (rpcConnection == null) return;
             try {
-                if (!object.equals("")) {
+                if (object != null) {
                     JsonParser parser = new JsonParser();
                     JsonObject jsonObject = parser.parse(object).getAsJsonObject();
                     rpcConnection.getSession().sendNotification(method, jsonObject);
