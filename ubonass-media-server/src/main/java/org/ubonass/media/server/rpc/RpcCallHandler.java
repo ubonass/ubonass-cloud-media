@@ -254,7 +254,7 @@ public class RpcCallHandler extends RpcHandler {
             //2.
             //让caller的rtpEndpoint生成rtpOffer发送到callee实现双端视频
             callable = new KurentoCallMediaTask(
-                    fromId, null, "createOffer");
+                    fromId, "111", "createOffer");
             Future<String> remoteOfferCreate = (Future<String>)
                     clusterRpcService.submitTaskToMembers(callable,
                             callerCluserConnection.getMemberId());
