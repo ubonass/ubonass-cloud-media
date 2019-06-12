@@ -41,7 +41,7 @@ public class KurentoCallMediaHandler
         switch (event) {
             case MEDIA_EVENT_PROCESS_SDPOFFER:
                 KurentoCallMediaStream mediaStream =
-                        SessionManager.getContext().getCallSession(clientId);
+                        SessionManager.getContext().getCallMediaStream(clientId);
                 RtpEndpoint rtpEndpoint =
                         mediaStream.getRtpEndpointById(clientId);
                 result = rtpEndpoint.processOffer(sdp);
@@ -58,7 +58,7 @@ public class KurentoCallMediaHandler
         switch (event) {
             case MEDIA_EVENT_RELEASE_STREAM:
                 KurentoCallMediaStream mediaStream =
-                        SessionManager.getContext().removeCallSession(clientId);
+                        SessionManager.getContext().removeCallMediaStream(clientId);
                 if (mediaStream != null) {
                     mediaStream.release();
                     mediaStream = null;
