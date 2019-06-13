@@ -24,6 +24,7 @@ import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
@@ -51,11 +52,11 @@ public class RpcNotificationService {
         return context;
     }
 
+    @Autowired
     private ClusterRpcService clusterRpcService;
 
     @PostConstruct
     public void init() {
-        this.clusterRpcService = ClusterRpcService.getContext();
         this.clusterConnections =
                 this.clusterRpcService.getHazelcastInstance().getMap("clusterConnections");
         context = this;
