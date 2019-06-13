@@ -16,7 +16,7 @@ public class SessionManager {
     /**
      * 用于管理1V1通信
      *
-     * @Key:为客户端的privateId
+     * @Key:sessionId,每个MediaPipleline对应一次会话
      * @Value:为KurentoCallSession
      */
     private Map<String, KurentoCallMediaStream> callMediaStreams = new ConcurrentHashMap<>();
@@ -32,13 +32,6 @@ public class SessionManager {
     @PostConstruct
     public void init() {
         context = this;
-    }
-
-    /**
-     * @return
-     */
-    public Map<String, KurentoCallMediaStream> getCallMediaStreams() {
-        return callMediaStreams;
     }
 
     /**

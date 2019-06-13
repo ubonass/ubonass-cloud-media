@@ -1,12 +1,16 @@
-package org.ubonass.media.server.rpc;
+package org.ubonass.media.server.cluster;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import lombok.Data;
+import org.ubonass.media.server.rpc.RpcConnection;
+import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.io.IOException;
 import java.io.Serializable;
 
-public class RpcNotificationTask implements Runnable, Serializable {
+@Data
+public class ClusterRpcNotification implements Runnable, Serializable {
 
     private static final long serialVersionUID = -375075629612750150L;
 
@@ -14,7 +18,7 @@ public class RpcNotificationTask implements Runnable, Serializable {
     private String method;
     private String object;
 
-    public RpcNotificationTask(
+    public ClusterRpcNotification(
             String clientId,
             String method,
             String object) {
@@ -30,7 +34,7 @@ public class RpcNotificationTask implements Runnable, Serializable {
                 RpcNotificationService.getContext();
         RpcConnection rpcConnection =
                 notificationService.getRpcConnection(
-                        notificationService.getClusterConnection(clientId).getSessionId());
+                        notificationService.getClusterConnection(clientId).getParticipantPrivateId());
         if (rpcConnection == null) return;
         try {
             if (object != null) {

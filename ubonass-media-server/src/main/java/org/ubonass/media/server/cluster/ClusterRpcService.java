@@ -4,10 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ubonass.media.server.rpc.RpcHandler;
-
-import javax.annotation.PostConstruct;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;

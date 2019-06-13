@@ -57,7 +57,7 @@ public class KurentoCallMediaHandler
         if (event == null) return;
         switch (event) {
             case MEDIA_EVENT_RELEASE_STREAM:
-                logger.info("start release stream....");
+                logger.debug("start release stream....");
                 KurentoCallMediaStream mediaStream =
                         SessionManager.getContext().removeCallMediaStream(clientId);
                 if (mediaStream != null) {

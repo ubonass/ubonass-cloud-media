@@ -1,5 +1,8 @@
 package org.ubonass.media.server.utils;
 
+import lombok.Data;
+
+@Data
 public class GeoLocation {
 
 	private String country;
@@ -15,26 +18,6 @@ public class GeoLocation {
 		this.timezone = timezone;
 		this.latitude = latitude;
 		this.longitude = longitude;
-	}
-
-	public String getCountry() {
-		return country;
-	}
-
-	public String getCity() {
-		return city;
-	}
-
-	public String getTimezone() {
-		return timezone;
-	}
-
-	public Double getLatitude() {
-		return latitude;
-	}
-
-	public Double getLongitude() {
-		return longitude;
 	}
 
 	@Override

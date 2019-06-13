@@ -11,11 +11,11 @@ public class KurentoCallMediaStream {
     private static final Logger logger = LoggerFactory.getLogger(KurentoCallMediaStream.class);
     private MediaPipeline pipeline;
     /**
-     * callee的sessionId,也就是ParticipantPrivateId
+     * callee的ClientId
      */
     private String callingTo;
     /**
-     * caller的sessionId，也就是ParticipantPrivateId
+     * caller的sessionId，也就是ClientId
      */
     private String callingFrom;
     /**
@@ -40,34 +40,34 @@ public class KurentoCallMediaStream {
         }
     }
 
-    public WebRtcEndpoint createWebRtcEndpoint(String sessionId) {
+    public WebRtcEndpoint createWebRtcEndpoint(String clientId) {
         WebRtcEndpoint endpoint =
                 new WebRtcEndpoint.Builder(pipeline).build();
         WebRtcEndpoint oldEndpoint =
-                webRtcEndpointMap.putIfAbsent(sessionId, endpoint);
+                webRtcEndpointMap.putIfAbsent(clientId, endpoint);
         if (oldEndpoint != null)
             endpoint = oldEndpoint;
         return endpoint;
     }
 
-    public WebRtcEndpoint getWebRtcEndpointById(String sessionId) {
-        if (!webRtcEndpointMap.containsKey(sessionId)) return null;
-        return webRtcEndpointMap.get(sessionId);
+    public WebRtcEndpoint getWebRtcEndpointById(String clientId) {
+        if (!webRtcEndpointMap.containsKey(clientId)) return null;
+        return webRtcEndpointMap.get(clientId);
     }
 
-    public RtpEndpoint createRtpEndPoint(String sessionId) {
+    public RtpEndpoint createRtpEndPoint(String clientId) {
         RtpEndpoint rtp = new RtpEndpoint.Builder(pipeline).build();
         RtpEndpoint oldRtp =
-                rtpEndpointMap.putIfAbsent(sessionId, rtp);
+                rtpEndpointMap.putIfAbsent(clientId, rtp);
         if (oldRtp != null) {
             rtp = oldRtp;
         }
         return rtp;
     }
 
-    public RtpEndpoint getRtpEndpointById(String sessionId) {
-        if (!rtpEndpointMap.containsKey(sessionId)) return null;
-        return rtpEndpointMap.get(sessionId);
+    public RtpEndpoint getRtpEndpointById(String clientId) {
+        if (!rtpEndpointMap.containsKey(clientId)) return null;
+        return rtpEndpointMap.get(clientId);
     }
 
     public String getCallingTo() {
@@ -79,7 +79,7 @@ public class KurentoCallMediaStream {
     }
 
     public void release() {
-        logger.info("enter release....");
+        logger.debug("enter release....");
         if (webRtcEndpointMap != null) {
             webRtcEndpointMap.clear();
             webRtcEndpointMap = null;

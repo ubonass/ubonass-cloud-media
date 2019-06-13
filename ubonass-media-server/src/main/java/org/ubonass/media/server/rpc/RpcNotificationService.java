@@ -24,10 +24,10 @@ import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.cluster.ClusterRpcNotification;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -51,13 +51,13 @@ public class RpcNotificationService {
         return context;
     }
 
-    @Autowired
     private ClusterRpcService clusterRpcService;
 
     @PostConstruct
     public void init() {
+        this.clusterRpcService = ClusterRpcService.getContext();
         this.clusterConnections =
-                clusterRpcService.getHazelcastInstance().getMap("clusterConnections");
+                this.clusterRpcService.getHazelcastInstance().getMap("clusterConnections");
         context = this;
     }
 
@@ -72,7 +72,7 @@ public class RpcNotificationService {
         return connection;
     }
 
-    public ClusterConnection newClusterConnection(RpcConnection rpcConnection) {
+    /*public ClusterConnection newClusterConnection(RpcConnection rpcConnection) {
         if (rpcConnection == null) return null;
         ClusterConnection connection = new ClusterConnection(
                 rpcConnection.getClientId(),
@@ -85,7 +85,7 @@ public class RpcNotificationService {
             connection = oldConnection;
         }
         return connection;
-    }
+    }*/
 
     /**
      * 返回null表示成功
@@ -217,7 +217,7 @@ public class RpcNotificationService {
 
     public RpcConnection getRpcConnectionByClientId(String clientId) {
         if (connectionIsLocalMember(clientId)) {
-            return rpcConnections.get(clusterConnections.get(clientId).getSessionId());
+            return rpcConnections.get(clusterConnections.get(clientId).getParticipantPrivateId());
         } else {
             return null;
         }
@@ -241,10 +241,10 @@ public class RpcNotificationService {
             ClusterConnection clusterConnection =
                     clusterConnections.get(clientId);
             if (rpcConnections.containsKey(
-                    clusterConnection.getSessionId())) {
+                    clusterConnection.getParticipantPrivateId())) {
                 return clusterRpcService
                         .isLocalHostMember(
-                                rpcConnections.get(clusterConnection.getSessionId()).getMemberId());
+                                rpcConnections.get(clusterConnection.getParticipantPrivateId()).getMemberId());
             } else {
                 return false;
             }
@@ -268,7 +268,7 @@ public class RpcNotificationService {
         }
         if (connectionIsLocalMember(clientId)) {
             sendNotification(
-                    clusterConnections.get(clientId).getSessionId(), method, object);
+                    clusterConnections.get(clientId).getParticipantPrivateId(), method, object);
         } else {
             String message = null;
             if (object != null) {
@@ -276,7 +276,7 @@ public class RpcNotificationService {
             }
             if (clusterConnections.containsKey(clientId)) {
                 clusterRpcService.executeToMember(
-                        new RpcNotificationTask(
+                        new ClusterRpcNotification(
                                 clientId, method, message),
                         clusterConnections.get(clientId).getMemberId());
             }
