@@ -332,8 +332,9 @@ function register() {
     sendMessageParams("register", message, msgId++);
     document.getElementById('peer').focus();*/
 
-    wsUrl = 'wss://ubonass.com:4443/openvidu?clientId=' + userId;
-
+    wsUrl = 'wss://ubonass.com:8443/call?clientId=' + userId;
+    //wsUrl = 'wss://ubonass.com:8445/call?clientId=' + userId;
+    
     ws = new WebSocket(wsUrl);
 
     ws.onmessage = onmessage;
