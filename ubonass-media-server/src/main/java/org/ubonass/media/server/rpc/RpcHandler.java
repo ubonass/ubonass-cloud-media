@@ -16,6 +16,8 @@ import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.core.EndReason;
+import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 
@@ -248,6 +250,45 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         }
         return request.getParams().get(key);
     }
+
+    public void leaveRoomAfterConnClosed(String participantPrivateId, EndReason reason) {
+        try {
+            sessionManager.evictParticipant(this.sessionManager.getParticipant(participantPrivateId), null, null, reason);
+            logger.info("Evicted participant with privateId {}", participantPrivateId);
+        } catch (CloudMediaException e) {
+            logger.warn("Unable to evict: {}", e.getMessage());
+            logger.trace("Unable to evict user", e);
+        }
+    }
+
+    protected Participant sanityCheckOfSession(RpcConnection rpcConnection, String methodName) throws CloudMediaException {
+        String participantPrivateId = rpcConnection.getParticipantPrivateId();
+        String sessionId = rpcConnection.getSessionId();
+        String errorMsg;
+        if (sessionId == null) { // null when afterConnectionClosed
+            errorMsg = "No session information found for participant with privateId " + participantPrivateId
+                    + ". Using the admin method to evict the user.";
+            logger.warn(errorMsg);
+            leaveRoomAfterConnClosed(participantPrivateId, null);
+            throw new CloudMediaException(Code.GENERIC_ERROR_CODE, errorMsg);
+        } else {
+            // Sanity check: don't call RPC method unless the id checks out
+            Participant participant = sessionManager.getParticipant(sessionId, participantPrivateId);
+            if (participant != null) {
+                errorMsg = "Participant " + participant.getParticipantPublicId() + " is calling method '" + methodName
+                        + "' in session " + sessionId;
+                logger.info(errorMsg);
+                return participant;
+            } else {
+                errorMsg = "Participant with private id " + participantPrivateId + " not found in session " + sessionId
+                        + ". Using the admin method to evict the user.";
+                logger.warn(errorMsg);
+                leaveRoomAfterConnClosed(participantPrivateId, null);
+                throw new CloudMediaException(Code.GENERIC_ERROR_CODE, errorMsg);
+            }
+        }
+    }
+
 
     public String getParticipantPrivateIdByTransaction(Transaction transaction) {
         String participantPrivateId = null;

@@ -228,6 +228,13 @@ public abstract class SessionManager {
 
     public abstract void onCallAccept(Participant participant, MediaOptions mediaOptions, Integer transactionId);
 
+    public abstract void onIceCandidate(Participant participant, String endpointName, String candidate,
+                                        int sdpMLineIndex, String sdpMid, Integer transactionId);
+
+
+    public abstract void evictParticipant(Participant evictedParticipant, Participant moderator, Integer transactionId,
+                                          EndReason reason);
+
     public MediaOptions generateMediaOptions(Request<JsonObject> request) {
         return null;
     }

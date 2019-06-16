@@ -183,6 +183,41 @@ public class KurentoSessionManager extends SessionManager {
         callerWebRtcEndpoint.connect(calleeWebRtcEndpoint);
     }
 
+    @Override
+    public void onIceCandidate(Participant participant, String endpointName, String candidate, int sdpMLineIndex, String sdpMid, Integer transactionId) {
+        try {
+            KurentoParticipant kParticipant = (KurentoParticipant) participant;
+            log.debug("Request [ICE_CANDIDATE] endpoint={} candidate={} " + "sdpMLineIdx={} sdpMid={} ({})",
+                    endpointName, candidate, sdpMLineIndex, sdpMid, participant.getParticipantPublicId());
+            kParticipant.addIceCandidate(endpointName, new IceCandidate(candidate, sdpMid, sdpMLineIndex));
+            sessionEventsHandler.onRecvIceCandidate(participant, transactionId, null);
+        } catch (CloudMediaException e) {
+            log.error("PARTICIPANT {}: Error receiving ICE " + "candidate (epName={}, candidate={})",
+                    participant.getParticipantPublicId(), endpointName, candidate, e);
+            sessionEventsHandler.onRecvIceCandidate(participant, transactionId, e);
+        }
+    }
+
+    @Override
+    public void evictParticipant(Participant evictedParticipant, Participant moderator, Integer transactionId, EndReason reason) {
+        if (evictedParticipant != null) {
+            KurentoParticipant kParticipant = (KurentoParticipant) evictedParticipant;
+            Set<Participant> participants = kParticipant.getSession().getParticipants();
+            //this.leaveRoom(kParticipant, null, reason, false);
+            this.sessionEventsHandler.onForceDisconnect(moderator, evictedParticipant, participants, transactionId,
+                    null, reason);
+            sessionEventsHandler.closeRpcSession(evictedParticipant.getParticipantPrivatetId());
+        } else {
+            if (moderator != null && transactionId != null) {
+                this.sessionEventsHandler.onForceDisconnect(moderator, evictedParticipant,
+                        new HashSet<>(Arrays.asList(moderator)), transactionId,
+                        new CloudMediaException(Code.USER_NOT_FOUND_ERROR_CODE,
+                                "Connection not found when calling 'forceDisconnect'"),
+                        null);
+            }
+        }
+    }
+
 
     /**
      * Creates a session if it doesn't already exist. The session's id will be

@@ -227,14 +227,30 @@ public class RpcCallHandler extends RpcHandler {
                                 Request<JsonObject> request) {
         //endpointName这里是sessionId
         //String endpointName = getStringParam(request, ProtocolElements.ONICECANDIDATE_EPNAME_PARAM);
-        String candidate = getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
+        /*String candidate = getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
         String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
         int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
         KurentoCallMediaStream kurentoCallSession =
                 sessionManager.getCallMediaStream(rpcConnection.getParticipantPublicId());
         WebRtcEndpoint webRtcEndpoint =
                 kurentoCallSession.getWebRtcEndpointById(rpcConnection.getParticipantPublicId());
-        webRtcEndpoint.addIceCandidate(new IceCandidate(candidate, sdpMid, sdpMLineIndex));
+        webRtcEndpoint.addIceCandidate(new IceCandidate(candidate, sdpMid, sdpMLineIndex));*/
+
+
+        Participant participant;
+        try {
+            participant = sanityCheckOfSession(rpcConnection, "onIceCandidate");
+        } catch (CloudMediaException e) {
+            return;
+        }
+
+        String endpointName = getStringParam(request, ProtocolElements.ONICECANDIDATE_EPNAME_PARAM);
+        String candidate = getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
+        String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
+        int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
+
+        sessionManager.onIceCandidate(participant, endpointName, candidate, sdpMLineIndex, sdpMid, request.getId());
+
     }
 
 }
