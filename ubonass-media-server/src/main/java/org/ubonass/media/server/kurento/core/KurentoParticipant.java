@@ -111,7 +111,7 @@ public class KurentoParticipant extends Participant {
     public void createCallMediaStreamEndpoint(MediaOptions mediaOptions) {
         callMediaStream.createEndpoint(endPointLatch);
 
-        if (callMediaStream.getEndpoint() == null) {
+        if (getCallMediaStream().getEndpoint() == null) {
             throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE, "Unable to create publisher endpoint");
         }
         callMediaStream.setMediaOptions(mediaOptions);
@@ -176,7 +176,15 @@ public class KurentoParticipant extends Participant {
     }
 
     public CallMediaStream getCallMediaStream() {
-
+        try {
+            if (!endPointLatch.await(KurentoSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
+                throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
+                        "Timeout reached while waiting for publisher endpoint to be ready");
+            }
+        } catch (InterruptedException e) {
+            throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
+                    "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
+        }
         return this.callMediaStream;
     }
 
