@@ -334,7 +334,7 @@ function register() {
 
     wsUrl = 'wss://ubonass.com:8443/call?clientId=' + userId;
     //wsUrl = 'wss://ubonass.com:8445/call?clientId=' + userId;
-    
+
     ws = new WebSocket(wsUrl);
 
     ws.onmessage = onmessage;

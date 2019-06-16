@@ -61,7 +61,7 @@ public class Participant{
         }
         this.token = token;
         this.clientMetadata = clientMetadata;
-        if (!token.getServerMetadata().isEmpty())
+        if (this.token != null && !token.getServerMetadata().isEmpty())
             this.serverMetadata = token.getServerMetadata();
         this.location = location;
         this.platform = platform;

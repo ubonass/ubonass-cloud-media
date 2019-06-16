@@ -4,6 +4,9 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.ubonass.media.server.core.SessionManager;
+
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -22,8 +25,12 @@ public class ClusterRpcService {
 
     private static ClusterRpcService context;
 
-    public ClusterRpcService(Config config) {
+    private SessionManager sessionManager;
+
+    public ClusterRpcService(Config config,
+                             SessionManager sessionManager) {
         this.config = config;
+        this.sessionManager = sessionManager;
         this.config.setInstanceName("hazelcast-instance");
         hazelcastInstance = Hazelcast.newHazelcastInstance(this.config);
         memberId = hazelcastInstance.getCluster().getLocalMember().getUuid();
@@ -35,6 +42,10 @@ public class ClusterRpcService {
 
     public static ClusterRpcService getContext() {
         return context;
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 
     /*@PostConstruct

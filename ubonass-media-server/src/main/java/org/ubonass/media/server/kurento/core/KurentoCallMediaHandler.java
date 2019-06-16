@@ -4,6 +4,7 @@ import lombok.Data;
 import org.kurento.client.RtpEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.SessionManager;
 
 import java.io.Serializable;
@@ -41,7 +42,7 @@ public class KurentoCallMediaHandler
         switch (event) {
             case MEDIA_EVENT_PROCESS_SDPOFFER:
                 KurentoCallMediaStream mediaStream =
-                        SessionManager.getContext().getCallMediaStream(clientId);
+                        ClusterRpcService.getContext().getSessionManager().getCallMediaStream(clientId);
                 RtpEndpoint rtpEndpoint =
                         mediaStream.getRtpEndpointById(clientId);
                 result = rtpEndpoint.processOffer(sdp);
@@ -59,7 +60,7 @@ public class KurentoCallMediaHandler
             case MEDIA_EVENT_RELEASE_STREAM:
                 logger.debug("start release stream....");
                 KurentoCallMediaStream mediaStream =
-                        SessionManager.getContext().removeCallMediaStream(clientId);
+                        ClusterRpcService.getContext().getSessionManager().removeCallMediaStream(clientId);
                 if (mediaStream != null) {
                     mediaStream.release();
                     mediaStream = null;

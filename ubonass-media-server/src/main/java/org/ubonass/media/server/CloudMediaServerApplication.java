@@ -80,7 +80,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         Config confg = null;
         try {
             confg = new XmlConfigBuilder(
-                    RpcHandler.class
+                    CloudMediaServerApplication.class
                             .getResource("/ubonass-media-hazelcast.xml")
                             .openStream()).build();
         } catch (IOException e) {
@@ -93,12 +93,6 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     @ConditionalOnMissingBean
     public CloudMediaConfig cloudMediaConfig() {
         return new CloudMediaConfig();
-    }
-
-    @ConditionalOnMissingBean
-    @Bean
-    public ClusterRpcService clusterRpcService() {
-        return new ClusterRpcService(config());
     }
 
     @Bean
@@ -135,6 +129,12 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         return new KurentoParticipantEndpointConfig();
     }
 
+
+    @ConditionalOnMissingBean
+    @Bean
+    public ClusterRpcService clusterRpcService() {
+        return new ClusterRpcService(config(),sessionManager());
+    }
 
     @Override
     public void registerJsonRpcHandlers(JsonRpcHandlerRegistry registry) {
