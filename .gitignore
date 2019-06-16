@@ -2,6 +2,11 @@
 */target/*
 !ubonass-client/target/ubonass-client.jar
 
+.idea
+ubonass-media-java-client/ubonass-media-java-client.iml
+ubonass-media-parent.iml
+
+
 /target
 .classpath
 .project
