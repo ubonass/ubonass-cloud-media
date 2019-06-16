@@ -25,12 +25,12 @@ public class ClusterRpcService {
 
     private static ClusterRpcService context;
 
-    private SessionManager sessionManager;
+    /*private SessionManager sessionManager;*/
 
-    public ClusterRpcService(Config config,
-                             SessionManager sessionManager) {
+    public ClusterRpcService(Config config/*,
+                             SessionManager sessionManager*/) {
         this.config = config;
-        this.sessionManager = sessionManager;
+        /*this.sessionManager = sessionManager;*/
         this.config.setInstanceName("hazelcast-instance");
         hazelcastInstance = Hazelcast.newHazelcastInstance(this.config);
         memberId = hazelcastInstance.getCluster().getLocalMember().getUuid();
@@ -45,7 +45,7 @@ public class ClusterRpcService {
     }
 
     public SessionManager getSessionManager() {
-        return sessionManager;
+        return SessionManager.getContext();
     }
 
     /*@PostConstruct

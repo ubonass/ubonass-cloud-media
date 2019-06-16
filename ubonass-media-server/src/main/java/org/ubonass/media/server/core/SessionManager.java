@@ -58,7 +58,7 @@ public abstract class SessionManager {
     @Autowired
     protected SessionEventsHandler sessionEventsHandler;
 
-    /*private static SessionManager context;
+    private static SessionManager context;
 
     public SessionManager() {
     }
@@ -70,7 +70,7 @@ public abstract class SessionManager {
     @PostConstruct
     public void init() {
         context = this;
-    }*/
+    }
 
     /**
      * @param sessionId
