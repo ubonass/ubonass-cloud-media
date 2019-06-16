@@ -268,8 +268,11 @@ public class KurentoSessionManager extends SessionManager {
             throw e;
         } catch (RuntimeException noParameterFound) {
         }
-
-        boolean doLoopback = RpcHandler.getBooleanParam(request, ProtocolElements.PUBLISHVIDEO_DOLOOPBACK_PARAM);
+        boolean doLoopback = false;
+        try {
+            doLoopback = RpcHandler.getBooleanParam(request, ProtocolElements.PUBLISHVIDEO_DOLOOPBACK_PARAM);
+        } catch (RuntimeException noParameterFound) {
+        }
 
         return new KurentoMediaOptions(true, sdpOffer, null, null, hasAudio, hasVideo, audioActive, videoActive,
                 typeOfVideo, frameRate, videoDimensions, kurentoFilter, doLoopback);
