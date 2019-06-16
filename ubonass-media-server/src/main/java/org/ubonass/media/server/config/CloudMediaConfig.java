@@ -28,13 +28,13 @@ public class CloudMediaConfig {
     @Value("${cloudmedia.streams.video.max-recv-bandwidth}")
     private int cloudmediaStreamsVideoMaxRecvBandwidth;
 
-    @Value("${cloudMedia.streams.video.min-recv-bandwidth}")
+    @Value("${cloudmedia.streams.video.min-recv-bandwidth}")
     private int cloudmediaStreamsVideoMinRecvBandwidth;
 
-    @Value("${cloudMedia.streams.video.max-send-bandwidth}")
+    @Value("${cloudmedia.streams.video.max-send-bandwidth}")
     private int cloudmediaStreamsVideoMaxSendBandwidth;
 
-    @Value("${cloudMedia.streams.video.min-send-bandwidth}")
+    @Value("${cloudmedia.streams.video.min-send-bandwidth}")
     private int cloudmediaStreamsVideoMinSendBandwidth;
 
 
