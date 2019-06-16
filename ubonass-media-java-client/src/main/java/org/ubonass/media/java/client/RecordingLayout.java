@@ -15,7 +15,7 @@
  *
  */
 
-package io.openvidu.java.client;
+package org.ubonass.media.java.client;
 
 /**
  * See

@@ -7,6 +7,7 @@
     <groupId>org.ubonass.media</groupId>
     <artifactId>ubonass-media-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
+
     <packaging>pom</packaging>
 
     <properties>
@@ -180,6 +181,7 @@
             <modules>
                 <module>ubonass-media-server</module>
                 <module>ubonass-media-client</module>
+                <module>ubonass-media-java-client</module>
             </modules>
         </profile>
         <profile>
@@ -187,6 +189,7 @@
             <modules>
                 <module>ubonass-media-server</module>
                 <module>ubonass-media-client</module>
+                <module>ubonass-media-java-client</module>
             </modules>
         </profile>
         <profile>
@@ -431,6 +434,13 @@
                 <artifactId>ubonass-media-client</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.ubonass.media</groupId>
+                <artifactId>ubonass-media-java-client</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

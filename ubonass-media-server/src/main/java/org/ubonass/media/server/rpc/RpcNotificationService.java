@@ -89,6 +89,21 @@ public class RpcNotificationService {
     }*/
 
     /**
+     * @param connection
+     * @return
+     */
+    public RpcConnection addRpcConnection(RpcConnection connection) {
+        if (connection == null) return null;
+        RpcConnection oldConnection =
+                rpcConnections.putIfAbsent(connection.getParticipantPrivateId(), connection);
+        if (oldConnection != null) {
+            log.warn("Concurrent initialization of rpcSession #{}", connection.getSessionId());
+            connection = oldConnection;
+        }
+        return connection;
+    }
+
+    /**
      * 返回null表示成功
      *
      * @param rpcConnection
@@ -97,11 +112,11 @@ public class RpcNotificationService {
     public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
         if (rpcConnection == null) return null;
         ClusterConnection connection = new ClusterConnection(
-                rpcConnection.getClientId(),
+                rpcConnection.getParticipantPublicId(),
                 rpcConnection.getParticipantPrivateId(),
                 rpcConnection.getMemberId());
         ClusterConnection oldConnection =
-                clusterConnections.putIfAbsent(rpcConnection.getClientId(), connection);
+                clusterConnections.putIfAbsent(rpcConnection.getParticipantPublicId(), connection);
         return oldConnection;
     }
 
@@ -216,9 +231,9 @@ public class RpcNotificationService {
         }
     }
 
-    public RpcConnection getRpcConnectionByClientId(String clientId) {
-        if (connectionIsLocalMember(clientId)) {
-            return rpcConnections.get(clusterConnections.get(clientId).getParticipantPrivateId());
+    public RpcConnection getRpcConnectionByPublicId(String publicId) {
+        if (connectionIsLocalMember(publicId)) {
+            return rpcConnections.get(clusterConnections.get(publicId).getParticipantPrivateId());
         } else {
             return null;
         }
@@ -260,7 +275,7 @@ public class RpcNotificationService {
      * @param method
      * @param object
      */
-    public void sendNotificationByClientId(String clientId,
+    public void sendNotificationByPublicId(String clientId,
                                            String method,
                                            JsonObject object) {
         if (clientId == null) {

@@ -15,64 +15,45 @@
  *
  */
 
-package io.openvidu.server.core;
+package org.ubonass.media.server.core;
 
-import io.openvidu.java.client.OpenViduRole;
-import io.openvidu.server.coturn.TurnCredentials;
-import io.openvidu.server.kurento.core.KurentoTokenOptions;
 
+import lombok.Data;
+import org.ubonass.media.java.client.CloudMediaRole;
+import org.ubonass.media.server.coturn.TurnCredentials;
+import org.ubonass.media.server.kurento.core.KurentoTokenOptions;
+
+@Data
 public class Token {
 
-	private String token;
-	private OpenViduRole role;
-	private String serverMetadata = "";
-	private TurnCredentials turnCredentials;
+    private String token;
+    private CloudMediaRole role;
+    private String serverMetadata = "";
+    private TurnCredentials turnCredentials;
 
-	private KurentoTokenOptions kurentoTokenOptions;
+    private KurentoTokenOptions kurentoTokenOptions;
 
-	public Token(String token) {
-		this.token = token;
-	}
+    public Token(String token) {
+        this.token = token;
+    }
 
-	public Token(String token, OpenViduRole role, String serverMetadata, TurnCredentials turnCredentials,
-			KurentoTokenOptions kurentoTokenOptions) {
-		this.token = token;
-		this.role = role;
-		this.serverMetadata = serverMetadata;
-		this.turnCredentials = turnCredentials;
-		this.kurentoTokenOptions = kurentoTokenOptions;
-	}
+    public Token(String token, CloudMediaRole role,
+                 String serverMetadata,
+                 TurnCredentials turnCredentials,
+                 KurentoTokenOptions kurentoTokenOptions) {
+        this.token = token;
+        this.role = role;
+        this.serverMetadata = serverMetadata;
+        this.turnCredentials = turnCredentials;
+        this.kurentoTokenOptions = kurentoTokenOptions;
+    }
 
-	public String getToken() {
-		return token;
-	}
-
-	public void setToken(String token) {
-		this.token = token;
-	}
-	
-	public OpenViduRole getRole() {
-		return role;
-	}
-
-	public String getServerMetadata() {
-		return serverMetadata;
-	}
-
-	public TurnCredentials getTurnCredentials() {
-		return turnCredentials;
-	}
-
-	public KurentoTokenOptions getKurentoTokenOptions() {
-		return kurentoTokenOptions;
-	}
-
-	@Override
-	public String toString() {
-		if (this.role != null)
-			return this.role.name();
-		else
-			return this.token;
-	}
+    @Override
+    public String toString() {
+        if (this.role != null)
+            return this.role.name();
+        else
+            return this.token;
+    }
 
 }

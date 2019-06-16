@@ -14,16 +14,16 @@ import org.ubonass.media.server.kurento.core.KurentoParticipant;
 /**
  * for one to one call
  */
-public class CallEndpoint extends MediaEndpoint {
-    private final static Logger log = LoggerFactory.getLogger(CallEndpoint.class);
+public class CallMediaStream extends MediaEndpoint {
+    private final static Logger log = LoggerFactory.getLogger(CallMediaStream.class);
 
     protected MediaOptions mediaOptions;
 
-    public CallEndpoint(boolean web,
-                        KurentoParticipant owner,
-                        String endpointName,
-                        MediaPipeline pipeline,
-                        CloudMediaConfig cloudMediaConfig) {
+    public CallMediaStream(boolean web,
+                           KurentoParticipant owner,
+                           String endpointName,
+                           MediaPipeline pipeline,
+                           CloudMediaConfig cloudMediaConfig) {
         super(web, owner, endpointName, pipeline, cloudMediaConfig, log);
     }
 
@@ -69,7 +69,7 @@ public class CallEndpoint extends MediaEndpoint {
     }
 
     public synchronized String publish(SdpType sdpType,
-                                       String sdpString, CallEndpoint endpoint) {
+                                       String sdpString, CallMediaStream endpoint) {
         registerOnIceCandidateEventListener(this.getOwner().getParticipantPublicId());
         if (endpoint != null)
             connect(endpoint.getEndpoint());

@@ -15,68 +15,68 @@
  *
  */
 
-package io.openvidu.server.kurento.core;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+package org.ubonass.media.server.kurento.core;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class KurentoTokenOptions {
 
-	private Integer videoMaxRecvBandwidth;
-	private Integer videoMinRecvBandwidth;
-	private Integer videoMaxSendBandwidth;
-	private Integer videoMinSendBandwidth;
-	private Map<String, Boolean> allowedFilters = new ConcurrentHashMap<>();
+    private Integer videoMaxRecvBandwidth;
+    private Integer videoMinRecvBandwidth;
+    private Integer videoMaxSendBandwidth;
+    private Integer videoMinSendBandwidth;
+    private Map<String, Boolean> allowedFilters = new ConcurrentHashMap<>();
 
-	public KurentoTokenOptions(JsonObject options) {
-		if (options.has("videoMaxRecvBandwidth")) {
-			this.videoMaxRecvBandwidth = options.get("videoMaxRecvBandwidth").getAsInt();
-		}
-		if (options.has("videoMinRecvBandwidth")) {
-			this.videoMinRecvBandwidth = options.get("videoMinRecvBandwidth").getAsInt();
-		}
-		if (options.has("videoMaxSendBandwidth")) {
-			this.videoMaxSendBandwidth = options.get("videoMaxSendBandwidth").getAsInt();
-		}
-		if (options.has("videoMinSendBandwidth")) {
-			this.videoMinSendBandwidth = options.get("videoMinSendBandwidth").getAsInt();
-		}
-		if (options.has("allowedFilters")) {
-			JsonArray filters = options.get("allowedFilters").getAsJsonArray();
-			Iterator<JsonElement> it = filters.iterator();
-			while (it.hasNext()) {
-				this.allowedFilters.put(it.next().getAsString(), true);
-			}
-		}
-	}
+    public KurentoTokenOptions(JsonObject options) {
+        if (options.has("videoMaxRecvBandwidth")) {
+            this.videoMaxRecvBandwidth = options.get("videoMaxRecvBandwidth").getAsInt();
+        }
+        if (options.has("videoMinRecvBandwidth")) {
+            this.videoMinRecvBandwidth = options.get("videoMinRecvBandwidth").getAsInt();
+        }
+        if (options.has("videoMaxSendBandwidth")) {
+            this.videoMaxSendBandwidth = options.get("videoMaxSendBandwidth").getAsInt();
+        }
+        if (options.has("videoMinSendBandwidth")) {
+            this.videoMinSendBandwidth = options.get("videoMinSendBandwidth").getAsInt();
+        }
+        if (options.has("allowedFilters")) {
+            JsonArray filters = options.get("allowedFilters").getAsJsonArray();
+            Iterator<JsonElement> it = filters.iterator();
+            while (it.hasNext()) {
+                this.allowedFilters.put(it.next().getAsString(), true);
+            }
+        }
+    }
 
-	public Integer getVideoMaxRecvBandwidth() {
-		return videoMaxRecvBandwidth;
-	}
+    public Integer getVideoMaxRecvBandwidth() {
+        return videoMaxRecvBandwidth;
+    }
 
-	public Integer getVideoMinRecvBandwidth() {
-		return videoMinRecvBandwidth;
-	}
+    public Integer getVideoMinRecvBandwidth() {
+        return videoMinRecvBandwidth;
+    }
 
-	public Integer getVideoMaxSendBandwidth() {
-		return videoMaxSendBandwidth;
-	}
+    public Integer getVideoMaxSendBandwidth() {
+        return videoMaxSendBandwidth;
+    }
 
-	public Integer getVideoMinSendBandwidth() {
-		return videoMinSendBandwidth;
-	}
+    public Integer getVideoMinSendBandwidth() {
+        return videoMinSendBandwidth;
+    }
 
-	public String[] getAllowedFilters() {
-		return allowedFilters.keySet().stream().toArray(String[]::new);
-	}
+    public String[] getAllowedFilters() {
+        return allowedFilters.keySet().stream().toArray(String[]::new);
+    }
 
-	public boolean isFilterAllowed(String filterType) {
-		return this.allowedFilters.containsKey(filterType);
-	}
+    public boolean isFilterAllowed(String filterType) {
+        return this.allowedFilters.containsKey(filterType);
+    }
 
 }

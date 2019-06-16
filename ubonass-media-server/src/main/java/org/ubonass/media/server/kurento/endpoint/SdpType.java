@@ -15,7 +15,7 @@
  *
  */
 
-package io.openvidu.server.kurento.endpoint;
+package org.ubonass.media.server.kurento.endpoint;
 
 public enum SdpType {
   OFFER, ANSWER;

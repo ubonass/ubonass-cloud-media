@@ -15,9 +15,12 @@
  *
  */
 
-ws = new WebSocket('wss://ubonass.com:8443/call');
+//ws = new WebSocket('wss://ubonass.com:8443/call');
 //ws = new WebSocket('wss://ubonass.com:8445/call');
 //ws = new WebSocket('wss://localhost:8443/call');
+
+var wsUrl;
+var ws;
 
 var videoInput;
 var videoOutput;
@@ -35,6 +38,7 @@ const REGISTERED = 2;
 
 var msgId = 0;
 var userId;
+var sessionName;
 
 var iceCandidatesList = new Array();
 
@@ -130,10 +134,25 @@ function handlerMethod(message) {
             onCall(paramsMessage);
             break;
         case 'iceCandidate':
-            var candidate = paramsMessage.candidate;
+            /*
+            {
+                candidate: {"candidate":xxxx,"sdpMid":xxx,“sdpMLineIndex”:xxxx}
+            }
+            * */
+            //var candidate = paramsMessage.candidate;
+
+            var candidate = {
+                candidate: paramsMessage.candidate,
+                sdpMid: paramsMessage.sdpMid,
+                sdpMLineIndex: paramsMessage.sdpMLineIndex,
+            };
+
             webRtcPeer.addIceCandidate(candidate, function (error) {
                 if (error)
                     return console.error('Error adding candidate: ' + error);
+
+                else
+                    console.info("webRtcPeerSendonly addIceCandidate success....");
             });
             break;
         default:
@@ -141,7 +160,7 @@ function handlerMethod(message) {
     }
 }
 
-ws.onmessage = function onmessage(message) {
+/*ws.onmessage = */function onmessage(message) {
     var parsedMessage = JSON.parse(message.data);
     console.info('Received message: ' + message.data);
     if (parsedMessage.hasOwnProperty('result')) {
@@ -150,6 +169,13 @@ ws.onmessage = function onmessage(message) {
         handlerMethod(parsedMessage);
     }
 }
+
+function onopen(message) {
+    setRegisterState(REGISTERING);
+    sendMessage("keepLive", msgId++);
+    document.getElementById('peer').focus();
+}
+
 
 function callResponse(message) {
     if (message.response != 'OK') {
@@ -164,7 +190,8 @@ function callResponse(message) {
             var msg = {
                 candidate: iceCandidatesList[i].candidate,
                 sdpMid: iceCandidatesList[i].sdpMid,
-                sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex
+                sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex,
+                endpointName: userId
             };
             sendMessageParams("onIceCandidate", msg, msgId++);
         }
@@ -202,7 +229,8 @@ function onCall(message) {
             var msg = {
                 candidate: iceCandidatesList[i].candidate,
                 sdpMid: iceCandidatesList[i].sdpMid,
-                sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex
+                sdpMLineIndex: iceCandidatesList[i].sdpMLineIndex,
+                endpointName: userId
             };
             sendMessageParams("onIceCandidate", msg, msgId++);
         }
@@ -247,9 +275,8 @@ function incomingCall(message) {
     if (confirm('User ' + message.fromId
         + ' is calling you. Do you accept the call?')) {
         showSpinner(videoInput, videoOutput);
-
         fromId = message.fromId;
-        //sessionId = message.sessionId;
+        sessionName = message.sessionName;
         var options = {
             localVideo: videoInput,
             remoteVideo: videoOutput,
@@ -278,14 +305,16 @@ function incomingCall(message) {
 function onOfferIncomingCall(error, offerSdp) {
     if (error)
         return console.error("Error generating the offer");
-    var response = {
+    var accept = {
         media: 'all',
         fromId: fromId,
-        //sessionId: sessionId,
+        sessionName: sessionName,
+        hasAudio: true,
+        hasVideo: true,
         event: 'accept',
         sdpOffer: offerSdp
     };
-    sendMessageParams("onCall", response, msgId++);
+    sendMessageParams("onCall", accept, msgId++);
 }
 
 function register() {
@@ -295,13 +324,20 @@ function register() {
         window.alert('You must insert your user name');
         return;
     }
-    setRegisterState(REGISTERING);
+    /*setRegisterState(REGISTERING);
 
     var message = {
         userId: userId,
     };
     sendMessageParams("register", message, msgId++);
-    document.getElementById('peer').focus();
+    document.getElementById('peer').focus();*/
+
+    wsUrl = 'wss://ubonass.com:4443/openvidu?clientId=' + userId;
+
+    ws = new WebSocket(wsUrl);
+
+    ws.onmessage = onmessage;
+    ws.onopen = onopen;
 }
 
 function call() {
@@ -335,7 +371,8 @@ function onOfferCall(error, offerSdp) {
     var message = {
         fromId: userId,
         targetId: document.getElementById('peer').value,
-        media: "all",
+        hasAudio: true,
+        hasVideo: true,
         sdpOffer: offerSdp
     };
     sendMessageParams("call", message, msgId++);

@@ -15,34 +15,33 @@
  *
  */
 
-package io.openvidu.server.kurento.core;
+package org.ubonass.media.server.kurento.core;
 
 import org.kurento.client.MediaElement;
 import org.kurento.client.MediaType;
-
-import io.openvidu.server.core.MediaOptions;
-import io.openvidu.server.kurento.KurentoFilter;
+import org.ubonass.media.server.core.MediaOptions;
+import org.ubonass.media.server.kurento.KurentoFilter;
 
 public class KurentoMediaOptions extends MediaOptions {
 
-	public boolean isOffer;
-	public String sdpOffer;
-	public boolean doLoopback;
-	public MediaElement loopbackAlternativeSrc;
-	public MediaType loopbackConnectionType;
-	public MediaElement[] mediaElements;
+    public boolean isOffer;
+    public String sdpOffer;
+    public boolean doLoopback;
+    public MediaElement loopbackAlternativeSrc;
+    public MediaType loopbackConnectionType;
+    public MediaElement[] mediaElements;
 
-	public KurentoMediaOptions(boolean isOffer, String sdpOffer, MediaElement loopbackAlternativeSrc,
-			MediaType loopbackConnectionType, Boolean hasAudio, Boolean hasVideo, Boolean audioActive,
-			Boolean videoActive, String typeOfVideo, Integer frameRate, String videoDimensions, KurentoFilter filter,
-			boolean doLoopback, MediaElement... mediaElements) {
-		super(hasAudio, hasVideo, audioActive, videoActive, typeOfVideo, frameRate, videoDimensions, filter);
-		this.isOffer = isOffer;
-		this.sdpOffer = sdpOffer;
-		this.loopbackAlternativeSrc = loopbackAlternativeSrc;
-		this.loopbackConnectionType = loopbackConnectionType;
-		this.doLoopback = doLoopback;
-		this.mediaElements = mediaElements;
-	}
+    public KurentoMediaOptions(boolean isOffer, String sdpOffer, MediaElement loopbackAlternativeSrc,
+                               MediaType loopbackConnectionType, Boolean hasAudio, Boolean hasVideo, Boolean audioActive,
+                               Boolean videoActive, String typeOfVideo, Integer frameRate, String videoDimensions, KurentoFilter filter,
+                               boolean doLoopback, MediaElement... mediaElements) {
+        super(hasAudio, hasVideo, audioActive, videoActive, typeOfVideo, frameRate, videoDimensions, filter);
+        this.isOffer = isOffer;
+        this.sdpOffer = sdpOffer;
+        this.loopbackAlternativeSrc = loopbackAlternativeSrc;
+        this.loopbackConnectionType = loopbackConnectionType;
+        this.doLoopback = doLoopback;
+        this.mediaElements = mediaElements;
+    }
 
 }

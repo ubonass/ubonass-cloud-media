@@ -49,25 +49,15 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     @Override
     public void handleRequest(Transaction transaction, Request<JsonObject> request)
             throws Exception {
-        String participantPrivateId =
-                getParticipantPrivateIdByTransaction(transaction);
-        logger.info("WebSocket session #{} - Request: {}", participantPrivateId, request);
-        RpcConnection rpcConnection;
-        if (ProtocolElements.KEEPLIVE_METHOD.equals(request.getMethod()) ||
-                ProtocolElements.REGISTER_METHOD.equals(request.getMethod())) {
-            // Store new RpcConnection information if method 'keepLive'
-            rpcConnection = notificationService.newRpcConnection(transaction, request);
-        } else if (notificationService.getRpcConnection(participantPrivateId) == null) {
-            // Throw exception if any method is called before 'joinCloud'
-            logger.warn(
-                    "No connection found for participant with privateId {} when trying to execute method '{}'. Method 'Session.connect()' must be the first operation called in any session",
-                    participantPrivateId, request.getMethod());
-            throw new CloudMediaException(Code.TRANSPORT_ERROR_CODE,
-                    "No connection found for participant with privateId " + participantPrivateId
-                            + ". Method 'Session.connect()' must be the first operation called in any session");
-        }
 
-        rpcConnection = notificationService.addTransaction(transaction, request);
+        RpcConnection rpcConnection = notificationService.addTransaction(transaction, request);
+        if (rpcConnection == null) {
+            throw new CloudMediaException(Code.TRANSPORT_ERROR_CODE,
+                    "No connection found for participant with privateId " +
+                            transaction.getSession().getSessionId()
+                            + ". Method 'Session.connect()' must be the first operation called " +
+                            "in any session");
+        }
 
         transaction.startAsync();
 
@@ -98,22 +88,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
     private void keepLive(RpcConnection rpcConnection, Request<JsonObject> request) {
         JsonObject result = new JsonObject();
-        if (rpcConnection.getSession().getAttributes().containsKey("clientId")) {
-            String clientId = (String)
-                    rpcConnection.getSession().getAttributes().get("clientId");
-            rpcConnection.setClientId(clientId);//保存client id
-            rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
-            ClusterConnection connection =
-                    notificationService.addClusterConnection(rpcConnection);
-            result.addProperty("clientId",clientId);
-            if (connection == null) {
-                result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
-            } else {
-                result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "Error");
-            }
-        }
-        notificationService.sendResponse(
-                rpcConnection.getParticipantPrivateId(), request.getId(), result);
+        result.addProperty(ProtocolElements.KEEPLIVE_METHOD, "OK");
+        notificationService.sendResponse(rpcConnection.getParticipantPrivateId(),
+                request.getId(), result);
     }
 
     protected void register(RpcConnection rpcConnection, Request<JsonObject> request) {
@@ -134,7 +111,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
                 result.addProperty(ProtocolElements.REGISTER_MESSAGE_PARAM, responseMsg);
             } else {
-                rpcConnection.setClientId(userId);//保存client id
+                rpcConnection.setParticipantPublicId(userId);//保存client id
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
                 ClusterConnection connection =
                         notificationService.addClusterConnection(rpcConnection);
@@ -309,9 +286,18 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 String clientId =
                         (String) ((WebSocketServerSession) rpcSession)
                                 .getWebSocketSession().getAttributes().get("clientId");
-                rpcSession.getAttributes().putIfAbsent("clientId", clientId);
-                //RpcConnection rpcConnection = new RpcConnection(clientId, clusterRpcService.getMemberId(), rpcSession);
-                //sessionManager.addOnlineConnection(clientId, rpcConnection);
+                /**
+                 * add by jeffrey......
+                 */
+                String participantPublicId =
+                        (String) ((WebSocketServerSession) rpcSession).getWebSocketSession()
+                                .getAttributes().get("clientId");
+                rpcSession.getAttributes().put("clientId", participantPublicId);
+                RpcConnection rpcConnection = new RpcConnection(rpcSession);
+                rpcConnection.setMemberId(clusterRpcService.getMemberId());
+                rpcConnection.setParticipantPublicId(participantPublicId);
+                notificationService.addRpcConnection(rpcConnection);
+                notificationService.addClusterConnection(rpcConnection);
             }
         }
     }
@@ -335,10 +321,11 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 if (clusterConnection != null) clusterConnection = null;
                 logger.info("afterConnectionClosed clientId:" + clientId);
             }
+            RpcConnection rpc =
+                    this.notificationService.closeRpcSession(rpcSessionId);
+            if (rpc != null) rpc = null;
         }
-        RpcConnection rpc =
-                this.notificationService.closeRpcSession(rpcSessionId);
-        if (rpc != null) rpc = null;
+
     }
 
     @Override

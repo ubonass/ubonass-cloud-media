@@ -15,21 +15,21 @@
  *
  */
 
-package io.openvidu.java.client;
+package org.ubonass.media.java.client;
 
 /**
  * See
- * {@link io.openvidu.java.client.SessionProperties.Builder#mediaMode(MediaMode)}
+ * {@link org.ubonass.media.java.client.SessionProperties.Builder#mediaMode(MediaMode)}
  */
 public enum MediaMode {
-	/**
-	 * <i>(not available yet)</i> The session will attempt to transmit streams
-	 * directly between clients
-	 */
-	RELAYED,
+    /**
+     * <i>(not available yet)</i> The session will attempt to transmit streams
+     * directly between clients
+     */
+    RELAYED,
 
-	/**
-	 * The session will transmit streams using OpenVidu Media Server
-	 */
-	ROUTED
+    /**
+     * The session will transmit streams using OpenVidu Media Server
+     */
+    ROUTED
 }

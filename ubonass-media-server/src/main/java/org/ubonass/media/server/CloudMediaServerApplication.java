@@ -20,14 +20,20 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.HttpHandshakeInterceptor;
+import org.ubonass.media.server.core.SessionEventsHandler;
+import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.kurento.AutodiscoveryKurentoClientProvider;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
+import org.ubonass.media.server.kurento.core.KurentoParticipantEndpointConfig;
+import org.ubonass.media.server.kurento.core.KurentoSessionEventsHandler;
+import org.ubonass.media.server.kurento.core.KurentoSessionManager;
 import org.ubonass.media.server.kurento.kms.FixedOneKmsManager;
 import org.ubonass.media.server.rpc.RpcCallHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Import({JsonRpcConfiguration.class})
@@ -100,17 +106,35 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
+    public SessionManager sessionManager() {
+        return new KurentoSessionManager();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public RpcNotificationService rpcNotificationService() {
         return new RpcNotificationService();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SessionEventsHandler sessionEventsHandler() {
+        return new KurentoSessionEventsHandler();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public KurentoParticipantEndpointConfig kurentoEndpointConfig() {
+        return new KurentoParticipantEndpointConfig();
     }
 
 
     @Override
     public void registerJsonRpcHandlers(JsonRpcHandlerRegistry registry) {
-        registry.addHandler(rpcHandler().withPingWatchdog(true)
-                .withInterceptors(new HttpHandshakeInterceptor()), "/media");
+        /*registry.addHandler(rpcHandler().withPingWatchdog(true)
+                .withInterceptors(new HttpHandshakeInterceptor()), "/media");*/
         registry.addHandler(callRpcHandler().withPingWatchdog(true)
-                /*.withInterceptors(new HttpHandshakeInterceptor())*/, "/call");
+                .withInterceptors(new HttpHandshakeInterceptor()), "/call");
     }
 
     public static void main(String[] args) {

@@ -15,14 +15,12 @@
  *
  */
 
-package io.openvidu.server.kurento.endpoint;
-
-import org.kurento.client.RaiseBaseEvent;
-import org.kurento.jsonrpc.JsonUtils;
+package org.ubonass.media.server.kurento.endpoint;
 
 import com.google.gson.JsonObject;
-
-import io.openvidu.server.core.Participant;
+import org.kurento.client.RaiseBaseEvent;
+import org.kurento.jsonrpc.JsonUtils;
+import org.ubonass.media.server.core.Participant;
 
 public class KmsEvent {
 
@@ -32,7 +30,10 @@ public class KmsEvent {
 	String endpoint;
 	RaiseBaseEvent event;
 
-	public KmsEvent(RaiseBaseEvent event, Participant participant, String endpointName, long createdAt) {
+	public KmsEvent(RaiseBaseEvent event,
+					Participant participant,
+					String endpointName,
+					long createdAt) {
 		this.event = event;
 		this.participant = participant;
 		this.endpoint = endpointName;
@@ -48,7 +49,7 @@ public class KmsEvent {
 		json.remove("timestampMillis");
 		json.addProperty("timestamp", timestamp);
 		json.addProperty("session", participant.getSessionId());
-		json.addProperty("user", participant.getFinalUserId());
+		//json.addProperty("user", participant.getFinalUserId());
 		json.addProperty("connection", participant.getParticipantPublicId());
 		json.addProperty("endpoint", this.endpoint);
 		json.addProperty("msSinceEndpointCreation", msSinceCreation);

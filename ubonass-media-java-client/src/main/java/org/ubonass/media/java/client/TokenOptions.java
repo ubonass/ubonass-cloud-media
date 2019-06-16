@@ -15,106 +15,104 @@
  *
  */
 
-package io.openvidu.java.client;
+package org.ubonass.media.java.client;
 
 /**
- * See {@link io.openvidu.java.client.Session#generateToken(TokenOptions)}
+ * See {@link org.ubonass.media.java.client.Session#generateToken(TokenOptions)}
  */
 public class TokenOptions {
 
-	private String data;
-	private OpenViduRole role;
-	private KurentoOptions kurentoOptions;
+    private String data;
+    private CloudMediaRole role;
+    private KurentoOptions kurentoOptions;
 
-	/**
-	 * 
-	 * Builder for {@link io.openvidu.java.client.TokenOptions}
-	 *
-	 */
-	public static class Builder {
+    /**
+     * Builder for {@link org.ubonass.media.java.client.TokenOptions}
+     */
+    public static class Builder {
 
-		private String data = "";
-		private OpenViduRole role = OpenViduRole.PUBLISHER;
-		private KurentoOptions kurentoOptions;
+        private String data = "";
+        private CloudMediaRole role = CloudMediaRole.PUBLISHER;
+        private KurentoOptions kurentoOptions;
 
-		/**
-		 * Builder for {@link io.openvidu.java.client.TokenOptions}
-		 */
-		public TokenOptions build() {
-			return new TokenOptions(this.data, this.role, this.kurentoOptions);
-		}
+        /**
+         * Builder for {@link org.ubonass.media.java.client.TokenOptions}
+         */
+        public TokenOptions build() {
+            return new TokenOptions(this.data, this.role, this.kurentoOptions);
+        }
 
-		/**
-		 * Call this method to set the secure (server-side) data associated to this
-		 * token. Every client will receive this data in property
-		 * <code>Connection.data</code>. Object <code>Connection</code> can be retrieved
-		 * by subscribing to event <code>connectionCreated</code> of Session object in
-		 * your clients.
-		 * <ul>
-		 * <li>If you have provided no data in your clients when calling method
-		 * <code>Session.connect(TOKEN, DATA)</code> (<code>DATA</code> not defined),
-		 * then <code>Connection.data</code> will only have this
-		 * {@link io.openvidu.java.client.TokenOptions.Builder#data(String)}
-		 * property.</li>
-		 * <li>If you have provided some data when calling
-		 * <code>Session.connect(TOKEN, DATA)</code> (<code>DATA</code> defined), then
-		 * <code>Connection.data</code> will have the following structure:
-		 * <code>&quot;CLIENT_DATA%/%SERVER_DATA&quot;</code>, being
-		 * <code>CLIENT_DATA</code> the second parameter passed in OpenVidu Browser in
-		 * method <code>Session.connect</code> and <code>SERVER_DATA</code> this
-		 * {@link io.openvidu.java.client.TokenOptions.Builder#data(String)}
-		 * property.</li>
-		 * </ul>
-		 */
-		public Builder data(String data) {
-			this.data = data;
-			return this;
-		}
+        /**
+         * Call this method to set the secure (server-side) data associated to this
+         * token. Every client will receive this data in property
+         * <code>Connection.data</code>. Object <code>Connection</code> can be retrieved
+         * by subscribing to event <code>connectionCreated</code> of Session object in
+         * your clients.
+         * <ul>
+         * <li>If you have provided no data in your clients when calling method
+         * <code>Session.connect(TOKEN, DATA)</code> (<code>DATA</code> not defined),
+         * then <code>Connection.data</code> will only have this
+         * {@link org.ubonass.media.java.client.TokenOptions.Builder#data(String)}
+         * property.</li>
+         * <li>If you have provided some data when calling
+         * <code>Session.connect(TOKEN, DATA)</code> (<code>DATA</code> defined), then
+         * <code>Connection.data</code> will have the following structure:
+         * <code>&quot;CLIENT_DATA%/%SERVER_DATA&quot;</code>, being
+         * <code>CLIENT_DATA</code> the second parameter passed in OpenVidu Browser in
+         * method <code>Session.connect</code> and <code>SERVER_DATA</code> this
+         * {@link org.ubonass.media.java.client.TokenOptions.Builder#data(String)}
+         * property.</li>
+         * </ul>
+         */
+        public Builder data(String data) {
+            this.data = data;
+            return this;
+        }
 
-		/**
-		 * Call this method to set the role assigned to this token
-		 */
-		public Builder role(OpenViduRole role) {
-			this.role = role;
-			return this;
-		}
+        /**
+         * Call this method to set the role assigned to this token
+         */
+        public Builder role(CloudMediaRole role) {
+            this.role = role;
+            return this;
+        }
 
-		/**
-		 * Call this method to set a {@link io.openvidu.java.client.KurentoOptions}
-		 * object for this token
-		 */
-		public Builder kurentoOptions(KurentoOptions kurentoOptions) {
-			this.kurentoOptions = kurentoOptions;
-			return this;
-		}
+        /**
+         * Call this method to set a {@link org.ubonass.media.java.client.KurentoOptions}
+         * object for this token
+         */
+        public Builder kurentoOptions(KurentoOptions kurentoOptions) {
+            this.kurentoOptions = kurentoOptions;
+            return this;
+        }
 
-	}
+    }
 
-	private TokenOptions(String data, OpenViduRole role, KurentoOptions kurentoOptions) {
-		this.data = data;
-		this.role = role;
-		this.kurentoOptions = kurentoOptions;
-	}
+    private TokenOptions(String data, CloudMediaRole role, KurentoOptions kurentoOptions) {
+        this.data = data;
+        this.role = role;
+        this.kurentoOptions = kurentoOptions;
+    }
 
-	/**
-	 * Returns the secure (server-side) metadata assigned to this token
-	 */
-	public String getData() {
-		return this.data;
-	}
+    /**
+     * Returns the secure (server-side) metadata assigned to this token
+     */
+    public String getData() {
+        return this.data;
+    }
 
-	/**
-	 * Returns the role assigned to this token
-	 */
-	public OpenViduRole getRole() {
-		return this.role;
-	}
+    /**
+     * Returns the role assigned to this token
+     */
+    public CloudMediaRole getRole() {
+        return this.role;
+    }
 
-	/**
-	 * Returns the Kurento options assigned to this token
-	 */
-	public KurentoOptions getKurentoOptions() {
-		return this.kurentoOptions;
-	}
+    /**
+     * Returns the Kurento options assigned to this token
+     */
+    public KurentoOptions getKurentoOptions() {
+        return this.kurentoOptions;
+    }
 
 }

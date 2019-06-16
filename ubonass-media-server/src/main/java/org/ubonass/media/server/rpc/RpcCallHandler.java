@@ -7,10 +7,15 @@ import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ubonass.media.client.CloudMediaException;
+import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.core.MediaOptions;
+import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaHandler;
+import org.ubonass.media.server.utils.RandomStringGenerator;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -48,9 +53,6 @@ public class RpcCallHandler extends RpcHandler {
     private void call(RpcConnection rpcConnection, Request<JsonObject> request) {
         String targetId = getStringParam(request, ProtocolElements.CALL_TARGETUSER_PARAM);
         String clientId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
-        String media = null;
-        if (request.getParams().has(ProtocolElements.CALL_MEDIA_PARAM))
-            media = getStringParam(request, ProtocolElements.CALL_MEDIA_PARAM);
         JsonObject result = new JsonObject();
         /**
          * 如果callee不存在
@@ -67,74 +69,32 @@ public class RpcCallHandler extends RpcHandler {
 
         logger.info("exists target user {} in {}",
                 targetId, notificationService.connectionIsLocalMember(targetId) ? "local member" : "remote member");
-        //要创建sessionId
-        KurentoCallMediaStream callerStream =
-                new KurentoCallMediaStream(
-                        kcProvider.getKurentoClient(), clientId, targetId);
 
-        WebRtcEndpoint callerWebRtcEndpoint =
-                callerStream.createWebRtcEndpoint(clientId);
+        /**
+         * 手动创建sessionId,同时为sessionId进行配置
+         */
+        String sessionId = RandomStringGenerator.generateRandomChain();
 
-        callerWebRtcEndpoint.addIceCandidateFoundListener(
-                new EventListener<IceCandidateFoundEvent>() {
-                    @Override
-                    public void onEvent(IceCandidateFoundEvent event) {
-                        JsonObject jsonObject = new JsonObject();
-                        //jsonObject.addProperty("id", "iceCandidate");
-                        jsonObject.add("candidate",
-                                JsonUtils.toJsonObject(event.getCandidate()));
-                        notificationService.sendNotification(
-                                rpcConnection.getParticipantPrivateId(),
-                                ProtocolElements.ICECANDIDATE_METHOD,
-                                jsonObject);
-                    }
-                });
+        rpcConnection.setSessionId(sessionId);
 
-        String sdpOffer = getStringParam(request, ProtocolElements.CALL_SDPOFFER_PARAM);
-        String sdpAnswer = callerWebRtcEndpoint.processOffer(sdpOffer);
+        Participant participant =
+                sessionManager.newCallParticipant(
+                        sessionId, rpcConnection.getParticipantPrivateId(), clientId);
+        /**
+         * 获取媒体参数
+         */
+        MediaOptions options = sessionManager.generateMediaOptions(request);
+        /**
+         * 已经在sessionId中发布了视频
+         */
+        sessionManager.call(participant, options, request.getId());
+
         JsonObject notifyInCallObject = new JsonObject();
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, clientId);
-        //notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, sessionId);
-        if (media != null)//如果未空表示全部
-            notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_MEDIA_PARAM, media);
-
-        if (!notificationService.connectionIsLocalMember(targetId)) {
-            //创建rtpEndpoint
-            RtpEndpoint callerRtpEndPoint = callerStream.createRtpEndPoint(clientId);
-
-            callerRtpEndPoint.addErrorListener(new EventListener<ErrorEvent>() {
-
-                @Override
-                public void onEvent(ErrorEvent event) {
-                    logger.warn("---error en RTP {}", event.getDescription());
-
-                }
-            });
-            callerRtpEndPoint.addConnectionStateChangedListener(
-                    new EventListener<ConnectionStateChangedEvent>() {
-
-                        @Override
-                        public void onEvent(ConnectionStateChangedEvent event) {
-                            logger.warn("---Caller RTP {}", event.getNewState());
-                        }
-                    });
-            callerWebRtcEndpoint.connect(callerRtpEndPoint);
-            callerRtpEndPoint.connect(callerWebRtcEndpoint);
-        }
-
-        sessionManager.addCallMediaStream(clientId, callerStream);
-
-        notificationService.sendNotificationByClientId(
+        notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, sessionId);
+        notificationService.sendNotificationByPublicId(
                 targetId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
 
-        result.addProperty("method", ProtocolElements.CALL_METHOD);
-        result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");
-        result.addProperty(ProtocolElements.CALL_SDPANSWER_PARAM, sdpAnswer);
-
-        notificationService.sendResponse(
-                rpcConnection.getParticipantPrivateId(), request.getId(), result);
-
-        callerWebRtcEndpoint.gatherCandidates();
 
     }
 
@@ -158,126 +118,23 @@ public class RpcCallHandler extends RpcHandler {
                 .equals(ProtocolElements.ONCALL_EVENT_ACCEPT) ||
                 !request.getParams().has(ProtocolElements.ONCALL_FROMUSER_PARAM)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
-
+        String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
+        //caller不存在
         if (!notificationService.connectionExist(fromId)) return;
 
-        String media = null;//如果为null则说明,all,视频语音一体
-        if (request.getParams().has(ProtocolElements.ONCALL_MEDIA_PARAM))
-            media = getStringParam(request, ProtocolElements.ONCALL_MEDIA_PARAM);
+        rpcConnection.setSessionId(sessionId);
+        Participant participant =
+                sessionManager.newCallParticipant(
+                        sessionId, rpcConnection.getParticipantPrivateId(),
+                        rpcConnection.getParticipantPublicId());
         /**
-         * 如果当前连接所在的host id和 caller的 host id 一致说明在一台服务器上,
-         * 否则这里需要重新创建MediaPipleline
+         * 获取媒体参数
          */
-        KurentoCallMediaStream calleeStream = null;
-        /**
-         * 判断callerConnection是否处于本host,如果不在本机上则需要自主创建一个kurentoCallSession
-         */
-        if (notificationService.connectionIsLocalMember(fromId)) {
-            calleeStream =
-                    sessionManager.getCallMediaStream(fromId);
-            logger.info("create calleeStream success ....");
-
-        } else {
-            //需要重新创建KurentoCallSession
-            calleeStream = new KurentoCallMediaStream(
-                    kcProvider.getKurentoClient(),
-                    fromId,
-                    rpcConnection.getClientId());
-        }
-
-        WebRtcEndpoint calleewebRtcEndpoint =
-                calleeStream.createWebRtcEndpoint(
-                        rpcConnection.getClientId());
-
-        calleewebRtcEndpoint.addIceCandidateFoundListener(
-                new EventListener<IceCandidateFoundEvent>() {
-
-                    @Override
-                    public void onEvent(IceCandidateFoundEvent event) {
-                        JsonObject jsonObject = new JsonObject();
-                        //jsonObject.addProperty("id", "iceCandidate");
-                        jsonObject.add("candidate",
-                                JsonUtils.toJsonObject(event.getCandidate()));
-                        notificationService.sendNotification(
-                                rpcConnection.getSession().getSessionId(),
-                                ProtocolElements.ICECANDIDATE_METHOD,
-                                jsonObject);
-                    }
-                });
-
-        if (notificationService.connectionIsLocalMember(fromId)) {
-            WebRtcEndpoint callerwebRtcEndpoint =
-                    calleeStream.getWebRtcEndpointById(fromId);
-            callerwebRtcEndpoint.connect(calleewebRtcEndpoint);
-            calleewebRtcEndpoint.connect(callerwebRtcEndpoint);
-        } else { //表示远程主机
-            //要创建rtpEndpoint
-            RtpEndpoint rtpEndpoint =
-                    calleeStream.createRtpEndPoint(rpcConnection.getClientId());
-            rtpEndpoint.addErrorListener(new EventListener<ErrorEvent>() {
-
-                @Override
-                public void onEvent(ErrorEvent event) {
-                    logger.warn("error en RTP {}", event.getDescription());
-
-                }
-            });
-            rtpEndpoint.addConnectionStateChangedListener(new EventListener<ConnectionStateChangedEvent>() {
-
-                @Override
-                public void onEvent(ConnectionStateChangedEvent event) {
-                    logger.warn("callee RTP {}", event.getNewState());
-                }
-            });
-            String rtpOffer = rtpEndpoint.generateOffer();
-            /**
-             * 1.将sdpOffer发送到Caller的RTP进行处理,同时接受sdpAnswer
-             * 提交一个异步任务
-             */
-            Callable callable = new KurentoCallMediaHandler(
-                    fromId, rtpOffer, KurentoCallMediaHandler.MEDIA_EVENT_PROCESS_SDPOFFER);
-            ClusterConnection callerCluserConnection =
-                    notificationService.getClusterConnection(fromId);
-            Future<String> processAnswer = (Future<String>)
-                    clusterRpcService.submitTaskToMembers(callable,
-                            callerCluserConnection.getMemberId());
-            try {
-                String rtpAnswer = processAnswer.get();
-                logger.info("rtpAnswer {}", rtpAnswer);
-                rtpEndpoint.processAnswer(rtpAnswer);
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-            //将webrtcendpoint作为rtpEndpoint的消费者
-            rtpEndpoint.connect(calleewebRtcEndpoint);
-            //将rtpEndpoint作为calleewebRtcEndpoint的消费者实现推流
-            calleewebRtcEndpoint.connect(rtpEndpoint);
-        }
-        sessionManager.addCallMediaStream(rpcConnection.getClientId(), calleeStream);
-        /**
-         * 回复给客户端
-         */
-        String sdpOffer = getStringParam(request, ProtocolElements.ONCALL_SDPOFFER_PARAM);
-        String sdpAnswer = calleewebRtcEndpoint.processOffer(sdpOffer);
-
-        JsonObject connectedObject = new JsonObject();
-        //startCommunication.addProperty("id", "startCommunication");
-        connectedObject.addProperty(
-                ProtocolElements.ONCALL_SDPANSWER_PARAM, sdpAnswer);
-        connectedObject.addProperty(
-                ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_CONNECTED);
-        notificationService.sendNotification(
-                rpcConnection.getParticipantPrivateId(), ProtocolElements.ONCALL_METHOD, connectedObject);
-
-        calleewebRtcEndpoint.gatherCandidates();
+        MediaOptions options = sessionManager.generateMediaOptions(request);
+        sessionManager.onCallAccept(participant, options, request.getId());
 
         JsonObject accetpObject = new JsonObject();
-        /*告知calleer对方已经接听*/
-        accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
-        if (media != null)
-            accetpObject.addProperty(ProtocolElements.ONCALL_MEDIA_PARAM, media);
-
-        notificationService.sendNotificationByClientId(
+        notificationService.sendNotificationByPublicId(
                 fromId, ProtocolElements.ONCALL_METHOD, accetpObject);
 
     }
@@ -312,7 +169,7 @@ public class RpcCallHandler extends RpcHandler {
         }
         rejectObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
 
-        notificationService.sendNotificationByClientId(
+        notificationService.sendNotificationByPublicId(
                 fromId, ProtocolElements.ONCALL_METHOD, rejectObject);
     }
 
@@ -326,11 +183,11 @@ public class RpcCallHandler extends RpcHandler {
                 ProtocolElements.ONCALL_EVENT_HANGUP);
         String targetId = null;
         KurentoCallMediaStream kurentoCallStream =
-                sessionManager.getCallMediaStream(rpcConnection.getClientId());
+                sessionManager.getCallMediaStream(rpcConnection.getParticipantPublicId());
         /**
          * 来自caller挂断
          */
-        if (rpcConnection.getClientId()
+        if (rpcConnection.getParticipantPublicId()
                 .equals(kurentoCallStream.getCallingFrom())) {
             targetId = kurentoCallStream.getCallingTo();
         } else {//来自callee挂断
@@ -338,12 +195,12 @@ public class RpcCallHandler extends RpcHandler {
         }
 
         if (notificationService.connectionExist(targetId))
-            notificationService.sendNotificationByClientId(
+            notificationService.sendNotificationByPublicId(
                     targetId,
                     ProtocolElements.ONCALL_METHOD, hangupObject);
 
         KurentoCallMediaStream mediaStream =
-                sessionManager.removeCallMediaStream(rpcConnection.getClientId());
+                sessionManager.removeCallMediaStream(rpcConnection.getParticipantPublicId());
         if (mediaStream != null) {
             mediaStream.release();
             mediaStream = null;
@@ -374,9 +231,9 @@ public class RpcCallHandler extends RpcHandler {
         String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
         int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
         KurentoCallMediaStream kurentoCallSession =
-                sessionManager.getCallMediaStream(rpcConnection.getClientId());
+                sessionManager.getCallMediaStream(rpcConnection.getParticipantPublicId());
         WebRtcEndpoint webRtcEndpoint =
-                kurentoCallSession.getWebRtcEndpointById(rpcConnection.getClientId());
+                kurentoCallSession.getWebRtcEndpointById(rpcConnection.getParticipantPublicId());
         webRtcEndpoint.addIceCandidate(new IceCandidate(candidate, sdpMid, sdpMLineIndex));
     }
 

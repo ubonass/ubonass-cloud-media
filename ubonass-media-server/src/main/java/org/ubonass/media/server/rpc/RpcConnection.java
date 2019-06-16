@@ -36,18 +36,18 @@ public class RpcConnection{
     private String sessionId;
     private String participantPrivateId;
     private String memberId;//当前连接位于集群中的那台主机,该ID以uuid进行标识
-    private String clientId;//当前客户端的客户唯一标识码
+    private String participantPublicId;//当前客户端的客户唯一标识码
 
     //add by jeffrey
-    public RpcConnection(String clientId, Session session) {
-        this.clientId = clientId;
+    public RpcConnection(String participantPublicId, Session session) {
+        this.participantPublicId = participantPublicId;
         this.session = session;
         this.transactions = new ConcurrentHashMap<>();
         this.participantPrivateId = session.getSessionId();
     }
 
     public RpcConnection(String clientId, String memberId, Session session) {
-        this.clientId = clientId;
+        this.participantPublicId = participantPublicId;
         this.memberId = memberId;
         this.session = session;
         this.transactions = new ConcurrentHashMap<>();
@@ -68,12 +68,12 @@ public class RpcConnection{
         this.memberId = memberId;
     }
 
-    public String getClientId() {
-        return clientId;
+    public String getParticipantPublicId() {
+        return participantPublicId;
     }
 
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
+    public void setParticipantPublicId(String participantPublicId) {
+        this.participantPublicId = participantPublicId;
     }
 
     public Session getSession() {

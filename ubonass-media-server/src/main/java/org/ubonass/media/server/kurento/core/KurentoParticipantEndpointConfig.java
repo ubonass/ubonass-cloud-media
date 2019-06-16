@@ -15,27 +15,24 @@
  *
  */
 
-package io.openvidu.server.kurento.core;
+package org.ubonass.media.server.kurento.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import io.openvidu.server.cdr.CallDetailRecord;
-import io.openvidu.server.config.InfoHandler;
-import io.openvidu.server.kurento.endpoint.KmsEvent;
-import io.openvidu.server.kurento.endpoint.KmsMediaEvent;
-import io.openvidu.server.kurento.endpoint.MediaEndpoint;
+import org.ubonass.media.server.kurento.endpoint.KmsEvent;
+import org.ubonass.media.server.kurento.endpoint.KmsMediaEvent;
+import org.ubonass.media.server.kurento.endpoint.MediaEndpoint;
 
 public class KurentoParticipantEndpointConfig {
 
 	protected static final Logger log = LoggerFactory.getLogger(KurentoParticipantEndpointConfig.class);
 
-	@Autowired
+	/*@Autowired
 	protected InfoHandler infoHandler;
 
 	@Autowired
-	protected CallDetailRecord CDR;
+	protected CallDetailRecord CDR;*/
 
 	public void addEndpointListeners(MediaEndpoint endpoint, String typeOfEndpoint) {
 
@@ -46,8 +43,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsMediaEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					event.getMediaType(), endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 		});
 
@@ -58,8 +55,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsMediaEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					event.getMediaType(), endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 		});
 
@@ -69,8 +66,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 		});
 
@@ -81,8 +78,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 		});
 
@@ -95,8 +92,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 		});
 
@@ -107,8 +104,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsMediaEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					event.getMediaType(), endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 		});
 
@@ -121,8 +118,8 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.info(msg);
 			// }
 		});
@@ -134,14 +131,14 @@ public class KurentoParticipantEndpointConfig {
 			KmsEvent kmsEvent = new KmsEvent(event, endpoint.getOwner(), endpoint.getEndpointName(),
 					endpoint.createdAt());
 			endpoint.kmsEvents.add(kmsEvent);
-			this.CDR.log(kmsEvent);
-			this.infoHandler.sendInfo(msg);
+			/*this.CDR.log(kmsEvent);
+			this.infoHandler.sendInfo(msg);*/
 			log.error(msg);
 		});
 	}
 
-	public CallDetailRecord getCdr() {
+	/*public CallDetailRecord getCdr() {
 		return this.CDR;
-	}
+	}*/
 
 }

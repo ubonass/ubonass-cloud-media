@@ -15,19 +15,17 @@
  *
  */
 
-package io.openvidu.server.kurento.endpoint;
-
-import java.util.Map.Entry;
-
-import org.kurento.client.MediaPipeline;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package org.ubonass.media.server.kurento.endpoint;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.kurento.client.MediaPipeline;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.ubonass.media.server.config.CloudMediaConfig;
+import org.ubonass.media.server.kurento.core.KurentoParticipant;
 
-import io.openvidu.server.config.OpenviduConfig;
-import io.openvidu.server.kurento.core.KurentoParticipant;
+import java.util.Map.Entry;
 
 /**
  * Subscriber aspect of the {@link MediaEndpoint}.
@@ -35,63 +33,66 @@ import io.openvidu.server.kurento.core.KurentoParticipant;
  * @author <a href="mailto:rvlad@naevatec.com">Radu Tom Vlad</a>
  */
 public class SubscriberEndpoint extends MediaEndpoint {
-	private final static Logger log = LoggerFactory.getLogger(SubscriberEndpoint.class);
+    private final static Logger log = LoggerFactory.getLogger(SubscriberEndpoint.class);
 
-	private boolean connectedToPublisher = false;
+    private boolean connectedToPublisher = false;
 
-	private PublisherEndpoint publisher = null;
+    private PublisherEndpoint publisher = null;
 
-	public SubscriberEndpoint(boolean web, KurentoParticipant owner, String endpointName, MediaPipeline pipeline,
-			OpenviduConfig openviduConfig) {
-		super(web, owner, endpointName, pipeline, openviduConfig, log);
-	}
+    public SubscriberEndpoint(boolean web,
+                              KurentoParticipant owner,
+                              String endpointName,
+                              MediaPipeline pipeline,
+                              CloudMediaConfig cloudMediaConfig) {
+        super(web, owner, endpointName, pipeline, cloudMediaConfig, log);
+    }
 
-	public synchronized String subscribe(String sdpOffer, PublisherEndpoint publisher) {
-		registerOnIceCandidateEventListener(publisher.getOwner().getParticipantPublicId());
-		String sdpAnswer = processOffer(sdpOffer);
-		gatherCandidates();
-		publisher.connect(this.getEndpoint());
-		setConnectedToPublisher(true);
-		setPublisher(publisher);
-		this.createdAt = System.currentTimeMillis();
-		return sdpAnswer;
-	}
+    public synchronized String subscribe(String sdpOffer, PublisherEndpoint publisher) {
+        registerOnIceCandidateEventListener(publisher.getOwner().getParticipantPublicId());
+        String sdpAnswer = processOffer(sdpOffer);
+        gatherCandidates();
+        publisher.connect(this.getEndpoint());
+        setConnectedToPublisher(true);
+        setPublisher(publisher);
+        this.createdAt = System.currentTimeMillis();
+        return sdpAnswer;
+    }
 
-	public boolean isConnectedToPublisher() {
-		return connectedToPublisher;
-	}
+    public boolean isConnectedToPublisher() {
+        return connectedToPublisher;
+    }
 
-	public void setConnectedToPublisher(boolean connectedToPublisher) {
-		this.connectedToPublisher = connectedToPublisher;
-	}
+    public void setConnectedToPublisher(boolean connectedToPublisher) {
+        this.connectedToPublisher = connectedToPublisher;
+    }
 
-	@Override
-	public PublisherEndpoint getPublisher() {
-		return this.publisher;
-	}
+    @Override
+    public PublisherEndpoint getPublisher() {
+        return this.publisher;
+    }
 
-	public void setPublisher(PublisherEndpoint publisher) {
-		this.publisher = publisher;
-	}
+    public void setPublisher(PublisherEndpoint publisher) {
+        this.publisher = publisher;
+    }
 
-	@Override
-	public JsonObject toJson() {
-		JsonObject json = super.toJson();
-		try {
-			json.addProperty("streamId", this.publisher.getStreamId());
-		} catch (NullPointerException ex) {
-			json.addProperty("streamId", "NOT_FOUND");
-		}
-		return json;
-	}
+    @Override
+    public JsonObject toJson() {
+        JsonObject json = super.toJson();
+        try {
+            json.addProperty("streamId", this.publisher.getStreamId());
+        } catch (NullPointerException ex) {
+            json.addProperty("streamId", "NOT_FOUND");
+        }
+        return json;
+    }
 
-	@Override
-	public JsonObject withStatsToJson() {
-		JsonObject json = super.withStatsToJson();
-		JsonObject toJson = this.toJson();
-		for (Entry<String, JsonElement> entry : toJson.entrySet()) {
-			json.add(entry.getKey(), entry.getValue());
-		}
-		return json;
-	}
+    @Override
+    public JsonObject withStatsToJson() {
+        JsonObject json = super.withStatsToJson();
+        JsonObject toJson = this.toJson();
+        for (Entry<String, JsonElement> entry : toJson.entrySet()) {
+            json.add(entry.getKey(), entry.getValue());
+        }
+        return json;
+    }
 }

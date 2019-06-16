@@ -300,7 +300,7 @@ public class ProtocolElements {
     public static final String INCOMINGCALL_METHOD = "incomingCall";//来电请求,由服务器发送给用户B
     public static final String INCOMINGCALL_FROMUSER_PARAM = "fromId";//
     //public static final String INCOMINGCALL_TARGETUSER_PARAM = "targetId";
-    //public static final String INCOMINGCALL_SESSION_PARAM = "sessionId";//有服务器随机生成
+    public static final String INCOMINGCALL_SESSION_PARAM = "sessionName";//有服务器随机生成
     public static final String INCOMINGCALL_MEDIA_PARAM = "media";//video or audio or all,default all
 
     /**
@@ -311,7 +311,7 @@ public class ProtocolElements {
     //public static final String ONCALL_TARGETUSER_PARAM = "targetId";
     public static final String ONCALL_SDPOFFER_PARAM = "sdpOffer";
     public static final String ONCALL_SDPANSWER_PARAM = "sdpAnswer";//这是服务器回复给发起者的
-    //public static final String ONCALL_SESSION_PARAM = "sessionId";//有服务器随机生成
+    public static final String ONCALL_SESSION_PARAM = "sessionName";//有服务器随机生成
     public static final String ONCALL_MEDIA_PARAM = "media";//
     public static final String ONCALL_EVENT_PARAM = "event";
     public static final String ONCALL_EVENT_ACCEPT = "accept";//接听

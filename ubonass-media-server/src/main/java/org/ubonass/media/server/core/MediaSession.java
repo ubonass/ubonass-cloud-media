@@ -15,7 +15,17 @@
  *
  */
 
-package io.openvidu.server.core;
+package org.ubonass.media.server.core;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.ubonass.media.client.CloudMediaException;
+import org.ubonass.media.client.internal.ProtocolElements;
+import org.ubonass.media.java.client.Recording;
+import org.ubonass.media.java.client.RecordingLayout;
+import org.ubonass.media.java.client.SessionProperties;
+import org.ubonass.media.server.config.CloudMediaConfig;
+import org.ubonass.media.server.kurento.core.KurentoParticipant;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,154 +35,144 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+public class MediaSession {
 
-import io.openvidu.client.OpenViduException;
-import io.openvidu.client.OpenViduException.Code;
-import io.openvidu.client.internal.ProtocolElements;
-import io.openvidu.java.client.Recording;
-import io.openvidu.java.client.RecordingLayout;
-import io.openvidu.java.client.SessionProperties;
-import io.openvidu.server.config.OpenviduConfig;
-import io.openvidu.server.kurento.core.KurentoParticipant;
-import io.openvidu.server.recording.service.RecordingManager;
+    protected CloudMediaConfig cloudMediaConfig;
 
-public class Session implements SessionInterface {
+    //protected RecordingManager recordingManager;
+    /**
+     * 私有ID
+     * @Key:participantPrivatetId
+     * @Value:KurentoParticipant
+     */
+    protected final ConcurrentMap<String, Participant> participants = new ConcurrentHashMap<>();
+    protected String sessionId;
+    protected SessionProperties sessionProperties;
+    protected Long startTime;
 
-	protected OpenviduConfig openviduConfig;
-	protected RecordingManager recordingManager;
+    protected volatile boolean closed = false;
+    protected AtomicInteger activePublishers = new AtomicInteger(0);
 
-	protected final ConcurrentMap<String, Participant> participants = new ConcurrentHashMap<>();
-	protected String sessionId;
-	protected SessionProperties sessionProperties;
-	protected Long startTime;
+    public final AtomicBoolean recordingManuallyStopped = new AtomicBoolean(false);
 
-	protected volatile boolean closed = false;
-	protected AtomicInteger activePublishers = new AtomicInteger(0);
+    public MediaSession(MediaSession previousSession) {
+        this.sessionId = previousSession.getSessionId();
+        this.startTime = previousSession.getStartTime();
+        this.sessionProperties = previousSession.getSessionProperties();
+        this.cloudMediaConfig = previousSession.cloudMediaConfig;
+        //this.recordingManager = previousSession.recordingManager;
+    }
 
-	public final AtomicBoolean recordingManuallyStopped = new AtomicBoolean(false);
+    public MediaSession(String sessionId,
+                        SessionProperties sessionProperties,
+                        CloudMediaConfig cloudMediaConfig/*,
+                        RecordingManager recordingManager*/) {
+        this.sessionId = sessionId;
+        this.startTime = System.currentTimeMillis();
+        this.sessionProperties = sessionProperties;
+        this.cloudMediaConfig = cloudMediaConfig;
+        //this.recordingManager = recordingManager;
+    }
 
-	public Session(Session previousSession) {
-		this.sessionId = previousSession.getSessionId();
-		this.startTime = previousSession.getStartTime();
-		this.sessionProperties = previousSession.getSessionProperties();
-		this.openviduConfig = previousSession.openviduConfig;
-		this.recordingManager = previousSession.recordingManager;
-	}
+    public String getSessionId() {
+        return this.sessionId;
+    }
 
-	public Session(String sessionId, SessionProperties sessionProperties, OpenviduConfig openviduConfig,
-			RecordingManager recordingManager) {
-		this.sessionId = sessionId;
-		this.startTime = System.currentTimeMillis();
-		this.sessionProperties = sessionProperties;
-		this.openviduConfig = openviduConfig;
-		this.recordingManager = recordingManager;
-	}
+    public SessionProperties getSessionProperties() {
+        return this.sessionProperties;
+    }
 
-	public String getSessionId() {
-		return this.sessionId;
-	}
+    public Long getStartTime() {
+        return this.startTime;
+    }
 
-	public SessionProperties getSessionProperties() {
-		return this.sessionProperties;
-	}
+    public Set<Participant> getParticipants() {
+        checkClosed();
+        return new HashSet<Participant>(this.participants.values());
+    }
 
-	public Long getStartTime() {
-		return this.startTime;
-	}
+    public Participant getParticipantByPrivateId(String participantPrivateId) {
+        checkClosed();
+        return participants.get(participantPrivateId);
+    }
 
-	public Set<Participant> getParticipants() {
-		checkClosed();
-		return new HashSet<Participant>(this.participants.values());
-	}
+    public Participant getParticipantByPublicId(String participantPublicId) {
+        checkClosed();
+        for (Participant p : participants.values()) {
+            if (p.getParticipantPublicId().equals(participantPublicId)) {
+                return p;
+            }
+        }
+        return null;
+    }
 
-	public Participant getParticipantByPrivateId(String participantPrivateId) {
-		checkClosed();
-		return participants.get(participantPrivateId);
-	}
+    public int getActivePublishers() {
+        return activePublishers.get();
+    }
 
-	public Participant getParticipantByPublicId(String participantPublicId) {
-		checkClosed();
-		for (Participant p : participants.values()) {
-			if (p.getParticipantPublicId().equals(participantPublicId)) {
-				return p;
-			}
-		}
-		return null;
-	}
+    public void registerPublisher() {
+        this.activePublishers.incrementAndGet();
+    }
 
-	public int getActivePublishers() {
-		return activePublishers.get();
-	}
+    public void deregisterPublisher() {
+        this.activePublishers.decrementAndGet();
+    }
 
-	public void registerPublisher() {
-		this.activePublishers.incrementAndGet();
-	}
+    public boolean isClosed() {
+        return closed;
+    }
 
-	public void deregisterPublisher() {
-		this.activePublishers.decrementAndGet();
-	}
+    protected void checkClosed() {
+        if (isClosed()) {
+            throw new CloudMediaException(CloudMediaException.Code.ROOM_CLOSED_ERROR_CODE, "The session '" + sessionId + "' is closed");
+        }
+    }
 
-	public boolean isClosed() {
-		return closed;
-	}
+    public JsonObject toJson() {
+        return this.sharedJson(KurentoParticipant::toJson);
+    }
 
-	protected void checkClosed() {
-		if (isClosed()) {
-			throw new OpenViduException(Code.ROOM_CLOSED_ERROR_CODE, "The session '" + sessionId + "' is closed");
-		}
-	}
+    public JsonObject withStatsToJson() {
+        return this.sharedJson(KurentoParticipant::withStatsToJson);
+    }
 
-	public JsonObject toJson() {
-		return this.sharedJson(KurentoParticipant::toJson);
-	}
+    private JsonObject sharedJson(Function<KurentoParticipant, JsonObject> toJsonFunction) {
+        JsonObject json = new JsonObject();
+        json.addProperty("sessionId", this.sessionId);
+        json.addProperty("createdAt", this.startTime);
+        json.addProperty("mediaMode", this.sessionProperties.mediaMode().name());
+        json.addProperty("recordingMode", this.sessionProperties.recordingMode().name());
+        json.addProperty("defaultOutputMode", this.sessionProperties.defaultOutputMode().name());
+        if (Recording.OutputMode.COMPOSED.equals(this.sessionProperties.defaultOutputMode())) {
+            json.addProperty("defaultRecordingLayout", this.sessionProperties.defaultRecordingLayout().name());
+            if (RecordingLayout.CUSTOM.equals(this.sessionProperties.defaultRecordingLayout())) {
+                json.addProperty("defaultCustomLayout", this.sessionProperties.defaultCustomLayout());
+            }
+        }
+        if (this.sessionProperties.customSessionId() != null) {
+            json.addProperty("customSessionId", this.sessionProperties.customSessionId());
+        }
+        JsonObject connections = new JsonObject();
+        JsonArray participants = new JsonArray();
+        this.participants.values().forEach(p -> {
+            if (!ProtocolElements.RECORDER_PARTICIPANT_PUBLICID.equals(p.getParticipantPublicId())) {
+                participants.add(toJsonFunction.apply((KurentoParticipant) p));
+            }
+        });
+        connections.addProperty("numberOfElements", participants.size());
+        connections.add("content", participants);
+        json.add("connections", connections);
+        //json.addProperty("recording", this.recordingManager.sessionIsBeingRecorded(this.sessionId));
+        return json;
+    }
 
-	public JsonObject withStatsToJson() {
-		return this.sharedJson(KurentoParticipant::withStatsToJson);
-	}
 
-	private JsonObject sharedJson(Function<KurentoParticipant, JsonObject> toJsonFunction) {
-		JsonObject json = new JsonObject();
-		json.addProperty("sessionId", this.sessionId);
-		json.addProperty("createdAt", this.startTime);
-		json.addProperty("mediaMode", this.sessionProperties.mediaMode().name());
-		json.addProperty("recordingMode", this.sessionProperties.recordingMode().name());
-		json.addProperty("defaultOutputMode", this.sessionProperties.defaultOutputMode().name());
-		if (Recording.OutputMode.COMPOSED.equals(this.sessionProperties.defaultOutputMode())) {
-			json.addProperty("defaultRecordingLayout", this.sessionProperties.defaultRecordingLayout().name());
-			if (RecordingLayout.CUSTOM.equals(this.sessionProperties.defaultRecordingLayout())) {
-				json.addProperty("defaultCustomLayout", this.sessionProperties.defaultCustomLayout());
-			}
-		}
-		if (this.sessionProperties.customSessionId() != null) {
-			json.addProperty("customSessionId", this.sessionProperties.customSessionId());
-		}
-		JsonObject connections = new JsonObject();
-		JsonArray participants = new JsonArray();
-		this.participants.values().forEach(p -> {
-			if (!ProtocolElements.RECORDER_PARTICIPANT_PUBLICID.equals(p.getParticipantPublicId())) {
-				participants.add(toJsonFunction.apply((KurentoParticipant) p));
-			}
-		});
-		connections.addProperty("numberOfElements", participants.size());
-		connections.add("content", participants);
-		json.add("connections", connections);
-		json.addProperty("recording", this.recordingManager.sessionIsBeingRecorded(this.sessionId));
-		return json;
-	}
+	public void join(Participant participant) { }
 
-	@Override
-	public void join(Participant participant) {
-	}
 
-	@Override
-	public void leave(String participantPrivateId, EndReason reason) {
-	}
+	public void leave(String participantPrivateId, EndReason reason) { }
 
-	@Override
-	public boolean close(EndReason reason) {
-		return false;
-	}
+
+	public boolean close(EndReason reason) { return false; }
 
 }

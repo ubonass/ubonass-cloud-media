@@ -15,17 +15,17 @@
  *
  */
 
-package io.openvidu.java.client;
+package org.ubonass.media.java.client;
 
 import org.json.simple.JSONObject;
 
 /**
- * See {@link io.openvidu.java.client.OpenVidu#startRecording(String)}
+ * See {@link org.ubonass.media.java.client.OpenVidu#startRecording(String)}
  */
 public class Recording {
 
 	/**
-	 * See {@link io.openvidu.java.client.Recording#getStatus()}
+	 * See {@link org.ubonass.media.java.client.Recording#getStatus()}
 	 */
 	public enum Status {
 
@@ -60,7 +60,7 @@ public class Recording {
 	}
 
 	/**
-	 * See {@link io.openvidu.java.client.Recording#getOutputMode()}
+	 * See {@link org.ubonass.media.java.client.Recording#getOutputMode()}
 	 */
 	public enum OutputMode {
 
@@ -152,7 +152,7 @@ public class Recording {
 	/**
 	 * The custom layout used in this recording. Only defined if if OutputMode is
 	 * COMPOSED and
-	 * {@link io.openvidu.java.client.RecordingProperties.Builder#customLayout(String)}
+	 * {@link org.ubonass.media.java.client.RecordingProperties.Builder#customLayout(String)}
 	 * has been called
 	 */
 	public String getCustomLayout() {
@@ -200,7 +200,7 @@ public class Recording {
 
 	/**
 	 * Resolution of the video file. Only defined if OutputMode of the Recording is
-	 * set to {@link io.openvidu.java.client.Recording.OutputMode#COMPOSED}
+	 * set to {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}
 	 */
 	public String getResolution() {
 		return this.recordingProperties.resolution();
