@@ -54,6 +54,7 @@ public class KurentoParticipant extends Participant {
     private KurentoParticipantEndpointConfig endpointConfig;
 
     private CallMediaStream callMediaStream;//for one2one
+    private boolean one2one = false;
     private PublisherEndpoint publisher;
     private CountDownLatch endPointLatch = new CountDownLatch(1);
 
@@ -414,11 +415,16 @@ public class KurentoParticipant extends Participant {
     }
 
     public void addIceCandidate(String endpointName, IceCandidate iceCandidate) {
-        if (this.getParticipantPublicId().equals(endpointName)) {
-            this.publisher.addIceCandidate(iceCandidate);
+        if (!this.one2one) {
+            if (this.getParticipantPublicId().equals(endpointName)) {
+                this.publisher.addIceCandidate(iceCandidate);
+            } else {
+                this.getNewOrExistingSubscriber(endpointName).addIceCandidate(iceCandidate);
+            }
         } else {
-            this.getNewOrExistingSubscriber(endpointName).addIceCandidate(iceCandidate);
+            this.callMediaStream.addIceCandidate(iceCandidate);
         }
+
     }
 
     public void sendIceCandidate(String senderPublicId, String endpointName, IceCandidate candidate) {

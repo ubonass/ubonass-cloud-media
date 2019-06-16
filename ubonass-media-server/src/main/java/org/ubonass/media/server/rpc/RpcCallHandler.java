@@ -236,7 +236,6 @@ public class RpcCallHandler extends RpcHandler {
                 kurentoCallSession.getWebRtcEndpointById(rpcConnection.getParticipantPublicId());
         webRtcEndpoint.addIceCandidate(new IceCandidate(candidate, sdpMid, sdpMLineIndex));*/
 
-
         Participant participant;
         try {
             participant = sanityCheckOfSession(rpcConnection, "onIceCandidate");
