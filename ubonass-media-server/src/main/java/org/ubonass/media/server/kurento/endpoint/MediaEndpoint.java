@@ -223,6 +223,7 @@ public abstract class MediaEndpoint {
      */
     protected void internalEndpointInitialization(final CountDownLatch endpointLatch) {
         if (this.isWeb()) {
+            log.info("start internalEndpointInitialization");
             WebRtcEndpoint.Builder builder = new WebRtcEndpoint.Builder(pipeline);
             /*
              * if (this.dataChannels) { builder.useDataChannels(); }
@@ -238,7 +239,7 @@ public abstract class MediaEndpoint {
                     webEndpoint.setMinVideoSendBandwidth(minSendKbps);
 
                     endpointLatch.countDown();
-                    log.trace("EP {}: Created a new WebRtcEndpoint", endpointName);
+                    log.info("EP {}: Created a new WebRtcEndpoint", endpointName);
                     endpointSubscription = registerElemErrListener(webEndpoint);
                 }
 

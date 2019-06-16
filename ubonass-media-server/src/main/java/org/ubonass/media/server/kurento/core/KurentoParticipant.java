@@ -110,6 +110,7 @@ public class KurentoParticipant extends Participant {
 
     public void createCallMediaStreamEndpoint(MediaOptions mediaOptions) {
         callMediaStream.createEndpoint(endPointLatch);
+
         if (callMediaStream.getEndpoint() == null) {
             throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE, "Unable to create publisher endpoint");
         }
