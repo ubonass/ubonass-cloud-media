@@ -101,7 +101,7 @@ public class KurentoSessionManager extends SessionManager {
 
         SdpType sdpType = kurentoOptions.isOffer ? SdpType.OFFER : SdpType.ANSWER;
 
-        kParticipant.createPublishingEndpoint(mediaOptions);
+        kParticipant.createCallMediaStreamEndpoint(mediaOptions);
 
         return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
     }
