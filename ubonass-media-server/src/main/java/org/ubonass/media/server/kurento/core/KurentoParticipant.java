@@ -99,7 +99,7 @@ public class KurentoParticipant extends Participant {
                     this.session.getPipeline(),
                     this.cloudMediaConfig);
         }
-        
+
         /*if (!one2one) {
             Token token = participant.getToken();
             if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
@@ -434,7 +434,7 @@ public class KurentoParticipant extends Participant {
     }
 
     public void addIceCandidate(String endpointName, IceCandidate iceCandidate) {
-        if (!this.one2one) {
+        /*if (!this.one2one) {
             if (this.getParticipantPublicId().equals(endpointName)) {
                 this.publisher.addIceCandidate(iceCandidate);
             } else {
@@ -442,8 +442,13 @@ public class KurentoParticipant extends Participant {
             }
         } else {
             this.callMediaStream.addIceCandidate(iceCandidate);
-        }
+        }*/
 
+        if (this.getParticipantPublicId().equals(endpointName)) {
+            this.publisher.addIceCandidate(iceCandidate);
+        } else {
+            this.getNewOrExistingSubscriber(endpointName).addIceCandidate(iceCandidate);
+        }
     }
 
     public void sendIceCandidate(String senderPublicId, String endpointName, IceCandidate candidate) {
