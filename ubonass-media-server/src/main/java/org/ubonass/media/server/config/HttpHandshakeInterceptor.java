@@ -37,6 +37,7 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
                                    ServerHttpResponse response,
                                    WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) throws Exception {
+        log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         if (request instanceof ServletServerHttpRequest) {
             HttpSession session = ((ServletServerHttpRequest) request)
                     .getServletRequest().getSession();
@@ -55,5 +56,6 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler,
                                Exception ex) {
+        log.info("afterHandshake");
     }
 }
