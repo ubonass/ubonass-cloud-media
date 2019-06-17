@@ -133,7 +133,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     @ConditionalOnMissingBean
     @Bean
     public ClusterRpcService clusterRpcService() {
-        return new ClusterRpcService(config()/*,sessionManager()*/);
+        return new ClusterRpcService(config(),sessionManager());
     }
 
     @Override
