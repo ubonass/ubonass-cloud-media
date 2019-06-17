@@ -21,20 +21,19 @@ import org.springframework.core.env.Environment;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.config.HttpHandshakeInterceptor;
+import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.core.SessionEventsHandler;
-import org.ubonass.media.server.core.SessionManager;
 import org.ubonass.media.server.kurento.AutodiscoveryKurentoClientProvider;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 import org.ubonass.media.server.kurento.core.KurentoParticipantEndpointConfig;
 import org.ubonass.media.server.kurento.core.KurentoSessionEventsHandler;
-import org.ubonass.media.server.kurento.core.KurentoSessionManager;
+import org.ubonass.media.server.kurento.core.KurentoMediaSessionManager;
 import org.ubonass.media.server.kurento.kms.FixedOneKmsManager;
 import org.ubonass.media.server.rpc.RpcCallHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 @Import({JsonRpcConfiguration.class})
@@ -107,8 +106,8 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
-    public SessionManager sessionManager() {
-        return new KurentoSessionManager();
+    public MediaSessionManager sessionManager() {
+        return new KurentoMediaSessionManager();
     }
 
     @Bean

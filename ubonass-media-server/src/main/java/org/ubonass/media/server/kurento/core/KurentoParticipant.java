@@ -49,7 +49,7 @@ public class KurentoParticipant extends Participant {
 
     private boolean webParticipant = true;
 
-    private final KurentoSession session;
+    private final KurentoMediaSession session;
 
     private KurentoParticipantEndpointConfig endpointConfig;
 
@@ -63,7 +63,7 @@ public class KurentoParticipant extends Participant {
 
 
     public KurentoParticipant(Participant participant,
-                              KurentoSession kurentoSession,
+                              KurentoMediaSession kurentoSession,
                               KurentoParticipantEndpointConfig endpointConfig,
                               CloudMediaConfig cloudMediaConfig/*,
                               RecordingManager recordingManager*/,
@@ -197,7 +197,7 @@ public class KurentoParticipant extends Participant {
 
     public CallMediaStream getCallMediaStream() {
         try {
-            if (!endPointLatch.await(KurentoSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
+            if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                         "Timeout reached while waiting for publisher endpoint to be ready");
             }
@@ -211,7 +211,7 @@ public class KurentoParticipant extends Participant {
 
     public PublisherEndpoint getPublisher() {
         try {
-            if (!endPointLatch.await(KurentoSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
+            if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                         "Timeout reached while waiting for publisher endpoint to be ready");
             }
@@ -232,7 +232,7 @@ public class KurentoParticipant extends Participant {
         this.publisher.setMediaOptions(mediaOptions);
     }
 
-    public KurentoSession getSession() {
+    public KurentoMediaSession getSession() {
         return session;
     }
 
@@ -312,7 +312,7 @@ public class KurentoParticipant extends Participant {
             CountDownLatch subscriberLatch = new CountDownLatch(1);
             SdpEndpoint oldMediaEndpoint = subscriber.createEndpoint(subscriberLatch);
             try {
-                if (!subscriberLatch.await(KurentoSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
+                if (!subscriberLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                     throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                             "Timeout reached when creating subscriber endpoint");
                 }

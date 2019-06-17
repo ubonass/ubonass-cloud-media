@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
 import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
@@ -72,16 +73,16 @@ public class RpcCallHandler extends RpcHandler {
         rpcConnection.setSessionId(sessionId);
 
         Participant participant =
-                sessionManager.newCallParticipant(
+                mediaSessionManager.newCallParticipant(
                         sessionId, rpcConnection.getParticipantPrivateId(), clientId);
         /**
          * 获取媒体参数
          */
-        MediaOptions options = sessionManager.generateMediaOptions(request);
+        MediaOptions options = mediaSessionManager.generateMediaOptions(request);
         /**
          * 已经在sessionId中发布了视频
          */
-        sessionManager.call(participant, options, request.getId());
+        mediaSessionManager.call(participant, options, request.getId());
 
         JsonObject notifyInCallObject = new JsonObject();
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, clientId);
@@ -118,21 +119,20 @@ public class RpcCallHandler extends RpcHandler {
 
         rpcConnection.setSessionId(sessionId);
         Participant participant =
-                sessionManager.newCallParticipant(
+                mediaSessionManager.newCallParticipant(
                         sessionId, rpcConnection.getParticipantPrivateId(),
                         rpcConnection.getParticipantPublicId());
         /**
          * 获取媒体参数
          */
-        MediaOptions options = sessionManager.generateMediaOptions(request);
-        sessionManager.onCallAccept(participant, options, request.getId());
+        MediaOptions options = mediaSessionManager.generateMediaOptions(request);
+        mediaSessionManager.onCallAccept(participant, options, request.getId());
 
         JsonObject accetpObject = new JsonObject();
         /*告知calleer对方已经接听*/
         accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
         notificationService.sendNotificationByPublicId(
                 fromId, ProtocolElements.ONCALL_METHOD, accetpObject);
-
     }
 
     private void onCallRejectProcess(RpcConnection rpcConnection,
@@ -140,11 +140,13 @@ public class RpcCallHandler extends RpcHandler {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+        String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
 
         if (!notificationService.connectionExist(fromId)) return;
 
         if (notificationService.connectionIsLocalMember(fromId)) {
             //caller leaveSession
+            mediaSessionManager.onCallReject(sessionId, request.getId());
         } else {
             //远程要移除掉
             ClusterConnection callerCluserConnection =
@@ -171,49 +173,15 @@ public class RpcCallHandler extends RpcHandler {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_HANGUP)) return;
 
-        JsonObject hangupObject = new JsonObject();
-        hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
-                ProtocolElements.ONCALL_EVENT_HANGUP);
-        String targetId = null;
-        KurentoCallMediaStream kurentoCallStream =
-                sessionManager.getCallMediaStream(rpcConnection.getParticipantPublicId());
-        /**
-         * 来自caller挂断
-         */
-        if (rpcConnection.getParticipantPublicId()
-                .equals(kurentoCallStream.getCallingFrom())) {
-            targetId = kurentoCallStream.getCallingTo();
-        } else {//来自callee挂断
-            targetId = kurentoCallStream.getCallingFrom();
+        Participant participant;
+        try {
+            participant = sanityCheckOfSession(rpcConnection, "onCallHangup");
+        } catch (CloudMediaException e) {
+            return;
         }
-
-        if (notificationService.connectionExist(targetId))
-            notificationService.sendNotificationByPublicId(
-                    targetId,
-                    ProtocolElements.ONCALL_METHOD, hangupObject);
-
-        KurentoCallMediaStream mediaStream =
-                sessionManager.removeCallMediaStream(rpcConnection.getParticipantPublicId());
-        if (mediaStream != null) {
-            mediaStream.release();
-            mediaStream = null;
-        }
-
-        if (notificationService
-                .connectionIsLocalMember(targetId)) {
-            mediaStream =
-                    sessionManager.removeCallMediaStream(targetId);
-            if (mediaStream != null) {
-                mediaStream.release();
-                mediaStream = null;
-            }
-        } else {
-            ClusterConnection callerCluserConnection =
-                    notificationService.getClusterConnection(targetId);
-            Runnable runnable = new KurentoCallMediaHandler(
-                    targetId, KurentoCallMediaHandler.MEDIA_EVENT_RELEASE_STREAM);
-            clusterRpcService.executeToMember(runnable, callerCluserConnection.getMemberId());
-        }
+        mediaSessionManager.onCallHangup(participant, request.getId());
+        logger.info("Participant {} has left session {}", participant.getParticipantPublicId(),
+                rpcConnection.getSessionId());
     }
 
     private void onIceCandidate(RpcConnection rpcConnection,
@@ -230,7 +198,7 @@ public class RpcCallHandler extends RpcHandler {
         String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
         int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
 
-        sessionManager.onIceCandidate(participant, endpointName, candidate, sdpMLineIndex, sdpMid, request.getId());
+        mediaSessionManager.onIceCandidate(participant, endpointName, candidate, sdpMLineIndex, sdpMid, request.getId());
 
     }
 

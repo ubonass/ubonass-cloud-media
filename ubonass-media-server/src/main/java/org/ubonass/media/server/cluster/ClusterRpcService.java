@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ubonass.media.server.core.SessionManager;
+import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.util.Iterator;
@@ -25,7 +25,7 @@ public class ClusterRpcService {
 
     private static ClusterRpcService context;
 
-    private SessionManager sessionManager;
+    private MediaSessionManager sessionManager;
 
     private RpcNotificationService notificationService;
 
@@ -36,7 +36,7 @@ public class ClusterRpcService {
 
     public ClusterRpcService(Config config,
                              RpcNotificationService notificationService,
-                             SessionManager sessionManager) {
+                             MediaSessionManager sessionManager) {
         this.config = config;
         this.sessionManager = sessionManager;
         this.notificationService = notificationService;
@@ -55,7 +55,7 @@ public class ClusterRpcService {
         return context;
     }
 
-    public SessionManager getSessionManager() {
+    public MediaSessionManager getSessionManager() {
         return sessionManager;
     }
 

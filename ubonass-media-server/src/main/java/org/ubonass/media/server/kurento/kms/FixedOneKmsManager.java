@@ -22,8 +22,8 @@ import org.kurento.client.KurentoConnectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.ubonass.media.server.core.SessionManager;
-import org.ubonass.media.server.kurento.core.KurentoSession;
+import org.ubonass.media.server.core.MediaSessionManager;
+import org.ubonass.media.server.kurento.core.KurentoMediaSession;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,7 +33,7 @@ public class FixedOneKmsManager extends KmsManager {
     private static final Logger log = LoggerFactory.getLogger(FixedOneKmsManager.class);
 
     @Autowired
-    SessionManager sessionManager;
+    MediaSessionManager sessionManager;
 
     public static final AtomicBoolean CONNECTED_TO_KMS = new AtomicBoolean(false);
     public static final AtomicLong TIME_OF_DISCONNECTION = new AtomicLong(0);
@@ -55,7 +55,7 @@ public class FixedOneKmsManager extends KmsManager {
                         log.warn("Kurento Client reconnected to a different KMS instance, with uri {}", kmsWsUri);
                         log.warn("Updating all webrtc endpoints for active sessions");
                         sessionManager.getMediaSessions().forEach(s -> {
-                            ((KurentoSession) s).restartStatusInKurento();
+                            ((KurentoMediaSession) s).restartStatusInKurento();
                         });
                     } else {
                         // Same KMS. We can infer that openvidu-server/KMS connection has been lost, but

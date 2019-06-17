@@ -18,7 +18,7 @@ import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.Participant;
-import org.ubonass.media.server.core.SessionManager;
+import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 
 import javax.servlet.http.HttpSession;
@@ -46,7 +46,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     protected ClusterRpcService clusterRpcService;
 
     @Autowired
-    protected SessionManager sessionManager;
+    protected MediaSessionManager mediaSessionManager;
 
     @Override
     public void handleRequest(Transaction transaction, Request<JsonObject> request)
@@ -153,9 +153,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     JsonObject target = targetArray.get(i).getAsJsonObject();
                     String targetId = target.get("userId").getAsString();
                     //判断targetId是否在sessions集合当中
-                    boolean targetOnline = sessionManager.getOnlineConnections().containsKey(targetId);
+                    boolean targetOnline = mediaSessionManager.getOnlineConnections().containsKey(targetId);
                     if (targetOnline) {
-                        RpcConnection connection = sessionManager.getOnlineConnection(targetId);
+                        RpcConnection connection = mediaSessionManager.getOnlineConnection(targetId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_FROMUSER_PARAM, fromId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_TARGETUSER_PARAM, targetId);
                         notifParams.addProperty(ProtocolElements.ONINVITED_TYPEMEDIA_PARAM, typeOfMedia);
@@ -202,8 +202,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     /**
      * 判断目标用户是否存在
      *//*
-        if (sessionManager.getOnlineConnections().containsKey(targetId)) {
-            RpcConnection connection = sessionManager.getOnlineConnection(targetId);
+        if (mediaSessionManager.getOnlineConnections().containsKey(targetId)) {
+            RpcConnection connection = mediaSessionManager.getOnlineConnection(targetId);
             JsonObject notifParams = new JsonObject();
             notifParams.addProperty(ProtocolElements.ONINVITED_TARGETUSER_PARAM, targetId);
             notifParams.addProperty(ProtocolElements.ONINVITED_FROMUSER_PARAM, fromId);
@@ -253,7 +253,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
     public void leaveRoomAfterConnClosed(String participantPrivateId, EndReason reason) {
         try {
-            sessionManager.evictParticipant(this.sessionManager.getParticipant(participantPrivateId), null, null, reason);
+            mediaSessionManager.evictParticipant(this.mediaSessionManager.getParticipant(participantPrivateId), null, null, reason);
             logger.info("Evicted participant with privateId {}", participantPrivateId);
         } catch (CloudMediaException e) {
             logger.warn("Unable to evict: {}", e.getMessage());
@@ -273,7 +273,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             throw new CloudMediaException(Code.GENERIC_ERROR_CODE, errorMsg);
         } else {
             // Sanity check: don't call RPC method unless the id checks out
-            Participant participant = sessionManager.getParticipant(sessionId, participantPrivateId);
+            Participant participant = mediaSessionManager.getParticipant(sessionId, participantPrivateId);
             if (participant != null) {
                 errorMsg = "Participant " + participant.getParticipantPublicId() + " is calling method '" + methodName
                         + "' in session " + sessionId;
@@ -356,7 +356,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
             if (rpcSession.getAttributes().containsKey("clientId")) {
                 String clientId = (String) rpcSession.getAttributes().remove("clientId");
-                //sessionManager.removeClusterConnection(clientId);
+                //mediaSessionManager.removeClusterConnection(clientId);
                 ClusterConnection clusterConnection =
                         this.notificationService.closeClusterConnection(clientId);
                 if (clusterConnection != null) clusterConnection = null;

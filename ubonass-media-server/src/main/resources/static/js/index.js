@@ -264,6 +264,7 @@ function incomingCall(message) {
         var response = {
             /*id: 'incomingCallResponse',*/
             fromId: message.fromId,
+            sessionName: message.sessionName,
             event: 'busy',
             media: message.media,
             reason: 'bussy'

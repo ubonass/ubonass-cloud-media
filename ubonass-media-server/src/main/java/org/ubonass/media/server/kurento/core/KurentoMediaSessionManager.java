@@ -17,12 +17,8 @@
 
 package org.ubonass.media.server.kurento.core;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import org.kurento.client.*;
-import org.kurento.jsonrpc.Props;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +32,6 @@ import org.ubonass.media.server.kurento.CloudMediaKurentoClientSessionInfo;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
 import org.ubonass.media.server.kurento.KurentoClientSessionInfo;
 import org.ubonass.media.server.kurento.KurentoFilter;
-import org.ubonass.media.server.kurento.endpoint.PublisherEndpoint;
 import org.ubonass.media.server.kurento.endpoint.SdpType;
 import org.ubonass.media.server.rpc.RpcHandler;
 
@@ -45,9 +40,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class KurentoSessionManager extends SessionManager {
+public class KurentoMediaSessionManager extends MediaSessionManager {
 
-    private static final Logger log = LoggerFactory.getLogger(KurentoSessionManager.class);
+    private static final Logger log = LoggerFactory.getLogger(KurentoMediaSessionManager.class);
 
     @Autowired
     private KurentoClientProvider kcProvider;
@@ -71,7 +66,7 @@ public class KurentoSessionManager extends SessionManager {
     private String createAndProcessCallMediaStream(Participant participant,
                                                    MediaOptions mediaOptions) {
         String sessionId = participant.getSessionId();
-        KurentoSession kSession = (KurentoSession) mediaSessions.get(sessionId);
+        KurentoMediaSession kSession = (KurentoMediaSession) sessions.get(sessionId);
         if (kSession == null) {
             log.error("Session '{}' not found");
             throw new CloudMediaException(Code.ROOM_NOT_FOUND_ERROR_CODE, "Session '" + sessionId
@@ -105,7 +100,7 @@ public class KurentoSessionManager extends SessionManager {
 
         //return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
 
-        return kParticipant.publishToRoom(sdpType,kurentoOptions.sdpOffer, kurentoOptions.doLoopback,
+        return kParticipant.publishToRoom(sdpType, kurentoOptions.sdpOffer, kurentoOptions.doLoopback,
                 kurentoOptions.loopbackAlternativeSrc, kurentoOptions.loopbackConnectionType);
     }
 
@@ -121,7 +116,7 @@ public class KurentoSessionManager extends SessionManager {
         String sessionId = participant.getSessionId();
         KurentoClientSessionInfo kcSessionInfo = new CloudMediaKurentoClientSessionInfo(
                 participant.getParticipantPrivatetId(), sessionId);
-        if (!mediaSessions.containsKey(sessionId) && kcSessionInfo != null) {
+        if (!sessions.containsKey(sessionId) && kcSessionInfo != null) {
             MediaSession sessionNotActive = new MediaSession(sessionId,
                     new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
                             .recordingMode(RecordingMode.ALWAYS)
@@ -158,8 +153,8 @@ public class KurentoSessionManager extends SessionManager {
         /**
          * 将caller和call进行连接
          */
-        KurentoSession kSession = (KurentoSession)
-                mediaSessions.get(participant.getSessionId());
+        KurentoMediaSession kSession = (KurentoMediaSession)
+                sessions.get(participant.getSessionId());
         KurentoParticipant kParticipantCallee =
                 (KurentoParticipant)
                         kSession.getParticipantByPrivateId(participant.getParticipantPrivatetId());
@@ -195,6 +190,30 @@ public class KurentoSessionManager extends SessionManager {
     }
 
     @Override
+    public void onCallReject(String sessionId, Integer transactionId) {
+        Set<Participant> participants =
+                closeSession(sessionId, null);
+        for (Participant p : participants) {
+            log.info("onCallReject Participant {}",p.getParticipantPublicId());
+            p = null;
+        }
+    }
+
+    @Override
+    public void onCallHangup(Participant participant, Integer transactionId) {
+        Set<Participant> existsParticipants = getParticipants(participant.getSessionId());
+        log.info("participants number {}", existsParticipants.size());
+        sessionEventsHandler.onCallHangup(participant,existsParticipants,transactionId);
+        Set<Participant> participants =
+                closeSession(participant.getSessionId(), null);
+        for (Participant p : participants) {
+            log.info("onCallReject Participant {}",p.getParticipantPublicId());
+            p = null;
+        }
+    }
+
+
+    @Override
     public void onIceCandidate(Participant participant, String endpointName, String candidate, int sdpMLineIndex, String sdpMid, Integer transactionId) {
         try {
             KurentoParticipant kParticipant = (KurentoParticipant) participant;
@@ -210,14 +229,111 @@ public class KurentoSessionManager extends SessionManager {
     }
 
     @Override
+    public void leaveRoom(Participant participant, Integer transactionId, EndReason reason, boolean closeWebSocket) {
+        log.debug("Request [LEAVE_ROOM] ({})", participant.getParticipantPublicId());
+
+        KurentoParticipant kParticipant = (KurentoParticipant) participant;
+        KurentoMediaSession session = kParticipant.getSession();
+        String sessionId = session.getSessionId();
+
+        if (session.isClosed()) {
+            log.warn("'{}' is trying to leave from session '{}' but it is closing",
+                    participant.getParticipantPublicId(), sessionId);
+            throw new CloudMediaException(Code.ROOM_CLOSED_ERROR_CODE, "'" + participant.getParticipantPublicId()
+                    + "' is trying to leave from session '" + sessionId + "' but it is closing");
+        }
+        session.leave(participant.getParticipantPrivatetId(), reason);
+
+        // Update control data structures
+        // modify by jeffrey
+        if (sessionidParticipantpublicidParticipant.containsKey(sessionId)) {
+            if (sessionidParticipantpublicidParticipant.get(sessionId) != null) {
+                Participant p = sessionidParticipantpublicidParticipant.get(sessionId)
+                        .remove(participant.getParticipantPublicId());
+
+                /*if (this.coturnCredentialsService.isCoturnAvailable()) {
+                    this.coturnCredentialsService.deleteUser(p.getToken().getTurnCredentials().getUsername());
+                }
+
+                if (sessionidTokenTokenobj.get(sessionId) != null) {
+                    sessionidTokenTokenobj.get(sessionId).remove(p.getToken().getToken());
+                }*/
+
+                boolean stillParticipant = false;
+                for (MediaSession s : sessions.values()) {
+                    if (s.getParticipantByPrivateId(p.getParticipantPrivatetId()) != null) {
+                        stillParticipant = true;
+                        break;
+                    }
+                }
+                /*if (!stillParticipant) {
+                    insecureUsers.remove(p.getParticipantPrivatetId());
+                }*/
+            }
+        }
+        //modify by jeffrey
+        showTokens();
+        // Close Session if no more participants
+
+        Set<Participant> remainingParticipants = null;
+        try {
+            remainingParticipants = getParticipants(sessionId);
+        } catch (CloudMediaException e) {
+            log.info("Possible collision when closing the session '{}' (not found)", sessionId);
+            remainingParticipants = Collections.emptySet();
+        }
+        sessionEventsHandler.onParticipantLeft(participant, sessionId, remainingParticipants, transactionId, null, reason);
+
+        //modify by jeffrey
+        if (!EndReason.sessionClosedByServer.equals(reason)) {
+            // If session is closed by a call to "DELETE /api/sessions" do NOT stop the
+            // recording. Will be stopped after in method
+            // "SessionManager.closeSessionAndEmptyCollections"
+            if (remainingParticipants.isEmpty()) {
+                //modify by jeffrey
+                /*if (cloudMediaConfig.isRecordingModuleEnabled()
+                        && MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode())
+                        && (this.recordingManager.sessionIsBeingRecorded(sessionId))) {
+                    // Start countdown to stop recording. Will be aborted if a Publisher starts
+                    // before timeout
+                    log.info(
+                            "Last participant left. Starting {} seconds countdown for stopping recording of session {}",
+                            this.cloudMediaConfig.getOpenviduRecordingAutostopTimeout(), sessionId);
+                    recordingManager.initAutomaticRecordingStopThread(session);
+                } else*/ {
+                    log.info("No more participants in session '{}', removing it and closing it", sessionId);
+                    this.closeSessionAndEmptyCollections(session, reason);
+                    showTokens();
+                }
+                //modify by jeffrey
+            } /*else if (remainingParticipants.size() == 1 && cloudMediaConfig.isRecordingModuleEnabled()
+                    && MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode())
+                    && this.recordingManager.sessionIsBeingRecorded(sessionId)
+                    && ProtocolElements.RECORDER_PARTICIPANT_PUBLICID
+                    .equals(remainingParticipants.iterator().next().getParticipantPublicId())) {
+                // Start countdown
+                log.info("Last participant left. Starting {} seconds countdown for stopping recording of session {}",
+                        this.cloudMediaConfig.getOpenviduRecordingAutostopTimeout(), sessionId);
+                recordingManager.initAutomaticRecordingStopThread(session);
+            }*/
+        }
+
+        // Finally close websocket session if required
+        if (closeWebSocket) {
+            sessionEventsHandler.closeRpcSession(participant.getParticipantPrivatetId());
+        }
+    }
+
+    @Override
     public void evictParticipant(Participant evictedParticipant, Participant moderator, Integer transactionId, EndReason reason) {
         if (evictedParticipant != null) {
             KurentoParticipant kParticipant = (KurentoParticipant) evictedParticipant;
             Set<Participant> participants = kParticipant.getSession().getParticipants();
-            //this.leaveRoom(kParticipant, null, reason, false);
-            this.sessionEventsHandler.onForceDisconnect(moderator, evictedParticipant, participants, transactionId,
-                    null, reason);
-            sessionEventsHandler.closeRpcSession(evictedParticipant.getParticipantPrivatetId());
+            this.leaveRoom(kParticipant, null, reason, false);
+            this.sessionEventsHandler.onForceDisconnect(moderator, evictedParticipant,
+                    participants, transactionId, null, reason);
+            //modify by jeffrey we needn't closeRpcSession
+            //sessionEventsHandler.closeRpcSession(evictedParticipant.getParticipantPrivatetId());
         } else {
             if (moderator != null && transactionId != null) {
                 this.sessionEventsHandler.onForceDisconnect(moderator, evictedParticipant,
@@ -242,16 +358,16 @@ public class KurentoSessionManager extends SessionManager {
     public void createSession(MediaSession sessionNotActive, KurentoClientSessionInfo kcSessionInfo)
             throws CloudMediaException {
         String sessionId = kcSessionInfo.getRoomName();
-        KurentoSession session = (KurentoSession) mediaSessions.get(sessionId);
+        KurentoMediaSession session = (KurentoMediaSession) sessions.get(sessionId);
         if (session != null) {
             throw new CloudMediaException(Code.ROOM_CANNOT_BE_CREATED_ERROR_CODE,
                     "Session '" + sessionId + "' already exists");
         }
         this.kurentoClient = kcProvider.getKurentoClient(kcSessionInfo);
-        session = new KurentoSession(sessionNotActive, kurentoClient, kurentoSessionEventsHandler,
+        session = new KurentoMediaSession(sessionNotActive, kurentoClient, kurentoSessionEventsHandler,
                 kurentoEndpointConfig, kcProvider.destroyWhenUnused());
 
-        KurentoSession oldSession = (KurentoSession) mediaSessions.putIfAbsent(sessionId, session);
+        KurentoMediaSession oldSession = (KurentoMediaSession) sessions.putIfAbsent(sessionId, session);
         if (oldSession != null) {
             log.warn("Session '{}' has just been created by another thread", sessionId);
             return;

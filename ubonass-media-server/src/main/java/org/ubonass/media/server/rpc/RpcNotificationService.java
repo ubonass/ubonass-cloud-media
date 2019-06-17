@@ -162,13 +162,13 @@ public class RpcNotificationService {
         return null;
     }
 
-    public ClusterConnection closeClusterConnection(String clientId) {
+    public ClusterConnection closeClusterConnection(String participantPublicId) {
         if (!ClusterRpcService.getContext()
-                        .getClusterConnections().containsKey(clientId)) return null;
+                        .getClusterConnections().containsKey(participantPublicId)) return null;
         ClusterConnection clusterConnection = ClusterRpcService.getContext()
-                        .getClusterConnections().remove(clientId);
+                        .getClusterConnections().remove(participantPublicId);
         if (clusterConnection == null) {
-            log.error("No session found for private id {}, unable to cleanup", clientId);
+            log.error("No session found for private id {}, unable to cleanup", participantPublicId);
             return null;
         }
         return clusterConnection;
@@ -208,27 +208,27 @@ public class RpcNotificationService {
         }
     }
 
-    public ClusterConnection getClusterConnection(String clientId) {
+    public ClusterConnection getClusterConnection(String participantPublicId) {
         if (ClusterRpcService.getContext()
-                .getClusterConnections().containsKey(clientId)) {
+                .getClusterConnections().containsKey(participantPublicId)) {
             return ClusterRpcService.getContext()
-                        .getClusterConnections().get(clientId);
+                        .getClusterConnections().get(participantPublicId);
         } else {
             return null;
         }
     }
 
 
-    public boolean connectionExist(String clientId) {
+    public boolean connectionExist(String participantPublicId) {
         return ClusterRpcService.getContext()
-                        .getClusterConnections().containsKey(clientId);
+                        .getClusterConnections().containsKey(participantPublicId);
     }
 
-    public boolean connectionIsLocalMember(String clientId) {
-        if (connectionExist(clientId)) {
+    public boolean connectionIsLocalMember(String participantPublicId) {
+        if (connectionExist(participantPublicId)) {
             ClusterConnection clusterConnection =
                     ClusterRpcService.getContext()
-                        .getClusterConnections().get(clientId);
+                        .getClusterConnections().get(participantPublicId);
             if (rpcConnections.containsKey(
                     clusterConnection.getParticipantPrivateId())) {
                 return ClusterRpcService.getContext()
@@ -239,38 +239,38 @@ public class RpcNotificationService {
             }
         } else {
             throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
-                    "clientId : {" + clientId + "} connection not Exist in local and remote member");
+                    "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
         }
     }
 
     /**
-     * @param clientId
+     * @param participantPublicId
      * @param method
      * @param object
      */
-    public void sendNotificationByPublicId(String clientId,
+    public void sendNotificationByPublicId(String participantPublicId,
                                            String method,
                                            JsonObject object) {
-        if (clientId == null) {
-            log.error("clientId can not null");
+        if (participantPublicId == null) {
+            log.error("participantPublicId can not null");
             return;
         }
-        if (connectionIsLocalMember(clientId)) {
+        if (connectionIsLocalMember(participantPublicId)) {
             sendNotification(
                     ClusterRpcService.getContext()
-                        .getClusterConnections().get(clientId).getParticipantPrivateId(), method, object);
+                        .getClusterConnections().get(participantPublicId).getParticipantPrivateId(), method, object);
         } else {
             String message = null;
             if (object != null) {
                 message = object.toString();
             }
             if (ClusterRpcService.getContext()
-                        .getClusterConnections().containsKey(clientId)) {
+                        .getClusterConnections().containsKey(participantPublicId)) {
                 ClusterRpcService.getContext().executeToMember(
                         new ClusterRpcNotification(
-                                clientId, method, message),
+                                participantPublicId, method, message),
                         ClusterRpcService.getContext()
-                        .getClusterConnections().get(clientId).getMemberId());
+                        .getClusterConnections().get(participantPublicId).getMemberId());
             }
         }
     }

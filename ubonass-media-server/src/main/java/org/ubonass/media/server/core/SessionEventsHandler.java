@@ -80,6 +80,22 @@ public class SessionEventsHandler {
                 participant.getParticipantPrivatetId(), ProtocolElements.ONCALL_METHOD, connectedObject);
     }
 
+    public void onCallHangup(Participant participant, Set<Participant> participants, Integer transactionId) {
+
+        for (Participant p : participants) {
+            if (p.getParticipantPrivatetId().equals(participant.getParticipantPrivatetId())) {
+                continue;
+            } else {
+                JsonObject hangupObject = new JsonObject();
+                hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
+                        ProtocolElements.ONCALL_EVENT_HANGUP);
+                rpcNotificationService.sendNotificationByPublicId(
+                        p.getParticipantPublicId(),
+                        ProtocolElements.ONCALL_METHOD, hangupObject);
+            }
+        }
+    }
+
     public void onParticipantJoined(Participant participant, String sessionId, Set<Participant> existingParticipants,
                                     Integer transactionId, CloudMediaException error) {
         if (error != null) {

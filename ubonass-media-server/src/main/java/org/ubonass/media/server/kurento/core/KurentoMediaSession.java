@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
-import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.java.client.CloudMediaRole;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaSession;
@@ -20,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Pablo Fuente (pablofuenteperez@gmail.com)
  */
-public class KurentoSession extends MediaSession {
+public class KurentoMediaSession extends MediaSession {
 
     private final static Logger log = LoggerFactory.getLogger(MediaSession.class);
     public static final int ASYNC_LATCH_TIMEOUT = 30;
@@ -40,11 +39,11 @@ public class KurentoSession extends MediaSession {
 
     public final ConcurrentHashMap<String, String> publishedStreamIds = new ConcurrentHashMap<>();
 
-    public KurentoSession(MediaSession sessionNotActive,
-                          KurentoClient kurentoClient,
-                          KurentoSessionEventsHandler kurentoSessionHandler,
-                          KurentoParticipantEndpointConfig kurentoEndpointConfig,
-                          boolean destroyKurentoClient) {
+    public KurentoMediaSession(MediaSession sessionNotActive,
+                               KurentoClient kurentoClient,
+                               KurentoSessionEventsHandler kurentoSessionHandler,
+                               KurentoParticipantEndpointConfig kurentoEndpointConfig,
+                               boolean destroyKurentoClient) {
         super(sessionNotActive);
         this.kurentoClient = kurentoClient;
         this.destroyKurentoClient = destroyKurentoClient;
@@ -188,7 +187,7 @@ public class KurentoSession extends MediaSession {
 
     public MediaPipeline getPipeline() {
         try {
-            pipelineLatch.await(KurentoSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS);
+            pipelineLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -312,7 +311,7 @@ public class KurentoSession extends MediaSession {
                     }
                 });
             } catch (Exception e) {
-                log.error("Error waiting to new MediaPipeline on KurentoSession restart: {}", e.getMessage());
+                log.error("Error waiting to new MediaPipeline on KurentoMediaSession restart: {}", e.getMessage());
             }
         });
     }
