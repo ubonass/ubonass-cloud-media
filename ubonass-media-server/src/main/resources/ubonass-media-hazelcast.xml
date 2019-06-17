@@ -69,6 +69,15 @@
             </entry-listeners> -->
     </multimap>
 
+    <!---->
+    <multimap name="sessionidPublicidClusterConnections">
+        <backup-count>1</backup-count>
+        <async-backup-count>1</async-backup-count>
+        <value-collection-type>SET</value-collection-type>
+        <!--<entry-listeners> <entry-listener include-value="false" local="false">com.hazelcast.examples.EntryListener</entry-listener>
+            </entry-listeners> -->
+    </multimap>
+
     <!--map de session para session delado chatapp -->
     <executor-service name="message">
         <pool-size>1000</pool-size>

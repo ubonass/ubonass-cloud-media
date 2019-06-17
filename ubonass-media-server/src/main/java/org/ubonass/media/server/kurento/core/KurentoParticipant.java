@@ -53,8 +53,9 @@ public class KurentoParticipant extends Participant {
 
     private KurentoParticipantEndpointConfig endpointConfig;
 
-    private CallMediaStream callMediaStream;//for one2one
-    private boolean one2one = false;
+    /*private CallMediaStream callMediaStream;
+    private boolean one2one = false;*/
+
     private PublisherEndpoint publisher;
     private CountDownLatch endPointLatch = new CountDownLatch(1);
 
@@ -80,7 +81,7 @@ public class KurentoParticipant extends Participant {
         this.cloudMediaConfig = cloudMediaConfig;
         /*this.recordingManager = recordingManager;*/
         this.session = kurentoSession;
-        this.one2one = one2one;
+        //this.one2one = one2one;
         if (!one2one) {
             Token token = participant.getToken();
             if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
@@ -100,35 +101,9 @@ public class KurentoParticipant extends Participant {
                     this.cloudMediaConfig);
         }
 
-        /*if (!one2one) {
-            Token token = participant.getToken();
-            if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
-                this.publisher = new PublisherEndpoint(
-                        webParticipant,
-                        this,
-                        participant.getParticipantPublicId(),
-                        this.session.getPipeline(),
-                        this.cloudMediaConfig);
-            }
-            *//**
-             * 如果该房间中有其他的人在则为该用户创建Subscriber用于接收其他人的流
-             *//*
-            for (Participant other : session.getParticipants()) {
-                if (!other.getParticipantPublicId().equals(this.getParticipantPublicId())) {
-                    getNewOrExistingSubscriber(other.getParticipantPublicId());
-                }
-            }
-        } else {
-            callMediaStream = new CallMediaStream(webParticipant,
-                    this,
-                    participant.getParticipantPublicId(),
-                    this.session.getPipeline(),
-                    this.cloudMediaConfig);
-        }*/
     }
 
-
-    public void createCallMediaStreamEndpoint(MediaOptions mediaOptions) {
+    /*public void createCallMediaStreamEndpoint(MediaOptions mediaOptions) {
         callMediaStream.createEndpoint(endPointLatch);
 
         if (getCallMediaStream().getEndpoint() == null) {
@@ -146,9 +121,9 @@ public class KurentoParticipant extends Participant {
 
         endpointConfig.addEndpointListeners(this.callMediaStream, "CallMediaStream");
 
-        /*this.session.publishedStreamIds.putIfAbsent(this.getPublisherStreamId(),
-                this.getParticipantPrivatetId());*/
-    }
+        *//*this.session.publishedStreamIds.putIfAbsent(this.getPublisherStreamId(),
+                this.getParticipantPrivatetId());*//*
+    }*/
 
 
     public void createPublishingEndpoint(MediaOptions mediaOptions) {
@@ -195,7 +170,7 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    public CallMediaStream getCallMediaStream() {
+    /*public CallMediaStream getCallMediaStream() {
         try {
             if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
@@ -206,7 +181,7 @@ public class KurentoParticipant extends Participant {
                     "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
         }
         return this.callMediaStream;
-    }
+    }*/
 
 
     public PublisherEndpoint getPublisher() {
@@ -236,7 +211,7 @@ public class KurentoParticipant extends Participant {
         return session;
     }
 
-    public String startCallMediaStream(SdpType sdpType, String sdpString,
+    /*public String startCallMediaStream(SdpType sdpType, String sdpString,
                                        CallMediaStream sinkMediaStream) {
         log.info("PARTICIPANT {}: Request to publish video in room {} (sdp type {})",
                 this.getParticipantPublicId(),
@@ -245,7 +220,7 @@ public class KurentoParticipant extends Participant {
         String sdpResponse = this.getCallMediaStream().publish(sdpType, sdpString, sinkMediaStream);
         this.streaming = true;
         return sdpResponse;
-    }
+    }*/
 
 
     public String publishToRoom(SdpType sdpType, String sdpString, boolean doLoopback,

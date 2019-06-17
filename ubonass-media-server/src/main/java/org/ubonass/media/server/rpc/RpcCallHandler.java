@@ -72,6 +72,8 @@ public class RpcCallHandler extends RpcHandler {
 
         rpcConnection.setSessionId(sessionId);
 
+        //添加进集群
+
         Participant participant =
                 mediaSessionManager.newCallParticipant(
                         sessionId, rpcConnection.getParticipantPrivateId(), clientId);
@@ -89,8 +91,6 @@ public class RpcCallHandler extends RpcHandler {
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, sessionId);
         notificationService.sendNotificationByPublicId(
                 targetId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
-
-
     }
 
     private void onCall(RpcConnection rpcConnection, Request<JsonObject> request) {
@@ -116,8 +116,8 @@ public class RpcCallHandler extends RpcHandler {
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
         //caller不存在
         if (!notificationService.connectionExist(fromId)) return;
-
         rpcConnection.setSessionId(sessionId);
+
         Participant participant =
                 mediaSessionManager.newCallParticipant(
                         sessionId, rpcConnection.getParticipantPrivateId(),

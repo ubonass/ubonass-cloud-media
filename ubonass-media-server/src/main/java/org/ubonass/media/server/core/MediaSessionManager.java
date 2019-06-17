@@ -1,12 +1,15 @@
 package org.ubonass.media.server.core;
 
 import com.google.gson.JsonObject;
+import com.hazelcast.core.IMap;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
+import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
 
@@ -300,6 +303,12 @@ public abstract class MediaSessionManager {
         /*sessionidFinalUsers.remove(session.getSessionId());
         sessionidAccumulatedRecordings.remove(session.getSessionId());
         sessionidTokenTokenobj.remove(session.getSessionId());*/
+
+        /**
+         * 将集群中的session删除
+         * add by jeffrey
+         */
+        ClusterRpcService.getContext().removeClusterSession(session.getSessionId());
 
         logger.info("Session '{}' removed and closed", session.getSessionId());
     }

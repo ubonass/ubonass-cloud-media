@@ -18,6 +18,7 @@
 package org.ubonass.media.server.kurento.core;
 
 import com.google.gson.JsonObject;
+import com.hazelcast.core.IMap;
 import org.kurento.client.*;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
@@ -27,6 +28,8 @@ import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.java.client.*;
+import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.*;
 import org.ubonass.media.server.kurento.CloudMediaKurentoClientSessionInfo;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
@@ -39,6 +42,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class KurentoMediaSessionManager extends MediaSessionManager {
 
@@ -81,13 +86,12 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         //创建pipe和KurentoParticipant
         kSession.createCallMediaStream(participant);
 
-
         KurentoMediaOptions kurentoOptions = (KurentoMediaOptions) mediaOptions;
 
         KurentoParticipant kParticipant =
                 (KurentoParticipant)
                         kSession.getParticipantByPrivateId(participant.getParticipantPrivatetId());
-        log.info(
+        log.debug(
                 "Request [Call_MEDIA] isOffer={} sdp={} "
                         + "loopbackAltSrc={} lpbkConnType={} doLoopback={} mediaElements={} ({})",
                 kurentoOptions.isOffer, kurentoOptions.sdpOffer, kurentoOptions.loopbackAlternativeSrc,
@@ -97,6 +101,11 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         SdpType sdpType = kurentoOptions.isOffer ? SdpType.OFFER : SdpType.ANSWER;
 
         kParticipant.createPublishingEndpoint(mediaOptions);
+
+        /**
+         * 如果当前的memberId不在本服务器上的话,则需要创建rtpEndpoint
+         *
+         */
 
         //return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
 
@@ -123,6 +132,8 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                             .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
                     cloudMediaConfig/*recordingManager*/);
             createSession(sessionNotActive, kcSessionInfo);
+            ClusterRpcService.getContext().addClusterSession(
+                    sessionId,participant.getParticipantPublicId());
         }
 
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions);
@@ -179,6 +190,11 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
 
         kParticipantCaller.getPublisher().
                 connect(kParticipantCallee.getPublisher().getEndpoint());
+        /**
+         * 添加到集群
+         */
+        ClusterRpcService.getContext().addClusterSession(
+                participant.getSessionId(),participant.getParticipantPublicId());
 
         /*WebRtcEndpoint calleeWebRtcEndpoint =
                 (WebRtcEndpoint) kParticipantCallee.getCallMediaStream().getEndpoint();
@@ -355,7 +371,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
      *                      {@link KurentoClient} that will be used by the room
      * @throws CloudMediaException in case of error while creating the session
      */
-    public void createSession(MediaSession sessionNotActive, KurentoClientSessionInfo kcSessionInfo)
+    public void createSession(MediaSession sessionNotActive,KurentoClientSessionInfo kcSessionInfo)
             throws CloudMediaException {
         String sessionId = kcSessionInfo.getRoomName();
         KurentoMediaSession session = (KurentoMediaSession) sessions.get(sessionId);
@@ -379,6 +395,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         log.warn("No session '{}' exists yet. Created one using KurentoClient '{}'.", sessionId, kcName);
 
         sessionEventsHandler.onSessionCreated(session);
+
     }
 
 

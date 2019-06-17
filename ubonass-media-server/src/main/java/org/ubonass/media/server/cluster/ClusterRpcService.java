@@ -9,6 +9,8 @@ import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.util.Iterator;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 public class ClusterRpcService {
@@ -33,6 +35,14 @@ public class ClusterRpcService {
      * key为用户远程连的客户唯一标识,Value为ClusterConnection,针对所有集群
      */
     private IMap<String, ClusterConnection> clusterConnections;
+    /**
+     * 用于管理有mediaSession的用户
+     *
+     * @Key:mediaSessionId
+     * @Value: @Key:ClientId,@Value:ClusterConnection
+     * 当离开session的时候需要移除
+     */
+    private IMap<String, ConcurrentHashMap<String, ClusterConnection>> sessionsMap;
 
     public ClusterRpcService(Config config,
                              RpcNotificationService notificationService,
@@ -48,6 +58,9 @@ public class ClusterRpcService {
                 hazelcastInstance.getExecutorService("streamsConnector");
         clusterConnections =
                 hazelcastInstance.getMap("clusterConnections");
+
+        sessionsMap =
+                hazelcastInstance.getMap("sessionidPublicidClusterConnections");
         context = this;
     }
 
@@ -63,13 +76,48 @@ public class ClusterRpcService {
         return notificationService;
     }
 
-    /*@PostConstruct
-    public void init() {
-        context = this;
-    }*/
-
+    /**
+     * 根据clientId获取在线用户
+     *
+     * @return
+     */
     public IMap<String, ClusterConnection> getClusterConnections() {
         return clusterConnections;
+    }
+
+    /**
+     * 根据房间号获取当前房间中的ClusterConnection
+     *
+     * @return
+     */
+    public IMap<String, ConcurrentHashMap<String, ClusterConnection>> getSessionsMap() {
+        return sessionsMap;
+    }
+
+    /**
+     * 将session进行集群管理
+     */
+    public void addClusterSession(String sessionId, String participantPublicId) {
+        ClusterConnection clusterConnection =
+                clusterConnections.get(participantPublicId);
+        if (clusterConnection != null) {
+            clusterConnection.setSessionId(sessionId);
+            if (!sessionsMap.containsKey(sessionId)) {
+                sessionsMap.putIfAbsent(sessionId, new ConcurrentHashMap<>());
+                /**
+                 * 这里引用ClusterConnection不是再创建一个
+                 */
+                sessionsMap.get(sessionId).putIfAbsent(participantPublicId, clusterConnection);
+            } else if (sessionsMap.get(sessionId) != null) {
+                sessionsMap.get(sessionId).putIfAbsent(participantPublicId, clusterConnection);
+            }
+        }
+    }
+
+    public void removeClusterSession(String sessionId) {
+        if (sessionsMap.containsKey(sessionId)) {
+            sessionsMap.remove(sessionId);
+        }
     }
 
     public boolean isLocalHostMember(String memberId) {

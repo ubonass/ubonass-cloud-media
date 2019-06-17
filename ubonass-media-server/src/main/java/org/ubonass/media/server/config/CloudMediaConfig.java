@@ -25,6 +25,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class CloudMediaConfig {
 
+    @Value("${cloudmedia.cluster.enable}")
+    private boolean cloudmediaClusterEnable;
+
     @Value("${cloudmedia.streams.video.max-recv-bandwidth}")
     private int cloudmediaStreamsVideoMaxRecvBandwidth;
 
@@ -53,5 +56,6 @@ public class CloudMediaConfig {
     public int getVideoMinSendBandwidth() {
         return this.cloudmediaStreamsVideoMinSendBandwidth;
     }
+
 }
 

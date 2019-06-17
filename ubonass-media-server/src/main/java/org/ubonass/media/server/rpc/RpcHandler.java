@@ -2,6 +2,7 @@ package org.ubonass.media.server.rpc;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hazelcast.core.IMap;
 import org.kurento.jsonrpc.DefaultJsonRpcHandler;
 import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
@@ -333,7 +334,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 String participantPublicId =
                         (String) ((WebSocketServerSession) rpcSession).getWebSocketSession()
                                 .getAttributes().get("clientId");
-                rpcSession.getAttributes().put("clientId", participantPublicId);
+                //rpcSession.getAttributes().put("clientId", participantPublicId);
                 RpcConnection rpcConnection = new RpcConnection(rpcSession);
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());
                 rpcConnection.setParticipantPublicId(participantPublicId);
@@ -349,22 +350,18 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         logger.info("After connection closed for WebSocket session: {} - Status: {}", rpcSession.getSessionId(), status);
         String rpcSessionId = rpcSession.getSessionId();
         if (rpcSession instanceof WebSocketServerSession) {
-            Map<String, Object> attributes =
-                    ((WebSocketServerSession) rpcSession).getWebSocketSession().getAttributes();
-            if (attributes.containsKey("clientId"))
-                attributes.remove("clientId");
-
-            if (rpcSession.getAttributes().containsKey("clientId")) {
-                String clientId = (String) rpcSession.getAttributes().remove("clientId");
-                //mediaSessionManager.removeClusterConnection(clientId);
-                ClusterConnection clusterConnection =
-                        this.notificationService.closeClusterConnection(clientId);
-                if (clusterConnection != null) clusterConnection = null;
-                logger.info("afterConnectionClosed clientId:" + clientId);
-            }
+            /*Map<String, Object> attributes =
+                    ((WebSocketServerSession) rpcSession).getWebSocketSession().getAttributes();*/
             RpcConnection rpc =
                     this.notificationService.closeRpcSession(rpcSessionId);
+            String clientId = rpc.getParticipantPublicId();
             if (rpc != null) rpc = null;
+            ClusterConnection clusterConnection =
+                    this.notificationService
+                            .closeClusterConnection(clientId);
+            if (clusterConnection != null) clusterConnection = null;
+
+            logger.info("afterConnectionClosed clientId:" + clientId);
         }
 
     }
