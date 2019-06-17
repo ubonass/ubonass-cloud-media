@@ -39,17 +39,22 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
                                    Map<String, Object> attributes) throws Exception {
         log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         if (request instanceof ServletServerHttpRequest) {
+            log.info("~~~~~~~~~~~~~~~~~~~~xxx~~~~~~~~~~~~~~~~~~~~~~");
             HttpSession session = ((ServletServerHttpRequest) request)
                     .getServletRequest().getSession();
             session.setMaxInactiveInterval(1800); // HttpSession will expire in 30 minutes
             attributes.put("httpSession", session);
             String clientId = ((ServletServerHttpRequest) request)
                     .getServletRequest().getParameter("clientId");
+            log.info("~~~~~~~~~~~~~~~~~~~~xxxxxxx~~~~~~~~~~~~~~~~~~~~~~");
             if (clientId != null) {
                 attributes.put("clientId", clientId);
                 log.info("user:" + clientId + " attempting connection.......");
+            } else {
+                log.info("clientId is null...");
             }
         }
+        log.info("~~~~~~~~~~~~~~~~~~~~@@@@@@@@@@@@@@@@@@@@@~~~~~~~~~~~~~~~~~~~~~~");
         return true;
     }
 
