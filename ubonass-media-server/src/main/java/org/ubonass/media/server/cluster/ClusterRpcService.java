@@ -4,8 +4,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.server.core.SessionManager;
+import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.util.Iterator;
 import java.util.concurrent.Callable;
@@ -27,16 +27,27 @@ public class ClusterRpcService {
 
     private SessionManager sessionManager;
 
+    private RpcNotificationService notificationService;
+
+    /**
+     * key为用户远程连的客户唯一标识,Value为ClusterConnection,针对所有集群
+     */
+    private IMap<String, ClusterConnection> clusterConnections;
+
     public ClusterRpcService(Config config,
+                             RpcNotificationService notificationService,
                              SessionManager sessionManager) {
         this.config = config;
         this.sessionManager = sessionManager;
+        this.notificationService = notificationService;
         this.config.setInstanceName("hazelcast-instance");
         hazelcastInstance = Hazelcast.newHazelcastInstance(this.config);
         memberId = hazelcastInstance.getCluster().getLocalMember().getUuid();
         logger.info("this uuid is {}", memberId);
         executorService =
                 hazelcastInstance.getExecutorService("streamsConnector");
+        clusterConnections =
+                hazelcastInstance.getMap("clusterConnections");
         context = this;
     }
 
@@ -48,10 +59,18 @@ public class ClusterRpcService {
         return sessionManager;
     }
 
+    public RpcNotificationService getRpcNotificationService() {
+        return notificationService;
+    }
+
     /*@PostConstruct
     public void init() {
         context = this;
     }*/
+
+    public IMap<String, ClusterConnection> getClusterConnections() {
+        return clusterConnections;
+    }
 
     public boolean isLocalHostMember(String memberId) {
         if (memberId == null) return false;

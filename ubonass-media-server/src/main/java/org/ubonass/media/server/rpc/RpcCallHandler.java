@@ -1,14 +1,11 @@
 package org.ubonass.media.server.rpc;
 
 import com.google.gson.JsonObject;
-import org.kurento.client.*;
-import org.kurento.jsonrpc.JsonUtils;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
-import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.core.MediaOptions;
@@ -17,9 +14,6 @@ import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaHandler;
 import org.ubonass.media.server.utils.RandomStringGenerator;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class RpcCallHandler extends RpcHandler {
 
@@ -150,10 +144,7 @@ public class RpcCallHandler extends RpcHandler {
         if (!notificationService.connectionExist(fromId)) return;
 
         if (notificationService.connectionIsLocalMember(fromId)) {
-            KurentoCallMediaStream session =
-                    sessionManager.removeCallMediaStream(fromId);
-            if (session != null)
-                session.release();
+            //caller leaveSession
         } else {
             //远程要移除掉
             ClusterConnection callerCluserConnection =
@@ -227,17 +218,6 @@ public class RpcCallHandler extends RpcHandler {
 
     private void onIceCandidate(RpcConnection rpcConnection,
                                 Request<JsonObject> request) {
-        //endpointName这里是sessionId
-        //String endpointName = getStringParam(request, ProtocolElements.ONICECANDIDATE_EPNAME_PARAM);
-        /*String candidate = getStringParam(request, ProtocolElements.ONICECANDIDATE_CANDIDATE_PARAM);
-        String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
-        int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
-        KurentoCallMediaStream kurentoCallSession =
-                sessionManager.getCallMediaStream(rpcConnection.getParticipantPublicId());
-        WebRtcEndpoint webRtcEndpoint =
-                kurentoCallSession.getWebRtcEndpointById(rpcConnection.getParticipantPublicId());
-        webRtcEndpoint.addIceCandidate(new IceCandidate(candidate, sdpMid, sdpMLineIndex));*/
-
         Participant participant;
         try {
             participant = sanityCheckOfSession(rpcConnection, "onIceCandidate");

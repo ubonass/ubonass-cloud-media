@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class RpcConnection{
+public class RpcConnection {
 
     private static final Logger log =
             LoggerFactory.getLogger(RpcConnection.class);
@@ -46,12 +46,9 @@ public class RpcConnection{
         this.participantPrivateId = session.getSessionId();
     }
 
-    public RpcConnection(String clientId, String memberId, Session session) {
-        this.participantPublicId = participantPublicId;
-        this.memberId = memberId;
-        this.session = session;
-        this.transactions = new ConcurrentHashMap<>();
-        this.participantPrivateId = session.getSessionId();
+    public RpcConnection(String participantPublicId, String memberId, Session session) {
+        this(participantPublicId, session);
+        setMemberId(memberId);
     }
 
     public RpcConnection(Session session) {

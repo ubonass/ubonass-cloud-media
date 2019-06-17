@@ -31,7 +31,7 @@ public class ClusterRpcNotification implements Runnable, Serializable {
     public void run() {
         if (clientId == null || method == null) return;
         RpcNotificationService notificationService =
-                RpcNotificationService.getContext();
+                ClusterRpcService.getContext().getRpcNotificationService();
         RpcConnection rpcConnection =
                 notificationService.getRpcConnection(
                         notificationService.getClusterConnection(clientId).getParticipantPrivateId());
