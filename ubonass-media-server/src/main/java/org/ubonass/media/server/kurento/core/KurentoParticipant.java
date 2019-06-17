@@ -91,9 +91,28 @@ public class KurentoParticipant extends Participant {
                         this.session.getPipeline(),
                         this.cloudMediaConfig);
             }
-            /**
+        } else {
+            this.publisher = new PublisherEndpoint(
+                    webParticipant,
+                    this,
+                    participant.getParticipantPublicId(),
+                    this.session.getPipeline(),
+                    this.cloudMediaConfig);
+        }
+        
+        /*if (!one2one) {
+            Token token = participant.getToken();
+            if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
+                this.publisher = new PublisherEndpoint(
+                        webParticipant,
+                        this,
+                        participant.getParticipantPublicId(),
+                        this.session.getPipeline(),
+                        this.cloudMediaConfig);
+            }
+            *//**
              * 如果该房间中有其他的人在则为该用户创建Subscriber用于接收其他人的流
-             */
+             *//*
             for (Participant other : session.getParticipants()) {
                 if (!other.getParticipantPublicId().equals(this.getParticipantPublicId())) {
                     getNewOrExistingSubscriber(other.getParticipantPublicId());
@@ -105,7 +124,7 @@ public class KurentoParticipant extends Participant {
                     participant.getParticipantPublicId(),
                     this.session.getPipeline(),
                     this.cloudMediaConfig);
-        }
+        }*/
     }
 
 

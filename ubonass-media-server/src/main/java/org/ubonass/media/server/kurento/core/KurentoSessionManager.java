@@ -101,9 +101,12 @@ public class KurentoSessionManager extends SessionManager {
 
         SdpType sdpType = kurentoOptions.isOffer ? SdpType.OFFER : SdpType.ANSWER;
 
-        kParticipant.createCallMediaStreamEndpoint(mediaOptions);
+        kParticipant.createPublishingEndpoint(mediaOptions);
 
-        return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
+        //return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
+
+        return kParticipant.publishToRoom(sdpType,kurentoOptions.sdpOffer, kurentoOptions.doLoopback,
+                kurentoOptions.loopbackAlternativeSrc, kurentoOptions.loopbackConnectionType);
     }
 
     /**
@@ -175,12 +178,20 @@ public class KurentoSessionManager extends SessionManager {
                         kParticipantCaller.getParticipantPublicId());
             }
         }
-        WebRtcEndpoint calleeWebRtcEndpoint =
+
+        kParticipantCallee.getPublisher().
+                connect(kParticipantCaller.getPublisher().getEndpoint());
+
+        kParticipantCaller.getPublisher().
+                connect(kParticipantCallee.getPublisher().getEndpoint());
+
+        /*WebRtcEndpoint calleeWebRtcEndpoint =
                 (WebRtcEndpoint) kParticipantCallee.getCallMediaStream().getEndpoint();
+
         WebRtcEndpoint callerWebRtcEndpoint =
                 (WebRtcEndpoint) kParticipantCaller.getCallMediaStream().getEndpoint();
         calleeWebRtcEndpoint.connect(callerWebRtcEndpoint);
-        callerWebRtcEndpoint.connect(calleeWebRtcEndpoint);
+        callerWebRtcEndpoint.connect(calleeWebRtcEndpoint);*/
     }
 
     @Override
