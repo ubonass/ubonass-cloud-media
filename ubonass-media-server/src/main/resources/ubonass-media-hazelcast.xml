@@ -52,8 +52,8 @@
         </join>
         <interfaces enabled="true">
             <!--<interface>192.168.100.*</interface>-->
-            <interface>192.168.43.*</interface>
-            <!--<interface>172.16.1.*</interface>-->
+            <!--<interface>192.168.43.*</interface>-->
+            <interface>172.16.1.*</interface>
         </interfaces>
         <ssl enabled="false"/>
         <socket-interceptor enabled="false"/>
