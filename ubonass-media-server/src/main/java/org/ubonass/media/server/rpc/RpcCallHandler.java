@@ -134,6 +134,8 @@ public class RpcCallHandler extends RpcHandler {
         sessionManager.onCallAccept(participant, options, request.getId());
 
         JsonObject accetpObject = new JsonObject();
+        /*告知calleer对方已经接听*/
+        accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
         notificationService.sendNotificationByPublicId(
                 fromId, ProtocolElements.ONCALL_METHOD, accetpObject);
 
