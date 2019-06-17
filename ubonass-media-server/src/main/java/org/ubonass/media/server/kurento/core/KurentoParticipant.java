@@ -80,7 +80,7 @@ public class KurentoParticipant extends Participant {
         this.cloudMediaConfig = cloudMediaConfig;
         /*this.recordingManager = recordingManager;*/
         this.session = kurentoSession;
-
+        this.one2one = one2one;
         if (!one2one) {
             Token token = participant.getToken();
             if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
