@@ -113,4 +113,14 @@ public class RpcConnection {
         return transactions.values();
     }
 
+
+    @Override
+    public String toString() {
+        return "RpcConnection{" +
+                "sessionId='" + sessionId + '\'' +
+                ", participantPrivateId='" + participantPrivateId + '\'' +
+                ", memberId='" + memberId + '\'' +
+                ", participantPublicId='" + participantPublicId + '\'' +
+                '}';
+    }
 }

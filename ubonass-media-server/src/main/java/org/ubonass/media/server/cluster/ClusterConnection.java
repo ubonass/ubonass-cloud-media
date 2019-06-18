@@ -27,4 +27,14 @@ public class ClusterConnection implements Serializable {
         this.memberId = clusterConnection.getMemberId();
         this.sessionId = clusterConnection.getSessionId();
     }
+
+    @Override
+    public String toString() {
+        return "ClusterConnection{" +
+                "memberId='" + memberId + '\'' +
+                ", participantPublicId='" + participantPublicId + '\'' +
+                ", participantPrivateId='" + participantPrivateId + '\'' +
+                ", sessionId='" + sessionId + '\'' +
+                '}';
+    }
 }

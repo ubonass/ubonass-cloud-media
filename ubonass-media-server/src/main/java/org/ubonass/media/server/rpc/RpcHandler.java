@@ -335,8 +335,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 RpcConnection rpcConnection = new RpcConnection(rpcSession);
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());
                 rpcConnection.setParticipantPublicId(participantPublicId);
-                notificationService.addRpcConnection(rpcConnection);
                 clusterRpcService.addClusterConnection(rpcConnection);
+                notificationService.addRpcConnection(rpcConnection);
             }
         }
     }

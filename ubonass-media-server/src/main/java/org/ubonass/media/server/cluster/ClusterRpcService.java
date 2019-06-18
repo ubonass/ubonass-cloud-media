@@ -118,17 +118,21 @@ public class ClusterRpcService {
 
     /**
      * 返回null表示成功
+     *
      * @param rpcConnection
      * @return
      */
     public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
         if (rpcConnection == null) return null;
+        logger.info(rpcConnection.toString());
         ClusterConnection connection = new ClusterConnection(
                 rpcConnection.getParticipantPublicId(),
                 rpcConnection.getParticipantPrivateId(),
                 rpcConnection.getMemberId());
+        logger.info(connection.toString());
         ClusterConnection oldConnection =
-                clusterConnections.putIfAbsent(rpcConnection.getParticipantPublicId(), connection);
+                clusterConnections.putIfAbsent(connection.getParticipantPublicId(), connection);
+        logger.info("insert connection {}", oldConnection == null ? "success" : "error");
         return oldConnection;
     }
 
