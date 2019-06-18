@@ -57,7 +57,7 @@ public class KurentoParticipant extends Participant {
 
     private RemoteEndpoint remotePublisher;//用于集群使用,默认使用rtpEndpoint
 
-    private CountDownLatch endPointLatch = new CountDownLatch(1);
+    private CountDownLatch endPointLatch;// = new CountDownLatch(1);
 
     private final ConcurrentMap<String, Filter> filters = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, SubscriberEndpoint> subscribers = new ConcurrentHashMap<String, SubscriberEndpoint>();
@@ -98,7 +98,7 @@ public class KurentoParticipant extends Participant {
     }
 
     public void createPublishingEndpoint(MediaOptions mediaOptions, boolean remoteNeed) {
-
+        endPointLatch = new CountDownLatch(1);
         publisher.createEndpoint(endPointLatch);
         if (getPublisher().getEndpoint() == null) {
             throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE, "Unable to create publisher endpoint");
@@ -121,6 +121,7 @@ public class KurentoParticipant extends Participant {
 
         if (remoteNeed &&
                 this.remotePublisher != null) {
+            endPointLatch = new CountDownLatch(1);
             this.remotePublisher.createEndpoint(endPointLatch);
             if (getRemoteEndpoint().getEndpoint() == null) {
                 throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE,
@@ -152,7 +153,7 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    public RemoteEndpoint getRemoteEndpoint() {
+    private void lockendPointLatch() {
         try {
             if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
@@ -162,20 +163,16 @@ public class KurentoParticipant extends Participant {
             throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                     "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
         }
+    }
+
+    public RemoteEndpoint getRemoteEndpoint() {
+        lockendPointLatch();
         return this.remotePublisher;
     }
 
 
     public PublisherEndpoint getPublisher() {
-        try {
-            if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
-                throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
-                        "Timeout reached while waiting for publisher endpoint to be ready");
-            }
-        } catch (InterruptedException e) {
-            throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
-                    "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
-        }
+        lockendPointLatch();
         return this.publisher;
     }
 
