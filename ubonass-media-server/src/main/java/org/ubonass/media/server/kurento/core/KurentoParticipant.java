@@ -124,7 +124,7 @@ public class KurentoParticipant extends Participant {
             this.remotePublisher.createEndpoint(endPointLatch);
             if (getRemoteEndpoint().getEndpoint() == null) {
                 throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE,
-                        "Unable to create publisher endpoint");
+                        "Unable to create remote publisher endpoint");
             }
             this.remotePublisher.setEndpointName(publisherStreamId);
             this.remotePublisher.getEndpoint().setName(publisherStreamId);
