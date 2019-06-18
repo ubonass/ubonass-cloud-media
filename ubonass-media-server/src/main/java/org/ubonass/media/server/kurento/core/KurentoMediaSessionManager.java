@@ -139,6 +139,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         }
         boolean remoteNeed = ClusterRpcService.getContext()
                 .isLocalHostMember(calleeConnection.getMemberId());
+
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, remoteNeed);
 
         if (sdpAnswer == null) {

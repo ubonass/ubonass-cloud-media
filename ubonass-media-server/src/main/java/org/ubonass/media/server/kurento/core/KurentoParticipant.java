@@ -152,7 +152,7 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    private void lockendPointLatch() {
+    public RemoteEndpoint getRemoteEndpoint() {
         try {
             if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
@@ -162,16 +162,20 @@ public class KurentoParticipant extends Participant {
             throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                     "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
         }
-    }
-
-    public RemoteEndpoint getRemoteEndpoint() {
-        lockendPointLatch();
         return this.remotePublisher;
     }
 
 
     public PublisherEndpoint getPublisher() {
-        lockendPointLatch();
+        try {
+            if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
+                throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
+                        "Timeout reached while waiting for publisher endpoint to be ready");
+            }
+        } catch (InterruptedException e) {
+            throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
+                    "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
+        }
         return this.publisher;
     }
 

@@ -109,8 +109,7 @@ public class RpcCallHandler extends RpcHandler {
                 !request.getParams().has(ProtocolElements.ONCALL_FROMUSER_PARAM)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
-        //caller不存在
-        //if (!notificationService.connectionExist(fromId)) return;
+
         rpcConnection.setSessionId(sessionId);
 
         Participant participant =
@@ -135,21 +134,6 @@ public class RpcCallHandler extends RpcHandler {
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
-
-        if (!ClusterRpcService.getContext().connectionExist(fromId)) return;
-
-        /*if (notificationService.connectionIsLocalMember(fromId)) {
-
-            mediaSessionManager.onCallReject(sessionId, request.getId());
-        } else {
-            //远程要移除掉
-            ClusterConnection callerCluserConnection =
-                    notificationService.getClusterConnection(fromId);
-
-            Runnable runnable = new KurentoCallMediaHandler(
-                    fromId, KurentoCallMediaHandler.MEDIA_EVENT_RELEASE_STREAM);
-            clusterRpcService.executeToMember(runnable, callerCluserConnection.getMemberId());
-        }*/
 
         mediaSessionManager.onCallReject(sessionId, fromId,request.getId());
 
