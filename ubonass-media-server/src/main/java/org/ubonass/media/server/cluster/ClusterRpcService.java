@@ -172,17 +172,18 @@ public class ClusterRpcService {
      * 将session进行集群管理
      */
     public void addClusterSession(String sessionId, String participantPublicId) {
-        ClusterConnection clusterConnection =
-                clusterConnections.get(participantPublicId);
-        if (clusterConnection != null) {
-            clusterConnection.setSessionId(sessionId);
-            if (!sessionsMap.containsKey(sessionId)) {
-                sessionsMap.putIfAbsent(sessionId, new ConcurrentHashMap<>());
+        if (!sessionsMap.containsKey(sessionId))
+            sessionsMap.putIfAbsent(sessionId, new ConcurrentHashMap<>());
+        if (sessionsMap.get(sessionId) != null) {
+            ClusterConnection connection =
+                    clusterConnections.get(participantPublicId);
+            if (connection != null) {
+                connection.setSessionId(sessionId);
+                /**
+                 * 这里引用ClusterConnection不是再创建一个
+                 */
+                sessionsMap.get(sessionId).putIfAbsent(participantPublicId, connection);
             }
-            /**
-             * 这里引用ClusterConnection不是再创建一个
-             */
-            sessionsMap.get(sessionId).putIfAbsent(participantPublicId, clusterConnection);
         }
     }
 

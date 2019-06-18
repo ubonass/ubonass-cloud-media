@@ -137,10 +137,14 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             ClusterRpcService.getContext().addClusterSession(
                     sessionId, participant.getParticipantPublicId());
         }
-        boolean remoteNeed = ClusterRpcService.getContext()
+
+        /**
+         * 如果为true则不需要创建
+         */
+        boolean isLocal = ClusterRpcService.getContext()
                 .isLocalHostMember(calleeConnection.getMemberId());
 
-        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, remoteNeed);
+        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
 
         if (sdpAnswer == null) {
             CloudMediaException e = new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
@@ -158,12 +162,14 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                              String callerId,
                              MediaOptions mediaOptions,
                              Integer transactionId) {
+        log.info("callerId:{}",callerId);
         ClusterConnection callerConnection =
                 ClusterRpcService.getContext().getConnection(callerId);
-        boolean remoteNeed =
+
+        boolean isLocal =
                 ClusterRpcService.getContext().isLocalHostMember(callerConnection.getMemberId());
 
-        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, remoteNeed);
+        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
         if (sdpAnswer == null) {
             CloudMediaException e = new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
                     "Error generating SDP response for publishing user " + participant.getParticipantPublicId());
@@ -195,7 +201,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             }
         }*/
 
-        if (!remoteNeed) {//callee连接在本host上
+        if (isLocal) {//callee连接在本host上
             KurentoParticipant kParticipantCaller =
                     (KurentoParticipant)
                             kSession.getParticipantByPrivateId(callerConnection.getParticipantPrivateId());
