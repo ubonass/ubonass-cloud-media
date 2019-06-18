@@ -57,7 +57,9 @@ public class KurentoParticipant extends Participant {
 
     private RemoteEndpoint remotePublisher;//用于集群使用,默认使用rtpEndpoint
 
-    private CountDownLatch endPointLatch;// = new CountDownLatch(1);
+    private CountDownLatch endPointLatch = new CountDownLatch(1);
+
+    private CountDownLatch remotePointLatch = new CountDownLatch(1);
 
     private final ConcurrentMap<String, Filter> filters = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, SubscriberEndpoint> subscribers = new ConcurrentHashMap<String, SubscriberEndpoint>();
@@ -121,8 +123,7 @@ public class KurentoParticipant extends Participant {
 
         if (remoteNeed &&
                 this.remotePublisher != null) {
-            endPointLatch = new CountDownLatch(1);
-            this.remotePublisher.createEndpoint(endPointLatch);
+            this.remotePublisher.createEndpoint(remotePointLatch);
             if (getRemoteEndpoint().getEndpoint() == null) {
                 throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE,
                         "Unable to create remote publisher endpoint");
@@ -153,9 +154,9 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    private void lockendPointLatch() {
+    private void awaitEndpointLatch(CountDownLatch countDownLatch) {
         try {
-            if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
+            if (!countDownLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                         "Timeout reached while waiting for publisher endpoint to be ready");
             }
@@ -166,13 +167,13 @@ public class KurentoParticipant extends Participant {
     }
 
     public RemoteEndpoint getRemoteEndpoint() {
-        lockendPointLatch();
+        awaitEndpointLatch(remotePointLatch);
         return this.remotePublisher;
     }
 
 
     public PublisherEndpoint getPublisher() {
-        lockendPointLatch();
+        awaitEndpointLatch(endPointLatch);
         return this.publisher;
     }
 
