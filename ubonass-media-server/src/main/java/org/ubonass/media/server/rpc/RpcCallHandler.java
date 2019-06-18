@@ -12,8 +12,6 @@ import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
 import org.ubonass.media.server.core.Participant;
-import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
-import org.ubonass.media.server.kurento.core.KurentoCallMediaHandler;
 import org.ubonass.media.server.utils.RandomStringGenerator;
 
 

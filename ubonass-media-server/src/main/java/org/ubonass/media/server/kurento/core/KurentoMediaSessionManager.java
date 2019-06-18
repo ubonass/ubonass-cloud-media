@@ -111,22 +111,11 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                 kurentoOptions.loopbackAlternativeSrc, kurentoOptions.loopbackConnectionType, remoteNeed);
     }
 
-    /**
-     * call support add by jeffrey
-     *
-     * @param participant   : callParticipant
-     * @param mediaOptions
-     * @param transactionId
-     */
-    @Override
-    public void call(Participant participant, String calleeId, MediaOptions mediaOptions, Integer transactionId) {
-        ClusterConnection calleeConnection =
-                ClusterRpcService.getContext().getConnection(calleeId);
-        if (calleeConnection == null) return;
+
+    private void createSessionIfNotExist(Participant participant) {
         String sessionId = participant.getSessionId();
         KurentoClientSessionInfo kcSessionInfo = new CloudMediaKurentoClientSessionInfo(
                 participant.getParticipantPrivatetId(), sessionId);
-
         if (!sessions.containsKey(sessionId) && kcSessionInfo != null) {
             MediaSession sessionNotActive = new MediaSession(sessionId,
                     new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
@@ -137,7 +126,21 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             ClusterRpcService.getContext().addClusterSession(
                     sessionId, participant.getParticipantPublicId());
         }
+    }
 
+    /**
+     * call support add by jeffrey
+     *
+     * @param participant   : callParticipant
+     * @param mediaOptions
+     * @param transactionId
+     */
+    @Override
+    public void call(Participant participant, String calleeId, MediaOptions mediaOptions, Integer transactionId) {
+
+        createSessionIfNotExist(participant);
+        ClusterConnection calleeConnection =
+                ClusterRpcService.getContext().getConnection(calleeId);
         /**
          * 如果为true则不需要创建
          */
@@ -162,12 +165,14 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                              String callerId,
                              MediaOptions mediaOptions,
                              Integer transactionId) {
-        log.info("callerId:{}",callerId);
+
         ClusterConnection callerConnection =
                 ClusterRpcService.getContext().getConnection(callerId);
-
         boolean isLocal =
-                ClusterRpcService.getContext().isLocalHostMember(callerConnection.getMemberId());
+                ClusterRpcService.getContext().isLocalHostMember(
+                        callerConnection.getMemberId());
+        if (!isLocal)
+            createSessionIfNotExist(participant);
 
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
         if (sdpAnswer == null) {
@@ -189,18 +194,6 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         /**
          * 寻找找出calleer
          */
-       /* Set<Participant> participants = kParticipantCallee.getSession().getParticipants();
-        log.info("participants number {}", participants.size());
-        for (Participant p : participants) {
-            if (p.getParticipantPrivatetId().equals(participant.getParticipantPrivatetId())) {
-                continue;
-            } else {
-                kParticipantCaller = (KurentoParticipant) p;
-                log.info("kParticipantCaller.kParticipantCaller {}",
-                        kParticipantCaller.getParticipantPublicId());
-            }
-        }*/
-
         if (isLocal) {//callee连接在本host上
             KurentoParticipant kParticipantCaller =
                     (KurentoParticipant)

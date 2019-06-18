@@ -19,7 +19,7 @@
 //ws = new WebSocket('wss://ubonass.com:8445/call');
 //ws = new WebSocket('wss://localhost:8443/call');
 
-var wsUrl;
+var wsUrl = 'wss://localhost:8443/call';
 var ws;
 
 var videoInput;
@@ -160,7 +160,8 @@ function handlerMethod(message) {
     }
 }
 
-/*ws.onmessage = */function onmessage(message) {
+/*ws.onmessage = */
+function onmessage(message) {
     var parsedMessage = JSON.parse(message.data);
     console.info('Received message: ' + message.data);
     if (parsedMessage.hasOwnProperty('result')) {
@@ -333,7 +334,7 @@ function register() {
     sendMessageParams("register", message, msgId++);
     document.getElementById('peer').focus();*/
 
-    wsUrl = 'wss://ubonass.com:8443/call?clientId=' + userId;
+    wsUrl = wsUrl + '?clientId=' + userId;
     /*wsUrl = 'wss://localhost:8443/call?clientId=' + userId;*/
     //wsUrl = 'wss://ubonass.com:8445/call?clientId=' + userId;
 

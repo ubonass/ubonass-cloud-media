@@ -124,15 +124,12 @@ public class ClusterRpcService {
      */
     public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
         if (rpcConnection == null) return null;
-        logger.info(rpcConnection.toString());
         ClusterConnection connection = new ClusterConnection(
                 rpcConnection.getParticipantPublicId(),
                 rpcConnection.getParticipantPrivateId(),
                 rpcConnection.getMemberId());
-        logger.info(connection.toString());
         ClusterConnection oldConnection =
                 clusterConnections.putIfAbsent(connection.getParticipantPublicId(), connection);
-        logger.info("insert connection {}", oldConnection == null ? "success" : "error");
         return oldConnection;
     }
 
@@ -151,6 +148,12 @@ public class ClusterRpcService {
         }
     }
 
+    /**
+     * 如果已经有会话
+     * @param sessionId
+     * @param participantPublicId
+     * @return
+     */
     public ClusterConnection getConnection(String sessionId, String participantPublicId) {
         if (sessionsMap.containsKey(sessionId)) {
             ConcurrentHashMap<String, ClusterConnection> connectionConcurrentHashMap =
