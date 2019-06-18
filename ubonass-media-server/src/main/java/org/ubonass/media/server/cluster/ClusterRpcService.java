@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.server.core.MediaSessionManager;
+import org.ubonass.media.server.rpc.RpcConnection;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.util.Iterator;
@@ -57,9 +58,9 @@ public class ClusterRpcService {
         logger.info("this uuid is {}", memberId);
         executorService =
                 hazelcastInstance.getExecutorService("streamsConnector");
+
         clusterConnections =
                 hazelcastInstance.getMap("clusterConnections");
-
         sessionsMap =
                 hazelcastInstance.getMap("sessionidPublicidClusterConnections");
         context = this;
@@ -114,6 +115,23 @@ public class ClusterRpcService {
                     "sessionId : {" + sessionId + "}  not Exist in local and remote member");
         }
     }
+
+    /**
+     * 返回null表示成功
+     * @param rpcConnection
+     * @return
+     */
+    public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
+        if (rpcConnection == null) return null;
+        ClusterConnection connection = new ClusterConnection(
+                rpcConnection.getParticipantPublicId(),
+                rpcConnection.getParticipantPrivateId(),
+                rpcConnection.getMemberId());
+        ClusterConnection oldConnection =
+                clusterConnections.putIfAbsent(rpcConnection.getParticipantPublicId(), connection);
+        return oldConnection;
+    }
+
     /**
      * 从clusterConnections集合中根据participantPublicId获取ClusterConnection
      *
@@ -156,13 +174,11 @@ public class ClusterRpcService {
             clusterConnection.setSessionId(sessionId);
             if (!sessionsMap.containsKey(sessionId)) {
                 sessionsMap.putIfAbsent(sessionId, new ConcurrentHashMap<>());
-                /**
-                 * 这里引用ClusterConnection不是再创建一个
-                 */
-                sessionsMap.get(sessionId).putIfAbsent(participantPublicId, clusterConnection);
-            } else if (sessionsMap.get(sessionId) != null) {
-                sessionsMap.get(sessionId).putIfAbsent(participantPublicId, clusterConnection);
             }
+            /**
+             * 这里引用ClusterConnection不是再创建一个
+             */
+            sessionsMap.get(sessionId).putIfAbsent(participantPublicId, clusterConnection);
         }
     }
 

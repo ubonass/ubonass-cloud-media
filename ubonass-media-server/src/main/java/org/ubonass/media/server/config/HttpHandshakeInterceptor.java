@@ -57,6 +57,5 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler,
                                Exception ex) {
-        log.info("afterHandshake");
     }
 }

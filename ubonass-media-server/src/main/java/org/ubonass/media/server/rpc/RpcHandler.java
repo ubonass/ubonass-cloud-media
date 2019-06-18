@@ -68,10 +68,10 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             case ProtocolElements.KEEPLIVE_METHOD:
                 keepLive(rpcConnection, request);
                 break;
-            case ProtocolElements.REGISTER_METHOD:
+            /*case ProtocolElements.REGISTER_METHOD:
                 register(rpcConnection, request);
                 break;
-            /*case ProtocolElements.INVITED_METHOD:
+            case ProtocolElements.INVITED_METHOD:
                 invited(rpcConnection, request);
                 break;
             case ProtocolElements.ONINVITED_METHOD:
@@ -96,7 +96,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 request.getId(), result);
     }
 
-    protected void register(RpcConnection rpcConnection, Request<JsonObject> request) {
+    /*protected void register(RpcConnection rpcConnection, Request<JsonObject> request) {
         JsonObject result = new JsonObject();
         String userId = getStringParam(request, ProtocolElements.REGISTER_USER_PARAM);
         result.addProperty("method", ProtocolElements.REGISTER_METHOD);
@@ -117,7 +117,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 rpcConnection.setParticipantPublicId(userId);//保存client id
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());//保存memberId
                 ClusterConnection connection =
-                        notificationService.addClusterConnection(rpcConnection);
+                        clusterRpcService.addClusterConnection(rpcConnection);
                 if (connection != null) {
                     responseMsg = "rejected: user '" + userId + "' already registered";
                     result.addProperty(ProtocolElements.REGISTER_TYPE_PARAM, ProtocolElements.REGISTER_TYPE_REJECTED);
@@ -128,7 +128,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             }
         }
         notificationService.sendResponse(rpcConnection.getParticipantPrivateId(), request.getId(), result);
-    }
+    }*/
 
     /*private void invited(RpcConnection rpcConnection, Request<JsonObject> request) {
         logger.info("Params :" + request.getParams().toString());
@@ -325,21 +325,18 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 rpcSession.getAttributes().put("httpSession", httpSession);
             }
             if (attributes.containsKey("clientId")) {
-                String clientId =
-                        (String) ((WebSocketServerSession) rpcSession)
-                                .getWebSocketSession().getAttributes().get("clientId");
                 /**
                  * add by jeffrey......
                  */
                 String participantPublicId =
-                        (String) ((WebSocketServerSession) rpcSession).getWebSocketSession()
-                                .getAttributes().get("clientId");
+                        attributes.get("clientId").toString();
+                logger.info("participantPublicId: {}",participantPublicId);
                 //rpcSession.getAttributes().put("clientId", participantPublicId);
                 RpcConnection rpcConnection = new RpcConnection(rpcSession);
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());
                 rpcConnection.setParticipantPublicId(participantPublicId);
                 notificationService.addRpcConnection(rpcConnection);
-                notificationService.addClusterConnection(rpcConnection);
+                clusterRpcService.addClusterConnection(rpcConnection);
             }
         }
     }

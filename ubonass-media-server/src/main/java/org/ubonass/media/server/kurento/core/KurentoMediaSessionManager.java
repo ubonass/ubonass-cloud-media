@@ -18,7 +18,6 @@
 package org.ubonass.media.server.kurento.core;
 
 import com.google.gson.JsonObject;
-import com.hazelcast.core.IMap;
 import org.kurento.client.*;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
@@ -127,6 +126,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         String sessionId = participant.getSessionId();
         KurentoClientSessionInfo kcSessionInfo = new CloudMediaKurentoClientSessionInfo(
                 participant.getParticipantPrivatetId(), sessionId);
+
         if (!sessions.containsKey(sessionId) && kcSessionInfo != null) {
             MediaSession sessionNotActive = new MediaSession(sessionId,
                     new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
@@ -160,7 +160,6 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                              Integer transactionId) {
         ClusterConnection callerConnection =
                 ClusterRpcService.getContext().getConnection(callerId);
-        if (callerConnection == null) return;
         boolean remoteNeed =
                 ClusterRpcService.getContext().isLocalHostMember(callerConnection.getMemberId());
 

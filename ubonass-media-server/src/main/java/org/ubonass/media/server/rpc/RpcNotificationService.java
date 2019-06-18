@@ -68,24 +68,6 @@ public class RpcNotificationService {
         return connection;
     }
 
-    /**
-     * 返回null表示成功
-     *
-     * @param rpcConnection
-     * @return
-     */
-    public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
-        if (rpcConnection == null) return null;
-        ClusterConnection connection = new ClusterConnection(
-                rpcConnection.getParticipantPublicId(),
-                rpcConnection.getParticipantPrivateId(),
-                rpcConnection.getMemberId());
-        ClusterConnection oldConnection =
-                ClusterRpcService.getContext()
-                        .getClusterConnections().putIfAbsent(rpcConnection.getParticipantPublicId(), connection);
-        return oldConnection;
-    }
-
     public RpcConnection addTransaction(Transaction t, Request<JsonObject> request) {
         String participantPrivateId = t.getSession().getSessionId();
         RpcConnection connection = rpcConnections.get(participantPrivateId);

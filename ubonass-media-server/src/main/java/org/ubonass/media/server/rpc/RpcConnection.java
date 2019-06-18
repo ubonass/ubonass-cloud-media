@@ -21,6 +21,7 @@ import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
