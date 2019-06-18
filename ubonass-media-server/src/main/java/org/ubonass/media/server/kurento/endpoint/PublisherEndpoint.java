@@ -421,11 +421,10 @@ public class PublisherEndpoint extends MediaEndpoint {
     }
 
 
-
-    @Override
+    /*@Override
     public PublisherEndpoint getPublisher() {
         return this;
-    }
+    }*/
 
     public MediaOptions getMediaOptions() {
         return mediaOptions;

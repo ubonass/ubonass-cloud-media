@@ -167,7 +167,7 @@ public class MediaSession {
     }
 
 
-	public void join(Participant participant) { }
+	public void join(Participant participant,boolean remoteNeed) { }
 
 
 	public void leave(String participantPrivateId, EndReason reason) { }

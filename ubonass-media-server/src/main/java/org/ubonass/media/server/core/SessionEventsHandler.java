@@ -55,10 +55,14 @@ public class SessionEventsHandler {
         /*CDR.recordSessionDestroyed(sessionId, reason);*/
     }
 
-    public void onCallResponse(Participant participant,
-                               String sdpAnswer,
-                               Integer transactionId) {
+    public void onCall(Participant participant, String calleeParticipantPublicId, String sdpAnswer, Integer transactionId) {
         if (sdpAnswer == null) return;
+
+        JsonObject notifyInCallObject = new JsonObject();
+        notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, participant.getParticipantPublicId());
+        notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, participant.getSessionId());
+        rpcNotificationService.sendNotificationByPublicId(
+                calleeParticipantPublicId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
         JsonObject result = new JsonObject();
         result.addProperty("method", ProtocolElements.CALL_METHOD);
         result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");

@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
@@ -92,6 +93,57 @@ public class ClusterRpcService {
      */
     public IMap<String, ConcurrentHashMap<String, ClusterConnection>> getSessionsMap() {
         return sessionsMap;
+    }
+
+    /**
+     * 判断远程连接是否存在
+     *
+     * @param participantPublicId
+     * @return
+     */
+    public boolean connectionExist(String participantPublicId) {
+        return clusterConnections.containsKey(participantPublicId);
+    }
+
+    public ConcurrentHashMap<String, ClusterConnection>
+    getSessionConnections(String sessionId) {
+        if (sessionsMap.containsKey(sessionId)) {
+            return sessionsMap.get(sessionId);
+        } else {
+            throw new CloudMediaException(CloudMediaException.Code.ROOM_NOT_FOUND_ERROR_CODE,
+                    "sessionId : {" + sessionId + "}  not Exist in local and remote member");
+        }
+    }
+    /**
+     * 从clusterConnections集合中根据participantPublicId获取ClusterConnection
+     *
+     * @param participantPublicId
+     * @return
+     */
+    public ClusterConnection getConnection(String participantPublicId) {
+        if (clusterConnections.containsKey(participantPublicId)) {
+            return clusterConnections.get(participantPublicId);
+        } else {
+            throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
+                    "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
+        }
+    }
+
+    public ClusterConnection getConnection(String sessionId, String participantPublicId) {
+        if (sessionsMap.containsKey(sessionId)) {
+            ConcurrentHashMap<String, ClusterConnection> connectionConcurrentHashMap =
+                    sessionsMap.get(sessionId);
+            if (connectionConcurrentHashMap != null
+                    && connectionConcurrentHashMap.containsKey(participantPublicId))
+                return connectionConcurrentHashMap.get(participantPublicId);
+            else {
+                throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
+                        "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
+            }
+        } else {
+            throw new CloudMediaException(CloudMediaException.Code.ROOM_NOT_FOUND_ERROR_CODE,
+                    "sessionId : {" + sessionId + "}  not Exist in local and remote member");
+        }
     }
 
     /**

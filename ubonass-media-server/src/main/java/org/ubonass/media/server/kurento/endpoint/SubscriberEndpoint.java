@@ -66,10 +66,10 @@ public class SubscriberEndpoint extends MediaEndpoint {
         this.connectedToPublisher = connectedToPublisher;
     }
 
-    @Override
+    /*@Override
     public PublisherEndpoint getPublisher() {
         return this.publisher;
-    }
+    }*/
 
     public void setPublisher(PublisherEndpoint publisher) {
         this.publisher = publisher;

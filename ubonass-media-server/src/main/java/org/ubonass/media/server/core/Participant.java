@@ -37,11 +37,12 @@ public class Participant{
     protected GeoLocation location; // Location of the participant
     protected String platform; // Platform used by the participant to connect to the session
     protected boolean streaming = false;
+    private String memberId;//当前连接位于集群中的那台主机,该ID以uuid进行标识
     protected volatile boolean closed;
 
     private final String METADATA_SEPARATOR = "%/%";
 
-    public Participant(/*String finalUserId,*/
+    public Participant(String memberId,
                        String participantPrivatetId,
                        String participantPublicId,
                        String sessionId,
@@ -50,7 +51,7 @@ public class Participant{
                        GeoLocation location,
                        String platform,
                        Long createdAt) {
-        /*this.finalUserId = finalUserId;*/
+        this.memberId = memberId;
         this.participantPrivatetId = participantPrivatetId;
         this.participantPublicId = participantPublicId;
         this.sessionId = sessionId;

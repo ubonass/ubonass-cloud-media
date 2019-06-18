@@ -38,12 +38,8 @@ import org.ubonass.media.server.kurento.KurentoFilter;
 import org.ubonass.media.server.kurento.endpoint.SdpType;
 import org.ubonass.media.server.rpc.RpcHandler;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class KurentoMediaSessionManager extends MediaSessionManager {
 
@@ -69,7 +65,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
      * @return
      */
     private String createAndProcessCallMediaStream(Participant participant,
-                                                   MediaOptions mediaOptions) {
+                                                   MediaOptions mediaOptions, boolean remoteNeed) {
         String sessionId = participant.getSessionId();
         KurentoMediaSession kSession = (KurentoMediaSession) sessions.get(sessionId);
         if (kSession == null) {
@@ -84,7 +80,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     + "' is trying to call session '" + sessionId + "' but it is closing");
         }
         //创建pipe和KurentoParticipant
-        kSession.createCallMediaStream(participant);
+        kSession.createCallMediaStream(participant, remoteNeed);
 
         KurentoMediaOptions kurentoOptions = (KurentoMediaOptions) mediaOptions;
 
@@ -100,17 +96,20 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
 
         SdpType sdpType = kurentoOptions.isOffer ? SdpType.OFFER : SdpType.ANSWER;
 
-        kParticipant.createPublishingEndpoint(mediaOptions);
-
         /**
-         * 如果当前的memberId不在本服务器上的话,则需要创建rtpEndpoint
-         *
+         * 如果remoteNeed为true,则会自动创建rtpEndpoint
          */
+        kParticipant.createPublishingEndpoint(mediaOptions, remoteNeed);
 
         //return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
 
+        if (remoteNeed) {//将自身的rtpEndpoint->webrtcEndpoint
+            kParticipant.getRemoteEndpoint().getEndpoint()
+                    .connect(kParticipant.getPublisher().getEndpoint());
+        }
+        //同时将webrtcEndpoing->rtpEndpoint
         return kParticipant.publishToRoom(sdpType, kurentoOptions.sdpOffer, kurentoOptions.doLoopback,
-                kurentoOptions.loopbackAlternativeSrc, kurentoOptions.loopbackConnectionType);
+                kurentoOptions.loopbackAlternativeSrc, kurentoOptions.loopbackConnectionType, remoteNeed);
     }
 
     /**
@@ -121,7 +120,10 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
      * @param transactionId
      */
     @Override
-    public void call(Participant participant, MediaOptions mediaOptions, Integer transactionId) {
+    public void call(Participant participant, String calleeId, MediaOptions mediaOptions, Integer transactionId) {
+        ClusterConnection calleeConnection =
+                ClusterRpcService.getContext().getConnection(calleeId);
+        if (calleeConnection == null) return;
         String sessionId = participant.getSessionId();
         KurentoClientSessionInfo kcSessionInfo = new CloudMediaKurentoClientSessionInfo(
                 participant.getParticipantPrivatetId(), sessionId);
@@ -133,10 +135,11 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     cloudMediaConfig/*recordingManager*/);
             createSession(sessionNotActive, kcSessionInfo);
             ClusterRpcService.getContext().addClusterSession(
-                    sessionId,participant.getParticipantPublicId());
+                    sessionId, participant.getParticipantPublicId());
         }
-
-        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions);
+        boolean remoteNeed = ClusterRpcService.getContext()
+                .isLocalHostMember(calleeConnection.getMemberId());
+        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, remoteNeed);
 
         if (sdpAnswer == null) {
             CloudMediaException e = new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
@@ -144,15 +147,23 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             log.error("PARTICIPANT {}: Error publishing media", participant.getParticipantPublicId(), e);
         }
         if (sdpAnswer != null) {
-            sessionEventsHandler.onCallResponse(participant, sdpAnswer, transactionId);
+            sessionEventsHandler.onCall(participant, calleeId, sdpAnswer, transactionId);
         }
+
     }
 
     @Override
     public void onCallAccept(Participant participant,
+                             String callerId,
                              MediaOptions mediaOptions,
                              Integer transactionId) {
-        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions);
+        ClusterConnection callerConnection =
+                ClusterRpcService.getContext().getConnection(callerId);
+        if (callerConnection == null) return;
+        boolean remoteNeed =
+                ClusterRpcService.getContext().isLocalHostMember(callerConnection.getMemberId());
+
+        String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, remoteNeed);
         if (sdpAnswer == null) {
             CloudMediaException e = new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
                     "Error generating SDP response for publishing user " + participant.getParticipantPublicId());
@@ -169,11 +180,10 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         KurentoParticipant kParticipantCallee =
                 (KurentoParticipant)
                         kSession.getParticipantByPrivateId(participant.getParticipantPrivatetId());
-        KurentoParticipant kParticipantCaller = null;
         /**
          * 寻找找出calleer
          */
-        Set<Participant> participants = kParticipantCallee.getSession().getParticipants();
+       /* Set<Participant> participants = kParticipantCallee.getSession().getParticipants();
         log.info("participants number {}", participants.size());
         for (Participant p : participants) {
             if (p.getParticipantPrivatetId().equals(participant.getParticipantPrivatetId())) {
@@ -183,49 +193,72 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                 log.info("kParticipantCaller.kParticipantCaller {}",
                         kParticipantCaller.getParticipantPublicId());
             }
+        }*/
+
+        if (!remoteNeed) {//callee连接在本host上
+            KurentoParticipant kParticipantCaller =
+                    (KurentoParticipant)
+                            kSession.getParticipantByPrivateId(callerConnection.getParticipantPrivateId());
+
+            kParticipantCallee.getPublisher().
+                    connect(kParticipantCaller.getPublisher().getEndpoint());
+
+            kParticipantCaller.getPublisher().
+                    connect(kParticipantCallee.getPublisher().getEndpoint());
+        } else {
+            //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理
+            kParticipantCallee.publishToRemoteRoom(callerId);
         }
-
-        kParticipantCallee.getPublisher().
-                connect(kParticipantCaller.getPublisher().getEndpoint());
-
-        kParticipantCaller.getPublisher().
-                connect(kParticipantCallee.getPublisher().getEndpoint());
         /**
          * 添加到集群
          */
         ClusterRpcService.getContext().addClusterSession(
-                participant.getSessionId(),participant.getParticipantPublicId());
-
-        /*WebRtcEndpoint calleeWebRtcEndpoint =
-                (WebRtcEndpoint) kParticipantCallee.getCallMediaStream().getEndpoint();
-
-        WebRtcEndpoint callerWebRtcEndpoint =
-                (WebRtcEndpoint) kParticipantCaller.getCallMediaStream().getEndpoint();
-        calleeWebRtcEndpoint.connect(callerWebRtcEndpoint);
-        callerWebRtcEndpoint.connect(calleeWebRtcEndpoint);*/
+                participant.getSessionId(), participant.getParticipantPublicId());
     }
 
+    /**
+     * 据接应用于1对1服务
+     *
+     * @param sessionId
+     * @param transactionId
+     */
     @Override
-    public void onCallReject(String sessionId, Integer transactionId) {
-        Set<Participant> participants =
-                closeSession(sessionId, null);
-        for (Participant p : participants) {
-            log.info("onCallReject Participant {}",p.getParticipantPublicId());
-            p = null;
+    public void onCallReject(String sessionId, String callerId, Integer transactionId) {
+        ClusterConnection callerConnection =
+                ClusterRpcService.getContext().getConnection(callerId);
+        if (callerConnection == null) return;
+        boolean callerRemote =
+                ClusterRpcService
+                        .getContext().isLocalHostMember(callerConnection.getMemberId());
+        if (!callerRemote) {
+            closeSession(sessionId, null);
+        } else {
+            //远程caller closeSession
+            closeRemoteSession(sessionId, callerId, callerConnection.getMemberId());
         }
     }
 
     @Override
     public void onCallHangup(Participant participant, Integer transactionId) {
+        //判断另一个connection是否在本机
+        ClusterRpcService context = ClusterRpcService.getContext();
+        ConcurrentHashMap<String, ClusterConnection> sessionConnections =
+                context.getSessionConnections(participant.getSessionId());
+        Collection<ClusterConnection> values = sessionConnections.values();
+
+        for (ClusterConnection connection : values) {
+            if (!context.isLocalHostMember(connection.getMemberId())) {
+                closeRemoteSession(participant.getSessionId(),
+                        connection.getParticipantPublicId(), connection.getMemberId());
+            }
+        }
+        /**
+         * 本服务器的媒体服务进行关闭
+         */
         Set<Participant> existsParticipants = getParticipants(participant.getSessionId());
-        log.info("participants number {}", existsParticipants.size());
-        sessionEventsHandler.onCallHangup(participant,existsParticipants,transactionId);
+        sessionEventsHandler.onCallHangup(participant, existsParticipants, transactionId);
         Set<Participant> participants =
                 closeSession(participant.getSessionId(), null);
-        for (Participant p : participants) {
-            log.info("onCallReject Participant {}",p.getParticipantPublicId());
-            p = null;
-        }
     }
 
 
@@ -316,7 +349,8 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                             "Last participant left. Starting {} seconds countdown for stopping recording of session {}",
                             this.cloudMediaConfig.getOpenviduRecordingAutostopTimeout(), sessionId);
                     recordingManager.initAutomaticRecordingStopThread(session);
-                } else*/ {
+                } else*/
+                {
                     log.info("No more participants in session '{}', removing it and closing it", sessionId);
                     this.closeSessionAndEmptyCollections(session, reason);
                     showTokens();
@@ -371,7 +405,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
      *                      {@link KurentoClient} that will be used by the room
      * @throws CloudMediaException in case of error while creating the session
      */
-    public void createSession(MediaSession sessionNotActive,KurentoClientSessionInfo kcSessionInfo)
+    public void createSession(MediaSession sessionNotActive, KurentoClientSessionInfo kcSessionInfo)
             throws CloudMediaException {
         String sessionId = kcSessionInfo.getRoomName();
         KurentoMediaSession session = (KurentoMediaSession) sessions.get(sessionId);

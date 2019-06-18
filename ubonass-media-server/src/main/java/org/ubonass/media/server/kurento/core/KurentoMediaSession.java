@@ -53,12 +53,12 @@ public class KurentoMediaSession extends MediaSession {
     }
 
     @Override
-    public void join(Participant participant) {
+    public void join(Participant participant,boolean remoteNeed) {
         checkClosed();
         createPipeline();
         KurentoParticipant kurentoParticipant =
                 new KurentoParticipant(participant, this, this.kurentoEndpointConfig,
-                        this.cloudMediaConfig/*, this.recordingManager*/, false);
+                        this.cloudMediaConfig/*, this.recordingManager*/, false,remoteNeed);
         participants.put(participant.getParticipantPrivatetId(), kurentoParticipant);
 
         filterStates.forEach((filterId, state) -> {
@@ -78,14 +78,19 @@ public class KurentoMediaSession extends MediaSession {
      *
      * @param participant
      */
-    public void createCallMediaStream(Participant participant) {
+    public void createCallMediaStream(Participant participant,boolean remoteNeed) {
         checkClosed();
         createPipeline();
         KurentoParticipant kurentoParticipant =
                 new KurentoParticipant(participant, this, this.kurentoEndpointConfig,
-                        this.cloudMediaConfig/*, this.recordingManager*/, true);
+                        this.cloudMediaConfig/*, this.recordingManager*/, true,remoteNeed);
         participants.put(participant.getParticipantPrivatetId(), kurentoParticipant);
+        filterStates.forEach((filterId, state) -> {
+            log.info("Adding filter {}", filterId);
+            kurentoSessionHandler.updateFilter(sessionId, participant, filterId, state);
+        });
     }
+
 
 
     public void newPublisher(Participant participant) {

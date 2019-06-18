@@ -30,11 +30,12 @@ public class ClusterRpcNotification implements Runnable, Serializable {
     @Override
     public void run() {
         if (clientId == null || method == null) return;
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         RpcNotificationService notificationService =
-                ClusterRpcService.getContext().getRpcNotificationService();
+                clusterRpcService.getRpcNotificationService();
         RpcConnection rpcConnection =
                 notificationService.getRpcConnection(
-                        notificationService.getClusterConnection(clientId).getParticipantPrivateId());
+                        clusterRpcService.getConnection(clientId).getParticipantPrivateId());
         if (rpcConnection == null) return;
         try {
             if (object != null) {

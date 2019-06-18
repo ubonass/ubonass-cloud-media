@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
  *
  * @author Pablo Fuente (pablofuenteperez@gmail.com)
  */
-public abstract class MediaEndpoint {
+public class MediaEndpoint {
     private static Logger log;
     private CloudMediaConfig cloudMediaConfig;
 
@@ -569,7 +569,7 @@ public abstract class MediaEndpoint {
     }
 
 
-    public abstract PublisherEndpoint getPublisher();
+    /*public abstract PublisherEndpoint getPublisher();*/
 
 
     public JsonObject toJson() {

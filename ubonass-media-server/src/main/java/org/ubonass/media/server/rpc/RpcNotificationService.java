@@ -199,7 +199,7 @@ public class RpcNotificationService {
         }
     }
 
-    public RpcConnection getRpcConnectionByPublicId(String publicId) {
+    public RpcConnection getRpcConnectionByParticipantPublicId(String publicId) {
         if (connectionIsLocalMember(publicId)) {
             return rpcConnections.get(ClusterRpcService.getContext()
                         .getClusterConnections().get(publicId).getParticipantPrivateId());
@@ -208,27 +208,11 @@ public class RpcNotificationService {
         }
     }
 
-    public ClusterConnection getClusterConnection(String participantPublicId) {
-        if (ClusterRpcService.getContext()
-                .getClusterConnections().containsKey(participantPublicId)) {
-            return ClusterRpcService.getContext()
-                        .getClusterConnections().get(participantPublicId);
-        } else {
-            return null;
-        }
-    }
-
-
-    public boolean connectionExist(String participantPublicId) {
-        return ClusterRpcService.getContext()
-                        .getClusterConnections().containsKey(participantPublicId);
-    }
-
     public boolean connectionIsLocalMember(String participantPublicId) {
-        if (connectionExist(participantPublicId)) {
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+        if (clusterRpcService.connectionExist(participantPublicId)) {
             ClusterConnection clusterConnection =
-                    ClusterRpcService.getContext()
-                        .getClusterConnections().get(participantPublicId);
+                    clusterRpcService.getClusterConnections().get(participantPublicId);
             if (rpcConnections.containsKey(
                     clusterConnection.getParticipantPrivateId())) {
                 return ClusterRpcService.getContext()

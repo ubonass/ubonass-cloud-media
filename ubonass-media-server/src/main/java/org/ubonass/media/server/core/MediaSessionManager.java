@@ -12,6 +12,7 @@ import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.kurento.core.KurentoCallMediaStream;
+import org.ubonass.media.server.kurento.core.KurentoMediaRemoteSession;
 
 import javax.annotation.PreDestroy;
 import java.util.Collection;
@@ -56,8 +57,8 @@ public abstract class MediaSessionManager {
     /**
      * @Key:房间名称
      * @Value:存储Token的集合
-     *  @key:tokenString
-     *  @value:Token
+     * @key:tokenString
+     * @value:Token
      */
     public ConcurrentMap<String, ConcurrentHashMap<String, Token>> sessionidTokenTokenobj = new ConcurrentHashMap<>();
 
@@ -105,7 +106,8 @@ public abstract class MediaSessionManager {
         return callMediaStreams.get(sessionId);
     }
 
-    public Participant newCallParticipant(String sessionId,
+    public Participant newCallParticipant(String memberId,
+                                          String sessionId,
                                           String participantPrivatetId,
                                           String participantPublicId) {
         /*if (!sessionidParticipantpublicidParticipant
@@ -121,7 +123,7 @@ public abstract class MediaSessionManager {
         } else {
             throw new CloudMediaException(Code.ROOM_NOT_FOUND_ERROR_CODE, sessionId);
         }*/
-        Participant p = new Participant(participantPrivatetId,
+        Participant p = new Participant(memberId, participantPrivatetId,
                 participantPublicId, sessionId, null, null, null, null, null);
         return p;
 
@@ -313,12 +315,21 @@ public abstract class MediaSessionManager {
         logger.info("Session '{}' removed and closed", session.getSessionId());
     }
 
+    public void closeRemoteSession(String sessionId, String remoteParticipantPublicId, String remoteMemberId) {
+        JsonObject object = new JsonObject();
+        object.addProperty(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT,
+                KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT_CLOSE_SESSION);
+        String message = object.toString();
+        Runnable runnable = new KurentoMediaRemoteSession(
+                sessionId, remoteParticipantPublicId, message);
+        ClusterRpcService.getContext().executeToMember(runnable, remoteMemberId);
+    }
 
-    public abstract void call(Participant participant, MediaOptions mediaOptions, Integer transactionId);
+    public abstract void call(Participant participant, String calleeId, MediaOptions mediaOptions, Integer transactionId);
 
-    public abstract void onCallAccept(Participant participant, MediaOptions mediaOptions, Integer transactionId);
+    public abstract void onCallAccept(Participant participant, String callerId, MediaOptions mediaOptions, Integer transactionId);
 
-    public abstract void onCallReject(String sessionId, Integer transactionId);
+    public abstract void onCallReject(String sessionId, String callerId, Integer transactionId);
 
     public abstract void onCallHangup(Participant participant, Integer transactionId);
 

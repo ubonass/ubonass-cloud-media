@@ -19,6 +19,7 @@ package org.ubonass.media.server.kurento.core;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.kurento.client.*;
 import org.kurento.client.internal.server.KurentoServerException;
@@ -27,6 +28,8 @@ import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.java.client.CloudMediaRole;
+import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
@@ -34,10 +37,7 @@ import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.core.Token;
 import org.ubonass.media.server.kurento.endpoint.*;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 public class KurentoParticipant extends Participant {
@@ -53,10 +53,10 @@ public class KurentoParticipant extends Participant {
 
     private KurentoParticipantEndpointConfig endpointConfig;
 
-    /*private CallMediaStream callMediaStream;
-    private boolean one2one = false;*/
-
     private PublisherEndpoint publisher;
+
+    private RemoteEndpoint remotePublisher;//用于集群使用,默认使用rtpEndpoint
+
     private CountDownLatch endPointLatch = new CountDownLatch(1);
 
     private final ConcurrentMap<String, Filter> filters = new ConcurrentHashMap<>();
@@ -68,8 +68,9 @@ public class KurentoParticipant extends Participant {
                               KurentoParticipantEndpointConfig endpointConfig,
                               CloudMediaConfig cloudMediaConfig/*,
                               RecordingManager recordingManager*/,
-                              boolean one2one) {
-        super(participant.getParticipantPrivatetId(),
+                              boolean one2one, boolean remoteNeed) {
+        super(participant.getMemberId(),
+                participant.getParticipantPrivatetId(),
                 participant.getParticipantPublicId(),
                 kurentoSession.getSessionId(),
                 participant.getToken(),
@@ -77,56 +78,26 @@ public class KurentoParticipant extends Participant {
                 participant.getLocation(),
                 participant.getPlatform(),
                 participant.getCreatedAt());
+
         this.endpointConfig = endpointConfig;
         this.cloudMediaConfig = cloudMediaConfig;
         /*this.recordingManager = recordingManager;*/
         this.session = kurentoSession;
-        //this.one2one = one2one;
-        if (!one2one) {
-            Token token = participant.getToken();
-            if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
-                this.publisher = new PublisherEndpoint(
-                        webParticipant,
-                        this,
-                        participant.getParticipantPublicId(),
-                        this.session.getPipeline(),
-                        this.cloudMediaConfig);
-            }
-        } else {
-            this.publisher = new PublisherEndpoint(
-                    webParticipant,
-                    this,
-                    participant.getParticipantPublicId(),
-                    this.session.getPipeline(),
-                    this.cloudMediaConfig);
-        }
 
+        Token token = participant.getToken();
+        if (one2one || token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
+            this.publisher = new PublisherEndpoint(webParticipant, this, participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudMediaConfig);
+        }
+        /**
+         * 如果房间使用了集群
+         */
+        if (remoteNeed) {
+            this.remotePublisher = new RemoteEndpoint(
+                    this, participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudMediaConfig);
+        }
     }
 
-    /*public void createCallMediaStreamEndpoint(MediaOptions mediaOptions) {
-        callMediaStream.createEndpoint(endPointLatch);
-
-        if (getCallMediaStream().getEndpoint() == null) {
-            throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE, "Unable to create publisher endpoint");
-        }
-        callMediaStream.setMediaOptions(mediaOptions);
-
-        String streamId = this.getParticipantPublicId() + "_"
-                + (mediaOptions.getHasAudio() ? mediaOptions.getTypeOfVideo() : "MICRO") + "_"
-                + RandomStringUtils.random(5, true, false).toUpperCase();
-
-        this.callMediaStream.setEndpointName(streamId);
-        this.callMediaStream.getEndpoint().setName(streamId);
-        this.callMediaStream.setStreamId(streamId);
-
-        endpointConfig.addEndpointListeners(this.callMediaStream, "CallMediaStream");
-
-        *//*this.session.publishedStreamIds.putIfAbsent(this.getPublisherStreamId(),
-                this.getParticipantPrivatetId());*//*
-    }*/
-
-
-    public void createPublishingEndpoint(MediaOptions mediaOptions) {
+    public void createPublishingEndpoint(MediaOptions mediaOptions, boolean remoteNeed) {
 
         publisher.createEndpoint(endPointLatch);
         if (getPublisher().getEndpoint() == null) {
@@ -148,6 +119,17 @@ public class KurentoParticipant extends Participant {
         this.session.publishedStreamIds.putIfAbsent(this.getPublisherStreamId(),
                 this.getParticipantPrivatetId());
 
+        if (remoteNeed &&
+                this.remotePublisher != null) {
+            this.remotePublisher.createEndpoint(endPointLatch);
+            if (getRemoteEndpoint().getEndpoint() == null) {
+                throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE,
+                        "Unable to create publisher endpoint");
+            }
+            this.remotePublisher.setEndpointName(publisherStreamId);
+            this.remotePublisher.getEndpoint().setName(publisherStreamId);
+            this.remotePublisher.setStreamId(publisherStreamId);
+        }
     }
 
     public synchronized Filter getFilterElement(String id) {
@@ -170,7 +152,7 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    /*public CallMediaStream getCallMediaStream() {
+    private void lockendPointLatch() {
         try {
             if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
                 throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
@@ -180,24 +162,18 @@ public class KurentoParticipant extends Participant {
             throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                     "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
         }
-        return this.callMediaStream;
-    }*/
+    }
 
-
-    public PublisherEndpoint getPublisher() {
-        try {
-            if (!endPointLatch.await(KurentoMediaSession.ASYNC_LATCH_TIMEOUT, TimeUnit.SECONDS)) {
-                throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
-                        "Timeout reached while waiting for publisher endpoint to be ready");
-            }
-        } catch (InterruptedException e) {
-            throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
-                    "Interrupted while waiting for publisher endpoint to be ready: " + e.getMessage());
-        }
-        return this.publisher;
+    public RemoteEndpoint getRemoteEndpoint() {
+        lockendPointLatch();
+        return this.remotePublisher;
     }
 
 
+    public PublisherEndpoint getPublisher() {
+        lockendPointLatch();
+        return this.publisher;
+    }
 
     public MediaOptions getPublisherMediaOptions() {
         return this.publisher.getMediaOptions();
@@ -211,16 +187,47 @@ public class KurentoParticipant extends Participant {
         return session;
     }
 
-    /*public String startCallMediaStream(SdpType sdpType, String sdpString,
-                                       CallMediaStream sinkMediaStream) {
-        log.info("PARTICIPANT {}: Request to publish video in room {} (sdp type {})",
-                this.getParticipantPublicId(),
-                this.session.getSessionId(), sdpType);
-        log.trace("PARTICIPANT {}: Publishing Sdp ({}) is {}", this.getParticipantPublicId(), sdpType, sdpString);
-        String sdpResponse = this.getCallMediaStream().publish(sdpType, sdpString, sinkMediaStream);
-        this.streaming = true;
-        return sdpResponse;
-    }*/
+    //Receive
+    public void publishToRemoteRoom(String remoteParticipantPublicId/*, boolean receiveEnable*/) {
+        if (this.remotePublisher == null || this.publisher == null) return;
+        JsonObject object = new JsonObject();
+        object.addProperty(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT,
+                KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS);
+        JsonObject paramsObject = new JsonObject();
+        paramsObject.addProperty(KurentoMediaRemoteSession.REMOTE_MEDIA_PARAMS_SDPOFFER,
+                remotePublisher.prepareRemoteConnection());
+        object.addProperty("params", paramsObject.toString());
+        String message = object.toString();
+
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+
+        ClusterConnection connection =
+                clusterRpcService
+                        .getConnection(session.getSessionId(), remoteParticipantPublicId);
+
+        Callable callable = new KurentoMediaRemoteSession(
+                session.getSessionId(), remoteParticipantPublicId, message);
+
+        Future<String> processAnswer = (Future<String>)
+                clusterRpcService.submitTaskToMembers(callable,
+                        connection.getMemberId());
+        try {
+            JsonParser parser = new JsonParser();
+            JsonObject rtpAnswerObject =
+                    parser.parse(processAnswer.get()).getAsJsonObject();
+            if (rtpAnswerObject.
+                    get(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT).toString()
+                    .equals(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS)) {
+                String rtpAnswer = rtpAnswerObject.get(KurentoMediaRemoteSession.REMOTE_MEDIA_PARAMS_SDPANSWER).toString();
+                log.info("rtpAnswer {}", rtpAnswer);
+                remotePublisher.startProcessOfferOrAnswer(SdpType.ANSWER, rtpAnswer);
+                /*if (receiveEnable)
+                    remotePublisher.getEndpoint().connect(publisher.getEndpoint());*/
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     public String publishToRoom(SdpType sdpType, String sdpString, boolean doLoopback,
@@ -247,6 +254,18 @@ public class KurentoParticipant extends Participant {
 
         return sdpResponse;
     }
+
+    public String publishToRoom(SdpType sdpType, String sdpString, boolean doLoopback,
+                                MediaElement loopbackAlternativeSrc, MediaType loopbackConnectionType, boolean remoteNeed) {
+        String sdpResponse = publishToRoom(
+                sdpType, sdpString, doLoopback, loopbackAlternativeSrc, loopbackConnectionType);
+        if (remoteNeed && this.remotePublisher != null) {
+            //将视频通过rtpEndpoint发布出去
+            publisher.connect(remotePublisher.getEndpoint());
+        }
+        return sdpResponse;
+    }
+
 
     public void unpublishMedia(EndReason reason) {
         log.info("PARTICIPANT {}: unpublishing media stream from room {}", this.getParticipantPublicId(),
@@ -330,7 +349,6 @@ public class KurentoParticipant extends Participant {
                 endpointConfig.getCdr().recordNewSubscriber(this, this.session.getSessionId(),
                         sender.getPublisherStreamId(), sender.getParticipantPublicId(), subscriber.createdAt());
             }*/
-
             return sdpAnswer;
         } catch (KurentoServerException e) {
             // TODO Check object status when KurentoClient sets this info in the object
@@ -409,15 +427,6 @@ public class KurentoParticipant extends Participant {
     }
 
     public void addIceCandidate(String endpointName, IceCandidate iceCandidate) {
-        /*if (!this.one2one) {
-            if (this.getParticipantPublicId().equals(endpointName)) {
-                this.publisher.addIceCandidate(iceCandidate);
-            } else {
-                this.getNewOrExistingSubscriber(endpointName).addIceCandidate(iceCandidate);
-            }
-        } else {
-            this.callMediaStream.addIceCandidate(iceCandidate);
-        }*/
 
         if (this.getParticipantPublicId().equals(endpointName)) {
             this.publisher.addIceCandidate(iceCandidate);
@@ -437,6 +446,16 @@ public class KurentoParticipant extends Participant {
     }
 
     private void releasePublisherEndpoint(EndReason reason) {
+
+        /**
+         * add by jeffrey......
+         */
+        if (remotePublisher != null && remotePublisher.getEndpoint() != null) {
+            remotePublisher.getEndpoint().release();
+            remotePublisher = null;
+        }
+        /////////////////////////////////////////////////////////////////////
+
         if (publisher != null && publisher.getEndpoint() != null) {
 
             // Remove streamId from publisher's map
@@ -463,9 +482,12 @@ public class KurentoParticipant extends Participant {
             //endpointConfig.getCdr().stopPublisher(this.getParticipantPublicId(), publisher.getStreamId(), reason);
             publisher = null;
 
+
         } else {
             log.warn("PARTICIPANT {}: Trying to release publisher endpoint but is null", getParticipantPublicId());
         }
+
+
     }
 
     private void releaseSubscriberEndpoint(String senderName, SubscriberEndpoint subscriber, EndReason reason) {

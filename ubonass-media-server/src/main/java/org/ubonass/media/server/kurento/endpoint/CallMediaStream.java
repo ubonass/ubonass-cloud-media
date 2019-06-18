@@ -28,11 +28,6 @@ public class CallMediaStream extends MediaEndpoint {
     }
 
 
-    @Override
-    public PublisherEndpoint getPublisher() {
-        return null;
-    }
-
     private void checkCurrentEndpointValid() {
         if (this.getEndpoint() == null) {
             throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
@@ -69,7 +64,7 @@ public class CallMediaStream extends MediaEndpoint {
     }
 
     public synchronized String publish(SdpType sdpType,
-                                       String sdpString, CallMediaStream endpoint) {
+                                        String sdpString, CallMediaStream endpoint) {
         registerOnIceCandidateEventListener(this.getOwner().getParticipantPublicId());
         if (endpoint != null)
             connect(endpoint.getEndpoint());

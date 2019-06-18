@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
 import org.ubonass.media.server.core.Participant;
@@ -47,12 +48,12 @@ public class RpcCallHandler extends RpcHandler {
 
     private void call(RpcConnection rpcConnection, Request<JsonObject> request) {
         String targetId = getStringParam(request, ProtocolElements.CALL_TARGETUSER_PARAM);
-        String clientId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
+        //String clientId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
         JsonObject result = new JsonObject();
         /**
          * 如果callee不存在
          */
-        if (!notificationService.connectionExist(targetId)) {
+        if (!ClusterRpcService.getContext().connectionExist(targetId)) {
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");
@@ -73,10 +74,9 @@ public class RpcCallHandler extends RpcHandler {
         rpcConnection.setSessionId(sessionId);
 
         //添加进集群
-
         Participant participant =
                 mediaSessionManager.newCallParticipant(
-                        sessionId, rpcConnection.getParticipantPrivateId(), clientId);
+                        rpcConnection.getMemberId(),sessionId, rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId());
         /**
          * 获取媒体参数
          */
@@ -84,13 +84,8 @@ public class RpcCallHandler extends RpcHandler {
         /**
          * 已经在sessionId中发布了视频
          */
-        mediaSessionManager.call(participant, options, request.getId());
+        mediaSessionManager.call(participant, targetId, options, request.getId());
 
-        JsonObject notifyInCallObject = new JsonObject();
-        notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_FROMUSER_PARAM, clientId);
-        notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, sessionId);
-        notificationService.sendNotificationByPublicId(
-                targetId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
     }
 
     private void onCall(RpcConnection rpcConnection, Request<JsonObject> request) {
@@ -115,18 +110,17 @@ public class RpcCallHandler extends RpcHandler {
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
         //caller不存在
-        if (!notificationService.connectionExist(fromId)) return;
+        //if (!notificationService.connectionExist(fromId)) return;
         rpcConnection.setSessionId(sessionId);
 
         Participant participant =
                 mediaSessionManager.newCallParticipant(
-                        sessionId, rpcConnection.getParticipantPrivateId(),
-                        rpcConnection.getParticipantPublicId());
+                        rpcConnection.getMemberId(), sessionId, rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId());
         /**
          * 获取媒体参数
          */
         MediaOptions options = mediaSessionManager.generateMediaOptions(request);
-        mediaSessionManager.onCallAccept(participant, options, request.getId());
+        mediaSessionManager.onCallAccept(participant, fromId, options, request.getId());
 
         JsonObject accetpObject = new JsonObject();
         /*告知calleer对方已经接听*/
@@ -142,10 +136,10 @@ public class RpcCallHandler extends RpcHandler {
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
 
-        if (!notificationService.connectionExist(fromId)) return;
+        if (!ClusterRpcService.getContext().connectionExist(fromId)) return;
 
-        if (notificationService.connectionIsLocalMember(fromId)) {
-            //caller leaveSession
+        /*if (notificationService.connectionIsLocalMember(fromId)) {
+
             mediaSessionManager.onCallReject(sessionId, request.getId());
         } else {
             //远程要移除掉
@@ -155,7 +149,9 @@ public class RpcCallHandler extends RpcHandler {
             Runnable runnable = new KurentoCallMediaHandler(
                     fromId, KurentoCallMediaHandler.MEDIA_EVENT_RELEASE_STREAM);
             clusterRpcService.executeToMember(runnable, callerCluserConnection.getMemberId());
-        }
+        }*/
+
+        mediaSessionManager.onCallReject(sessionId, fromId,request.getId());
 
         JsonObject rejectObject = new JsonObject();
         if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
