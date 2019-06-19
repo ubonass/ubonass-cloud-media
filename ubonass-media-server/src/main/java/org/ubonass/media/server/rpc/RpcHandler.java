@@ -18,6 +18,7 @@ import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.EndReason;
+import org.ubonass.media.server.core.MediaSession;
 import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.kurento.KurentoClientProvider;
@@ -47,7 +48,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     protected ClusterRpcService clusterRpcService;
 
     @Autowired
-    protected MediaSessionManager mediaSessionManager;
+    protected MediaSessionManager sessionManager;
 
     @Override
     public void handleRequest(Transaction transaction, Request<JsonObject> request)
@@ -254,7 +255,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
     public void leaveRoomAfterConnClosed(String participantPrivateId, EndReason reason) {
         try {
-            mediaSessionManager.evictParticipant(this.mediaSessionManager.getParticipant(participantPrivateId), null, null, reason);
+            sessionManager.evictParticipant(this.sessionManager.getParticipant(participantPrivateId), null, null, reason);
             logger.info("Evicted participant with privateId {}", participantPrivateId);
         } catch (CloudMediaException e) {
             logger.warn("Unable to evict: {}", e.getMessage());
@@ -274,7 +275,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             throw new CloudMediaException(Code.GENERIC_ERROR_CODE, errorMsg);
         } else {
             // Sanity check: don't call RPC method unless the id checks out
-            Participant participant = mediaSessionManager.getParticipant(sessionId, participantPrivateId);
+            Participant participant = sessionManager.getParticipant(sessionId, participantPrivateId);
             if (participant != null) {
                 errorMsg = "Participant " + participant.getParticipantPublicId() + " is calling method '" + methodName
                         + "' in session " + sessionId;
@@ -330,12 +331,12 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                  */
                 String participantPublicId =
                         attributes.get("clientId").toString();
-                logger.info("participantPublicId: {}",participantPublicId);
+                logger.info("participantPublicId: {}", participantPublicId);
                 //rpcSession.getAttributes().put("clientId", participantPublicId);
                 RpcConnection rpcConnection = new RpcConnection(rpcSession);
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());
                 rpcConnection.setParticipantPublicId(participantPublicId);
-                clusterRpcService.addClusterConnection(rpcConnection);
+                clusterRpcService.addConnection(rpcConnection);
                 notificationService.addRpcConnection(rpcConnection);
             }
         }
@@ -346,20 +347,47 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         super.afterConnectionClosed(rpcSession, status);
         logger.info("After connection closed for WebSocket session: {} - Status: {}", rpcSession.getSessionId(), status);
         String rpcSessionId = rpcSession.getSessionId();
-        if (rpcSession instanceof WebSocketServerSession) {
-            /*Map<String, Object> attributes =
-                    ((WebSocketServerSession) rpcSession).getWebSocketSession().getAttributes();*/
-            RpcConnection rpc =
-                    this.notificationService.closeRpcSession(rpcSessionId);
-            String clientId = rpc.getParticipantPublicId();
-            if (rpc != null) rpc = null;
-            ClusterConnection clusterConnection =
-                    this.notificationService
-                            .closeClusterConnection(clientId);
-            if (clusterConnection != null) clusterConnection = null;
 
-            logger.info("afterConnectionClosed clientId:" + clientId);
+        String message = "";
+
+        if ("Close for not receive ping from client".equals(status)) {
+            message = "Evicting participant with private id {} because of a network disconnection";
+        } else if (status == null) { // && this.webSocketBrokenPipeTransportError.remove(rpcSessionId) != null)) {
+            try {
+                Participant p = sessionManager.getParticipant(rpcSession.getSessionId());
+                if (p != null) {
+                    message = "Evicting participant with private id {} because its websocket unexpectedly closed in the client side";
+                }
+            } catch (CloudMediaException exception) {
+            }
         }
+
+        if (!message.isEmpty()) {
+            RpcConnection rpc = this.notificationService.closeRpcSession(rpcSessionId);
+            if (rpc != null && rpc.getSessionId() != null) {
+
+                MediaSession session = this.sessionManager.getSession(rpc.getSessionId());
+                if (session != null && session.getParticipantByPrivateId(rpc.getParticipantPrivateId()) != null) {
+                    //将该链接从集群session中移除
+                    this.clusterRpcService.leaveSession(rpc.getSessionId(),rpc.getParticipantPublicId());
+                    //将该集群链接从集群集合中清除
+                    ClusterConnection clusterConnection = this.clusterRpcService.closeConnection(rpc.getParticipantPublicId());
+                    if (clusterConnection != null) clusterConnection = null;
+
+                    logger.info(message, rpc.getParticipantPrivateId());
+                    leaveRoomAfterConnClosed(rpc.getParticipantPrivateId(), EndReason.networkDisconnect);
+                }
+            }
+        }
+
+        if (this.webSocketEOFTransportError.remove(rpcSessionId) != null) {
+            logger.warn(
+                    "Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
+                    rpcSession.getSessionId());
+            this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
+        }
+
+
 
     }
 

@@ -19,7 +19,6 @@ package org.ubonass.media.server.kurento.core;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.kurento.client.*;
 import org.kurento.client.internal.server.KurentoServerException;
@@ -28,8 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.java.client.CloudMediaRole;
-import org.ubonass.media.server.cluster.ClusterConnection;
-import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
@@ -124,7 +121,7 @@ public class KurentoParticipant extends Participant {
         if (remoteNeed &&
                 this.remotePublisher != null) {
             this.remotePublisher.createEndpoint(remotePointLatch);
-            if (getRemoteEndpoint().getEndpoint() == null) {
+            if (getRemotePublisher().getEndpoint() == null) {
                 throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE,
                         "Unable to create remote publisher endpoint");
             }
@@ -166,7 +163,7 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    public RemoteEndpoint getRemoteEndpoint() {
+    public RemoteEndpoint getRemotePublisher() {
         awaitEndpointLatch(remotePointLatch);
         return this.remotePublisher;
     }
@@ -187,48 +184,6 @@ public class KurentoParticipant extends Participant {
 
     public KurentoMediaSession getSession() {
         return session;
-    }
-
-    //Receive
-    public void publishToRemoteRoom(String remoteParticipantPublicId/*, boolean receiveEnable*/) {
-        if (this.remotePublisher == null || this.publisher == null) return;
-        JsonObject object = new JsonObject();
-        object.addProperty(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT,
-                KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS);
-        JsonObject paramsObject = new JsonObject();
-        paramsObject.addProperty(KurentoMediaRemoteSession.REMOTE_MEDIA_PARAMS_SDPOFFER,
-                remotePublisher.prepareRemoteConnection());
-        object.addProperty("params", paramsObject.toString());
-        String message = object.toString();
-
-        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
-
-        ClusterConnection connection =
-                clusterRpcService
-                        .getConnection(session.getSessionId(), remoteParticipantPublicId);
-
-        Callable callable = new KurentoMediaRemoteSession(
-                session.getSessionId(), remoteParticipantPublicId, message);
-
-        Future<String> processAnswer = (Future<String>)
-                clusterRpcService.submitTaskToMembers(callable,
-                        connection.getMemberId());
-        try {
-            JsonParser parser = new JsonParser();
-            JsonObject rtpAnswerObject =
-                    parser.parse(processAnswer.get()).getAsJsonObject();
-            if (rtpAnswerObject.
-                    get(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT).toString()
-                    .equals(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS)) {
-                String rtpAnswer = rtpAnswerObject.get(KurentoMediaRemoteSession.REMOTE_MEDIA_PARAMS_SDPANSWER).toString();
-                log.info("rtpAnswer {}", rtpAnswer);
-                remotePublisher.startProcessOfferOrAnswer(SdpType.ANSWER, rtpAnswer);
-                /*if (receiveEnable)
-                    remotePublisher.getEndpoint().connect(publisher.getEndpoint());*/
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
     }
 
 

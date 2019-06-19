@@ -18,6 +18,8 @@ public class ClusterRpcNotification implements Runnable, Serializable {
     private String method;
     private String object;
 
+    private transient ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+
     public ClusterRpcNotification(
             String clientId,
             String method,
@@ -30,7 +32,7 @@ public class ClusterRpcNotification implements Runnable, Serializable {
     @Override
     public void run() {
         if (clientId == null || method == null) return;
-        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+        //ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         RpcNotificationService notificationService =
                 clusterRpcService.getRpcNotificationService();
         RpcConnection rpcConnection =

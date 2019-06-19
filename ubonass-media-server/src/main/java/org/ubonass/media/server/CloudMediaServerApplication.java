@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.cluster.ClusterSessionEvent;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.config.HttpHandshakeInterceptor;
 import org.ubonass.media.server.core.MediaSessionManager;
@@ -132,7 +133,13 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     @ConditionalOnMissingBean
     @Bean
     public ClusterRpcService clusterRpcService() {
-        return new ClusterRpcService(config(), rpcNotificationService(), sessionManager());
+        return new ClusterRpcService(config()/*, rpcNotificationService(), sessionManager()*/);
+    }
+
+    @ConditionalOnMissingBean
+    @Bean
+    public ClusterSessionEvent clusterSessionEvent() {
+        return new ClusterSessionEvent();
     }
 
     @Override

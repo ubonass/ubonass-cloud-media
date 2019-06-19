@@ -9,7 +9,6 @@ import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
-import org.ubonass.media.server.kurento.core.KurentoMediaRemoteSession;
 
 import javax.annotation.PreDestroy;
 import java.util.Collection;
@@ -56,6 +55,9 @@ public abstract class MediaSessionManager {
 
     @Autowired
     protected SessionEventsHandler sessionEventsHandler;
+
+    @Autowired
+    protected ClusterRpcService clusterRpcService;
 
     private volatile boolean closed = false;
 
@@ -259,24 +261,13 @@ public abstract class MediaSessionManager {
         /*sessionidFinalUsers.remove(session.getSessionId());
         sessionidAccumulatedRecordings.remove(session.getSessionId());
         sessionidTokenTokenobj.remove(session.getSessionId());*/
-
         /**
          * 将集群中的session删除
          * add by jeffrey
          */
-        ClusterRpcService.getContext().removeClusterSession(session.getSessionId());
+        clusterRpcService.closeSession(session.getSessionId());
 
         logger.info("Session '{}' removed and closed", session.getSessionId());
-    }
-
-    public void closeRemoteSession(String sessionId, String remoteParticipantPublicId, String remoteMemberId) {
-        JsonObject object = new JsonObject();
-        object.addProperty(KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT,
-                KurentoMediaRemoteSession.REMOTE_MEDIA_EVENT_CLOSE_SESSION);
-        String message = object.toString();
-        Runnable runnable = new KurentoMediaRemoteSession(
-                sessionId, remoteParticipantPublicId, message);
-        ClusterRpcService.getContext().executeToMember(runnable, remoteMemberId);
     }
 
     public abstract void call(Participant participant, String calleeId, MediaOptions mediaOptions, Integer transactionId);

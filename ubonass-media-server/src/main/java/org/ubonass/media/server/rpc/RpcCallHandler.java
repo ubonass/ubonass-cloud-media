@@ -7,8 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.internal.ProtocolElements;
-import org.ubonass.media.server.cluster.ClusterConnection;
-import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
 import org.ubonass.media.server.core.Participant;
@@ -51,7 +49,7 @@ public class RpcCallHandler extends RpcHandler {
         /**
          * 如果callee不存在
          */
-        if (!ClusterRpcService.getContext().connectionExist(targetId)) {
+        if (!clusterRpcService.connectionExist(targetId)) {
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
                     "rejected: user '" + targetId + "' is not registered");
@@ -73,16 +71,16 @@ public class RpcCallHandler extends RpcHandler {
 
         //添加进集群
         Participant participant =
-                mediaSessionManager.newCallParticipant(
+                sessionManager.newCallParticipant(
                         rpcConnection.getMemberId(),sessionId, rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId());
         /**
          * 获取媒体参数
          */
-        MediaOptions options = mediaSessionManager.generateMediaOptions(request);
+        MediaOptions options = sessionManager.generateMediaOptions(request);
         /**
          * 已经在sessionId中发布了视频
          */
-        mediaSessionManager.call(participant, targetId, options, request.getId());
+        sessionManager.call(participant, targetId, options, request.getId());
 
     }
 
@@ -111,13 +109,13 @@ public class RpcCallHandler extends RpcHandler {
         rpcConnection.setSessionId(sessionId);
 
         Participant participant =
-                mediaSessionManager.newCallParticipant(
+                sessionManager.newCallParticipant(
                         rpcConnection.getMemberId(), sessionId, rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId());
         /**
          * 获取媒体参数
          */
-        MediaOptions options = mediaSessionManager.generateMediaOptions(request);
-        mediaSessionManager.onCallAccept(participant, fromId, options, request.getId());
+        MediaOptions options = sessionManager.generateMediaOptions(request);
+        sessionManager.onCallAccept(participant, fromId, options, request.getId());
 
         JsonObject accetpObject = new JsonObject();
         /*告知calleer对方已经接听*/
@@ -133,7 +131,7 @@ public class RpcCallHandler extends RpcHandler {
         String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
 
-        mediaSessionManager.onCallReject(sessionId, fromId,request.getId());
+        sessionManager.onCallReject(sessionId, fromId,request.getId());
 
         JsonObject rejectObject = new JsonObject();
         if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
@@ -157,7 +155,7 @@ public class RpcCallHandler extends RpcHandler {
         } catch (CloudMediaException e) {
             return;
         }
-        mediaSessionManager.onCallHangup(participant, request.getId());
+        sessionManager.onCallHangup(participant, request.getId());
         logger.info("Participant {} has left session {}", participant.getParticipantPublicId(),
                 rpcConnection.getSessionId());
     }
@@ -176,7 +174,7 @@ public class RpcCallHandler extends RpcHandler {
         String sdpMid = getStringParam(request, ProtocolElements.ONICECANDIDATE_SDPMIDPARAM);
         int sdpMLineIndex = getIntParam(request, ProtocolElements.ONICECANDIDATE_SDPMLINEINDEX_PARAM);
 
-        mediaSessionManager.onIceCandidate(participant, endpointName, candidate, sdpMLineIndex, sdpMid, request.getId());
+        sessionManager.onIceCandidate(participant, endpointName, candidate, sdpMLineIndex, sdpMid, request.getId());
 
     }
 

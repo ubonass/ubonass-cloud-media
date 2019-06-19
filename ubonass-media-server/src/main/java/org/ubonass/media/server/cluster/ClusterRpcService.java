@@ -4,15 +4,15 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.rpc.RpcConnection;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 public class ClusterRpcService {
@@ -29,10 +29,6 @@ public class ClusterRpcService {
 
     private static ClusterRpcService context;
 
-    private MediaSessionManager sessionManager;
-
-    private RpcNotificationService notificationService;
-
     /**
      * key为用户远程连的客户唯一标识,Value为ClusterConnection,针对所有集群
      */
@@ -44,14 +40,20 @@ public class ClusterRpcService {
      * @Value: @Key:ClientId,@Value:ClusterConnection
      * 当离开session的时候需要移除
      */
-    private IMap<String, IMap<String, ClusterConnection>> sessionsMap;
+    private IMap<String, ClusterSession> clusterSessions;
 
-    public ClusterRpcService(Config config,
+    @Autowired
+    private MediaSessionManager sessionManager;
+
+    @Autowired
+    private RpcNotificationService notificationService;
+
+    public ClusterRpcService(Config config/*,
                              RpcNotificationService notificationService,
-                             MediaSessionManager sessionManager) {
+                             MediaSessionManager sessionManager*/) {
         this.config = config;
-        this.sessionManager = sessionManager;
-        this.notificationService = notificationService;
+        /*this.sessionManager = sessionManager;
+        this.notificationService = notificationService;*/
         this.config.setInstanceName("hazelcast-instance");
         hazelcastInstance = Hazelcast.newHazelcastInstance(this.config);
         memberId = hazelcastInstance.getCluster().getLocalMember().getUuid();
@@ -61,8 +63,8 @@ public class ClusterRpcService {
 
         clusterConnections =
                 hazelcastInstance.getMap("clusterConnections");
-        sessionsMap =
-                hazelcastInstance.getMap("sessionidPublicidClusterConnections");
+        clusterSessions =
+                hazelcastInstance.getMap("clusterSessions");
         context = this;
     }
 
@@ -83,7 +85,7 @@ public class ClusterRpcService {
      *
      * @return
      */
-    public IMap<String, ClusterConnection> getClusterConnections() {
+    public IMap<String, ClusterConnection> getConnections() {
         return clusterConnections;
     }
 
@@ -92,8 +94,8 @@ public class ClusterRpcService {
      *
      * @return
      */
-    public IMap<String, IMap<String, ClusterConnection>> getSessionsMap() {
-        return sessionsMap;
+    public IMap<String, ClusterSession> getSessionsMap() {
+        return clusterSessions;
     }
 
     /**
@@ -106,14 +108,14 @@ public class ClusterRpcService {
         return clusterConnections.containsKey(participantPublicId);
     }
 
-    public IMap<String, ClusterConnection>
-    getSessionConnections(String sessionId) {
-        if (sessionsMap.containsKey(sessionId)) {
-            return sessionsMap.get(sessionId);
-        } else {
-            throw new CloudMediaException(CloudMediaException.Code.ROOM_NOT_FOUND_ERROR_CODE,
-                    "sessionId : {" + sessionId + "}  not Exist in local and remote member");
+    public ClusterConnection closeConnection(String participantPublicId) {
+        if (!clusterConnections.containsKey(participantPublicId)) return null;
+        ClusterConnection clusterConnection = clusterConnections.remove(participantPublicId);
+        if (clusterConnection == null) {
+            logger.error("No connection found for public id {}, unable to cleanup", participantPublicId);
+            return null;
         }
+        return clusterConnection;
     }
 
     /**
@@ -122,7 +124,7 @@ public class ClusterRpcService {
      * @param rpcConnection
      * @return
      */
-    public ClusterConnection addClusterConnection(RpcConnection rpcConnection) {
+    public ClusterConnection addConnection(RpcConnection rpcConnection) {
         if (rpcConnection == null) return null;
         ClusterConnection connection = new ClusterConnection(
                 rpcConnection.getParticipantPublicId(),
@@ -148,20 +150,39 @@ public class ClusterRpcService {
         }
     }
 
+    public String getConnectionMemberId(String participantPublicId) {
+        ClusterConnection connection = getConnection(participantPublicId);
+        if (connection != null)
+            return connection.getMemberId();
+        else
+            return null;
+    }
+
+    public String getConnectionMemberId(String sessionId, String participantPublicId) {
+        ClusterConnection connection =
+                getConnection(sessionId, participantPublicId);
+        if (connection != null)
+            return connection.getMemberId();
+        else
+            return null;
+    }
+
     /**
      * 如果已经有会话
+     *
      * @param sessionId
      * @param participantPublicId
      * @return
      */
     public ClusterConnection getConnection(String sessionId, String participantPublicId) {
-        if (sessionsMap.containsKey(sessionId)) {
-            IMap<String, ClusterConnection> childMap =
-                    sessionsMap.get(sessionId);
-            if (childMap != null
-                    && childMap.containsKey(participantPublicId))
-                return childMap.get(participantPublicId);
-            else {
+        if (clusterSessions.containsKey(sessionId)
+                && clusterSessions.get(sessionId) != null) {
+            ClusterSession session = clusterSessions.get(sessionId);
+            if (hazelcastInstance
+                    .getMap(session.getSessionName()).containsKey(participantPublicId)) {
+                return (ClusterConnection) hazelcastInstance
+                        .getMap(session.getSessionName()).get(participantPublicId);
+            } else {
                 throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
                         "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
             }
@@ -171,31 +192,94 @@ public class ClusterRpcService {
         }
     }
 
+    public Collection<ClusterSession> getSessions() {
+        return clusterSessions.values();
+    }
+
+    public ClusterSession getSession(String sessionId) {
+        if (clusterSessions.containsKey(sessionId)) {
+            return clusterSessions.get(sessionId);
+        } else {
+            throw new CloudMediaException(CloudMediaException.Code.ROOM_NOT_FOUND_ERROR_CODE,
+                    "sessionId : {" + sessionId + "}  not Exist in local and remote member");
+        }
+    }
+
     /**
      * 将session进行集群管理
      */
-    public void addClusterSession(String sessionId, String participantPublicId) {
-        if (!sessionsMap.containsKey(sessionId))
-            sessionsMap.putIfAbsent(sessionId, hazelcastInstance.getMap(sessionId));
-        if (sessionsMap.get(sessionId) != null) {
+    public void joinSession(String sessionId, String participantPublicId) {
+        ClusterSession session = null;
+        if (!clusterSessions.containsKey(sessionId)) {
+            session = new ClusterSession(sessionId);
+            clusterSessions.putIfAbsent(sessionId, session);
+        } else {
+            session = clusterSessions.get(sessionId);
+        }
+        if (session != null) {
             ClusterConnection connection =
                     clusterConnections.get(participantPublicId);
             if (connection != null) {
-                connection.setSessionId(sessionId);
+                connection.setSessionId(session.getSessionName());
                 /**
                  * 这里引用ClusterConnection不是再创建一个
                  */
-                sessionsMap.get(sessionId).putIfAbsent(participantPublicId, connection);
+                hazelcastInstance.getMap(session.getSessionName())
+                        .putIfAbsent(participantPublicId, connection);
+            } else {
+                throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
+                        "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
             }
         }
     }
 
-    public void removeClusterSession(String sessionId) {
-        if (sessionsMap.containsKey(sessionId)) {
-            sessionsMap.remove(sessionId);
+    public Collection<ClusterConnection> getSessionConnections(String sessionId) {
+        if (clusterSessions.containsKey(sessionId)) {
+            ClusterSession session = clusterSessions.get(sessionId);
+            IMap<String, ClusterConnection> clusterSessionConnections =
+                    hazelcastInstance.getMap(session.getSessionName());
+            Collection<ClusterConnection> values =
+                    clusterSessionConnections.values();
+            return values;
+        } else {
+            throw new CloudMediaException(CloudMediaException.Code.ROOM_NOT_FOUND_ERROR_CODE,
+                    "sessionId : {" + sessionId + "}  not Exist in local and remote member");
         }
     }
 
+    public void closeSession(String sessionId) {
+        if (clusterSessions.containsKey(sessionId)) {
+            ClusterSession session =
+                    clusterSessions.remove(sessionId);
+            IMap<String, ClusterConnection> clusterSessionConnections =
+                    hazelcastInstance.getMap(sessionId);
+            clusterSessionConnections.clear();
+            session = null;
+        }
+    }
+
+    /**
+     * @param sessionId
+     * @param participantPublicId
+     */
+    public void leaveSession(String sessionId, String participantPublicId) {
+        if (clusterSessions.containsKey(sessionId)) {
+            ClusterSession session =
+                    clusterSessions.get(sessionId);
+            IMap<String, ClusterConnection> clusterSessionConnections =
+                    hazelcastInstance.getMap(session.getSessionName());
+            if (clusterSessionConnections
+                    .containsKey(participantPublicId)) {
+                clusterSessionConnections.remove(participantPublicId);
+            }
+        }
+    }
+
+    /**
+     * 根据publicid
+     * @param memberId
+     * @return
+     */
     public boolean isLocalHostMember(String memberId) {
         if (memberId == null) return false;
         return memberId.equals(this.memberId);
