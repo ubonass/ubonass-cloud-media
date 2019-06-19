@@ -18,6 +18,7 @@
 package org.ubonass.media.server.kurento.core;
 
 import com.google.gson.JsonObject;
+import com.hazelcast.core.IMap;
 import org.kurento.client.*;
 import org.kurento.jsonrpc.message.Request;
 import org.slf4j.Logger;
@@ -241,7 +242,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
     public void onCallHangup(Participant participant, Integer transactionId) {
         //判断另一个connection是否在本机
         ClusterRpcService context = ClusterRpcService.getContext();
-        ConcurrentHashMap<String, ClusterConnection> sessionConnections =
+        IMap<String, ClusterConnection> sessionConnections =
                 context.getSessionConnections(participant.getSessionId());
         Collection<ClusterConnection> values = sessionConnections.values();
 

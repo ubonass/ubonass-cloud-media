@@ -44,7 +44,7 @@ public class ClusterRpcService {
      * @Value: @Key:ClientId,@Value:ClusterConnection
      * 当离开session的时候需要移除
      */
-    private IMap<String, ConcurrentHashMap<String, ClusterConnection>> sessionsMap;
+    private IMap<String, IMap<String, ClusterConnection>> sessionsMap;
 
     public ClusterRpcService(Config config,
                              RpcNotificationService notificationService,
@@ -92,7 +92,7 @@ public class ClusterRpcService {
      *
      * @return
      */
-    public IMap<String, ConcurrentHashMap<String, ClusterConnection>> getSessionsMap() {
+    public IMap<String, IMap<String, ClusterConnection>> getSessionsMap() {
         return sessionsMap;
     }
 
@@ -106,7 +106,7 @@ public class ClusterRpcService {
         return clusterConnections.containsKey(participantPublicId);
     }
 
-    public ConcurrentHashMap<String, ClusterConnection>
+    public IMap<String, ClusterConnection>
     getSessionConnections(String sessionId) {
         if (sessionsMap.containsKey(sessionId)) {
             return sessionsMap.get(sessionId);
@@ -156,11 +156,11 @@ public class ClusterRpcService {
      */
     public ClusterConnection getConnection(String sessionId, String participantPublicId) {
         if (sessionsMap.containsKey(sessionId)) {
-            ConcurrentHashMap<String, ClusterConnection> connectionConcurrentHashMap =
+            IMap<String, ClusterConnection> childMap =
                     sessionsMap.get(sessionId);
-            if (connectionConcurrentHashMap != null
-                    && connectionConcurrentHashMap.containsKey(participantPublicId))
-                return connectionConcurrentHashMap.get(participantPublicId);
+            if (childMap != null
+                    && childMap.containsKey(participantPublicId))
+                return childMap.get(participantPublicId);
             else {
                 throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
                         "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
@@ -176,7 +176,7 @@ public class ClusterRpcService {
      */
     public void addClusterSession(String sessionId, String participantPublicId) {
         if (!sessionsMap.containsKey(sessionId))
-            sessionsMap.putIfAbsent(sessionId, new ConcurrentHashMap<>());
+            sessionsMap.putIfAbsent(sessionId, hazelcastInstance.getMap(sessionId));
         if (sessionsMap.get(sessionId) != null) {
             ClusterConnection connection =
                     clusterConnections.get(participantPublicId);

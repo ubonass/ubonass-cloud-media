@@ -19,7 +19,7 @@
 //ws = new WebSocket('wss://ubonass.com:8445/call');
 //ws = new WebSocket('wss://localhost:8443/call');
 
-var wsUrl = 'wss://localhost:8443/call';
+var wsUrl = 'wss://ubonass.com:8443/call';
 var ws;
 
 var videoInput;
@@ -334,11 +334,11 @@ function register() {
     sendMessageParams("register", message, msgId++);
     document.getElementById('peer').focus();*/
 
-    wsUrl = wsUrl + '?clientId=' + userId;
+    var url = wsUrl + '?clientId=' + userId;
     /*wsUrl = 'wss://localhost:8443/call?clientId=' + userId;*/
     //wsUrl = 'wss://ubonass.com:8445/call?clientId=' + userId;
 
-    ws = new WebSocket(wsUrl);
+    ws = new WebSocket(url);
 
     ws.onmessage = onmessage;
     ws.onopen = onopen;
