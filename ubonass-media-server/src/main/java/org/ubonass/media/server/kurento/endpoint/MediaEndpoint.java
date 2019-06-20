@@ -451,7 +451,7 @@ public class MediaEndpoint {
         webEndpoint.gatherCandidates(new Continuation<Void>() {
             @Override
             public void onSuccess(Void result) throws Exception {
-                log.trace("EP {}: Internal endpoint started to gather candidates", endpointName);
+                log.info("EP {}: Internal endpoint started to gather candidates", endpointName);
             }
 
             @Override

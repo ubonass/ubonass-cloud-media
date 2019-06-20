@@ -208,6 +208,10 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
 
             kParticipantCaller.getPublisher().
                     connect(kParticipantCallee.getPublisher().getEndpoint());
+
+            kParticipantCallee.getPublisher().startTransmission();
+            kParticipantCaller.getPublisher().startTransmission();
+
             log.info("...........end connect .........");
         } else {
             //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理

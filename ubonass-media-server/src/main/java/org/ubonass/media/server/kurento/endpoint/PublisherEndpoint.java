@@ -130,6 +130,11 @@ public class PublisherEndpoint extends MediaEndpoint {
         }
     }
 
+    public void startTransmission() {
+        log.info("start Transmission");
+        gatherCandidates();
+    }
+
     /**
      * Initializes this media endpoint for publishing media and processes the SDP
      * offer or answer. If the internal endpoint is an {@link WebRtcEndpoint}, it
@@ -164,7 +169,7 @@ public class PublisherEndpoint extends MediaEndpoint {
         }
         String sdpResponse = processOfferOrAnswer(sdpType,sdpString);
 
-        gatherCandidates();
+        //gatherCandidates();
         this.createdAt = System.currentTimeMillis();
         return sdpResponse;
     }
