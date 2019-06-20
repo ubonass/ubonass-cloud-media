@@ -21,12 +21,12 @@ public class ClusterConnection implements Serializable {
         this.memberId = memberId;
     }
 
-    public ClusterConnection(ClusterConnection clusterConnection) {
+    /*public ClusterConnection(ClusterConnection clusterConnection) {
         this.participantPublicId = clusterConnection.getParticipantPublicId();
         this.participantPrivateId = clusterConnection.getParticipantPrivateId();
         this.memberId = clusterConnection.getMemberId();
         this.sessionId = clusterConnection.getSessionId();
-    }
+    }*/
 
     @Override
     public String toString() {

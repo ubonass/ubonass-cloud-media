@@ -331,13 +331,13 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                  */
                 String participantPublicId =
                         attributes.get("clientId").toString();
-                logger.info("participantPublicId: {}", participantPublicId);
                 //rpcSession.getAttributes().put("clientId", participantPublicId);
                 RpcConnection rpcConnection = new RpcConnection(rpcSession);
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());
                 rpcConnection.setParticipantPublicId(participantPublicId);
                 clusterRpcService.addConnection(rpcConnection);
                 notificationService.addRpcConnection(rpcConnection);
+                logger.info("participantPublicId: {}", participantPublicId);
             }
         }
     }

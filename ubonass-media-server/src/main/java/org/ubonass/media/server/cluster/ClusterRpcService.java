@@ -60,7 +60,6 @@ public class ClusterRpcService {
         logger.info("this uuid is {}", memberId);
         executorService =
                 hazelcastInstance.getExecutorService("streamsConnector");
-
         clusterConnections =
                 hazelcastInstance.getMap("clusterConnections");
         clusterSessions =
@@ -130,9 +129,14 @@ public class ClusterRpcService {
                 rpcConnection.getParticipantPublicId(),
                 rpcConnection.getParticipantPrivateId(),
                 rpcConnection.getMemberId());
+        /*logger.info("connection:{} ,add to clusterConnections map",connection.toString());*/
         ClusterConnection oldConnection =
                 clusterConnections.putIfAbsent(connection.getParticipantPublicId(), connection);
         return oldConnection;
+    }
+
+    public void showConnections() {
+        logger.info("<ParticipantPublicId, ClusterConnection>: {}", this.clusterConnections.toString());
     }
 
     /**

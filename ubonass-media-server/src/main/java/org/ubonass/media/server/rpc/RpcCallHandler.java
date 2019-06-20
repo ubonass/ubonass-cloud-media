@@ -59,9 +59,6 @@ public class RpcCallHandler extends RpcHandler {
             return;
         }
 
-        logger.info("exists target user {} in {}",
-                targetId, notificationService.connectionIsLocalMember(targetId) ? "local member" : "remote member");
-
         /**
          * 手动创建sessionId,同时为sessionId进行配置
          */

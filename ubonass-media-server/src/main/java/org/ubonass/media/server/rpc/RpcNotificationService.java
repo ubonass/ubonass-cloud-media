@@ -172,15 +172,16 @@ public class RpcNotificationService {
     }
 
     public RpcConnection getRpcConnectionByParticipantPublicId(String participantPublicId) {
-        if (connectionIsLocalMember(participantPublicId)) {
-            return rpcConnections.get(
-                    clusterRpcService.getConnection(participantPublicId).getParticipantPrivateId());
+        ClusterConnection connection = clusterRpcService
+                .getConnection(participantPublicId);
+        if (clusterRpcService
+                .isLocalHostMember(connection.getMemberId())) {
+            return rpcConnections.get(connection.getParticipantPrivateId());
         } else {
             return null;
         }
     }
-
-    public boolean connectionIsLocalMember(String participantPublicId) {
+    /*public boolean connectionIsLocalMember(String participantPublicId) {
         if (clusterRpcService.connectionExist(participantPublicId)) {
             ClusterConnection clusterConnection =
                     clusterRpcService.getConnection(participantPublicId);
@@ -197,7 +198,7 @@ public class RpcNotificationService {
             throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
                     "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
         }
-    }
+    }*/
 
     /**
      * @param participantPublicId
@@ -211,22 +212,22 @@ public class RpcNotificationService {
             log.error("participantPublicId can not null");
             return;
         }
-        if (connectionIsLocalMember(participantPublicId)) {
-            sendNotification(
-                    clusterRpcService
-                            .getConnections().get(participantPublicId).getParticipantPrivateId(), method, object);
-        } else {
-            String message = null;
-            if (object != null) {
-                message = object.toString();
-            }
-            if (clusterRpcService
-                    .getConnections().containsKey(participantPublicId)) {
+
+        if (clusterRpcService
+                .getConnection(participantPublicId) != null) {
+            ClusterConnection connection =
+                    clusterRpcService.getConnection(participantPublicId);
+            if (clusterRpcService.isLocalHostMember(connection.getMemberId())) {
+                sendNotification(
+                        connection.getParticipantPrivateId(), method, object);
+            } else {
+                String message = null;
+                if (object != null) {
+                    message = object.toString();
+                }
                 clusterRpcService.executeToMember(
                         new ClusterRpcNotification(
-                                participantPublicId, method, message),
-                        clusterRpcService
-                                .getConnections().get(participantPublicId).getMemberId());
+                                participantPublicId, method, message), connection.getMemberId());
             }
         }
     }

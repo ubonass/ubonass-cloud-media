@@ -96,11 +96,6 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     }
 
     @Bean
-    public RpcHandler rpcHandler() {
-        return new RpcHandler();
-    }
-
-    @Bean
     public RpcHandler callRpcHandler() {
         return new RpcCallHandler();
     }
