@@ -186,8 +186,7 @@ public class PublisherEndpoint extends MediaEndpoint {
         if (!connected) {
             innerConnect();
         }
-        //internalSinkConnect(passThru, sink);
-        getEndpoint().connect(sink);
+        internalSinkConnect(passThru, sink);
     }
     /**
      * 指定连接类型
@@ -406,7 +405,7 @@ public class PublisherEndpoint extends MediaEndpoint {
     }
 
     private void innerConnect() {
-        /*if (this.getEndpoint() == null) {
+        if (this.getEndpoint() == null) {
             throw new CloudMediaException(Code.MEDIA_ENDPOINT_ERROR_CODE,
                     "Can't connect null endpoint (ep: " + getEndpointName() + ")");
         }
@@ -422,7 +421,7 @@ public class PublisherEndpoint extends MediaEndpoint {
             current = prev;
             prevId = getPrevious(prevId);
         }
-        internalSinkConnect(current, passThru);*/
+        internalSinkConnect(current, passThru);
         connected = true;
     }
 
