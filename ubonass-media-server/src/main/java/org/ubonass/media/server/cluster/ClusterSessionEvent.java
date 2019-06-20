@@ -5,6 +5,9 @@ import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.ubonass.media.server.cluster.event.Event;
+import org.ubonass.media.server.cluster.event.SdpEvent;
+import org.ubonass.media.server.cluster.event.SessionEvent;
 import org.ubonass.media.server.kurento.endpoint.RemoteEndpoint;
 import org.ubonass.media.server.kurento.endpoint.SdpType;
 
@@ -16,24 +19,6 @@ public class ClusterSessionEvent {
 
     private static final Logger logger = LoggerFactory.getLogger(ClusterSessionEvent.class);
 
-        /*{
-        "event":"sdpOfferProcess",
-        "params":"{
-            "sdpOffer":"sdpOffer"
-        }"
-
-      {
-        "event":"sdpOfferProcess",
-        "sdpAnswer":"xxxxx"
-      }
-    }*/
-
-    public static final String REMOTE_MEDIA_EVENT = "event";
-    public static final String REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS = "sdpOfferProcess";
-    public static final String REMOTE_MEDIA_EVENT_CLOSE_SESSION = "closeSession";
-    public static final String REMOTE_MEDIA_PARAMS_SDPOFFER = "sdpOffer";
-    public static final String REMOTE_MEDIA_PARAMS_SDPANSWER = "sdpAnswer";
-
     @Autowired
     private ClusterRpcService clusterRpcService;
 
@@ -43,28 +28,24 @@ public class ClusterSessionEvent {
      * @param remotePublisher
      */
     public void publishToRoom(String sessionId, String participantPublicId, RemoteEndpoint remotePublisher) {
-        JsonObject object = new JsonObject();
-        object.addProperty(REMOTE_MEDIA_EVENT, REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS);
-        JsonObject paramsObject = new JsonObject();
-        paramsObject.addProperty(REMOTE_MEDIA_PARAMS_SDPOFFER, remotePublisher.prepareRemoteConnection());
-        object.addProperty("params", paramsObject.toString());
-        String message = object.toString();
 
-        Callable callable = new ClusterSessionEventHandler(
-                sessionId, participantPublicId, message);
 
-        Future<String> processAnswer = (Future<String>)
+        String sdpOffer = remotePublisher.prepareRemoteConnection();
+
+        Event sdpEvent =
+                new SdpEvent(participantPublicId, sessionId,
+                        Event.MEDIA_EVENT_PROCESS_SDPOFFER,null,sdpOffer);
+
+        Callable callable = new ClusterSessionEventHandler(sdpEvent);
+        Future<Event> processAnswer = (Future<Event>)
                 clusterRpcService.submitTaskToMembers(callable,
                         clusterRpcService.getConnectionMemberId(sessionId,participantPublicId));
         try {
-            JsonParser parser = new JsonParser();
-            JsonObject rtpAnswerObject =
-                    (JsonObject) parser.parse(processAnswer.get());
-            if (rtpAnswerObject.
-                    get(REMOTE_MEDIA_EVENT).toString().equals(REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS)) {
-                String rtpAnswer = rtpAnswerObject.get(REMOTE_MEDIA_PARAMS_SDPANSWER).toString();
-                logger.info("rtpAnswer {}", rtpAnswer);
-                remotePublisher.startProcessOfferOrAnswer(SdpType.ANSWER, rtpAnswer);
+            Event result = processAnswer.get();
+            if (result instanceof SdpEvent) {
+                logger.info("rtpAnswer {}", ((SdpEvent) result).getSdpAnswer());
+                remotePublisher.startProcessOfferOrAnswer(SdpType.ANSWER,
+                        ((SdpEvent) result).getSdpAnswer());
                 /*if (receiveEnable)
                     remotePublisher.getEndpoint().connect(publisher.getEndpoint());*/
             }
@@ -79,12 +60,12 @@ public class ClusterSessionEvent {
      * @param participantPublicId:目标参与者的participantPublicId
      */
     public void closeSession(String sessionId, String participantPublicId) {
-        JsonObject object = new JsonObject();
-        object.addProperty(REMOTE_MEDIA_EVENT, REMOTE_MEDIA_EVENT_CLOSE_SESSION);
-        String message = object.toString();
 
-        Runnable runnable = new ClusterSessionEventHandler(
-                sessionId, participantPublicId, message);
+        Event sessionEvent =
+                new SessionEvent(participantPublicId,
+                        sessionId,Event.MEDIA_EVENT_CLOSE_SESSION);
+
+        Runnable runnable = new ClusterSessionEventHandler(sessionEvent);
         clusterRpcService.executeToMember(runnable,
                 clusterRpcService.getConnectionMemberId(sessionId,participantPublicId));
     }

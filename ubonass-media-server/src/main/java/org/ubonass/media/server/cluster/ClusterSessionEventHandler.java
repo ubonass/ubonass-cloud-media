@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.Data;
+import org.ubonass.media.server.cluster.event.Event;
+import org.ubonass.media.server.cluster.event.SdpEvent;
 import org.ubonass.media.server.core.MediaSessionManager;
 import org.ubonass.media.server.kurento.core.KurentoParticipant;
 
@@ -11,38 +13,21 @@ import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 @Data
-public class ClusterSessionEventHandler implements Callable<String>, Runnable, Serializable {
+public class ClusterSessionEventHandler implements Callable<Event>, Runnable, Serializable {
 
-    private String participantPublicId;
-    private String message;
-    private String sessionId;
+    private Event event;
 
-    public ClusterSessionEventHandler(
-            String sessionId, String participantPublicId, String message) {
-        this.sessionId = sessionId;
-        this.participantPublicId = participantPublicId;
-        this.message = message;
-    }
-
-    private JsonObject messageJsonObject() {
-        if (message != null) {
-            JsonParser jsonParser = new JsonParser();
-            return (JsonObject) jsonParser.parse(message);
-        }
-        return null;
+    public ClusterSessionEventHandler(Event event) {
+        this.event = event;
     }
 
     @Override
     public void run() {
-        if (sessionId == null
-                || participantPublicId == null) return;
-        JsonObject messageObject = messageJsonObject();
-        if (messageObject == null) return;
         ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         MediaSessionManager sessionManager = clusterRpcService.getSessionManager();
-        switch (messageObject.get(ClusterSessionEvent.REMOTE_MEDIA_EVENT).toString()) {
-            case ClusterSessionEvent.REMOTE_MEDIA_EVENT_CLOSE_SESSION:
-                sessionManager.closeSession(sessionId, null);
+        switch (event.getEventType()) {
+            case Event.MEDIA_EVENT_CLOSE_SESSION:
+                sessionManager.closeSession(event.getSessionId(), null);
                 break;
             default:
                 break;
@@ -50,38 +35,24 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
     }
 
     @Override
-    public String call() throws Exception {
-        if (sessionId == null
-                || participantPublicId == null) return null;
-        JsonObject messageObject = messageJsonObject();
-        if (messageObject == null) return null;
+    public Event call() throws Exception {
         ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         MediaSessionManager sessionManager = clusterRpcService.getSessionManager();
-        JsonObject paramsObject = null;
-        if (messageObject.has("params"))
-            paramsObject =
-                    (JsonObject) new JsonParser().parse(messageObject.get("params").toString());
-
-        String result = null;
-        switch (messageObject.get(ClusterSessionEvent.REMOTE_MEDIA_EVENT).toString()) {
-            case ClusterSessionEvent.REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS:
-                if (paramsObject == null) break;
-                String sdpOffer = paramsObject.get(ClusterSessionEvent.REMOTE_MEDIA_PARAMS_SDPOFFER).toString();
-                ClusterConnection connection =
-                        clusterRpcService.getConnection(sessionId, participantPublicId);
-                KurentoParticipant kParticipant =
-                        (KurentoParticipant)
-                                sessionManager.getParticipant(sessionId, connection.getParticipantPrivateId());
+        ClusterConnection connection =
+                clusterRpcService.getConnection(event.getSessionId(), event.getParticipantPublicId());
+        KurentoParticipant kParticipant =
+                (KurentoParticipant)
+                        sessionManager.getParticipant(event.getSessionId(), connection.getParticipantPrivateId());
+        Event result = null;
+        if (event instanceof SdpEvent) {
+            if (event.getEventType().equals(Event.MEDIA_EVENT_PROCESS_SDPOFFER)) {
+                String sdpOffer = ((SdpEvent) event).getSdpOffer();
                 String sdpAnswer =
                         kParticipant.getRemotePublisher().getEndpoint().processOffer(sdpOffer);
-                JsonObject object = new JsonObject();
-                object.addProperty(ClusterSessionEvent.REMOTE_MEDIA_EVENT, ClusterSessionEvent.REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS);
-                object.addProperty(ClusterSessionEvent.REMOTE_MEDIA_PARAMS_SDPANSWER, sdpAnswer);
-                result = object.toString();
+                result = new SdpEvent(event.getParticipantPublicId(),event.getSessionId(),
+                        event.getEventType(), sdpAnswer, null);
 
-                break;
-            default:
-                break;
+            }
         }
         return result;
     }
