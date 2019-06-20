@@ -60,7 +60,8 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
         MediaSessionManager sessionManager = clusterRpcService.getSessionManager();
         JsonObject paramsObject = null;
         if (messageObject.has("params"))
-            paramsObject = messageObject.getAsJsonObject("params");
+            paramsObject =
+                    new JsonParser().parse(messageObject.get("params").toString()).getAsJsonObject();
 
         String result = null;
         switch (messageObject.get(ClusterSessionEvent.REMOTE_MEDIA_EVENT).toString()) {

@@ -138,7 +138,18 @@ public class ClusterRpcService {
     }
 
     public void showConnections() {
-        logger.info("<ParticipantPublicId, ClusterConnection>: {}", this.clusterConnections.toString());
+
+        Iterator<IMap.Entry<String, ClusterConnection>> entries =
+                clusterConnections.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<String, ClusterConnection> entry = entries.next();
+
+            logger.info("<ParticipantPublicId{}, ClusterConnection>: {}",
+                    entry.getKey(),entry.getValue().toString());
+            //System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
+        }
+
+        //logger.info("<ParticipantPublicId, ClusterConnection>: {}", this.clusterConnections.toString());
     }
 
     /**
