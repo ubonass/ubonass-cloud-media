@@ -96,8 +96,7 @@ public class KurentoParticipant extends Participant {
         }
     }
 
-    public void createPublishingEndpoint(MediaOptions mediaOptions, boolean remoteNeed) {
-        endPointLatch = new CountDownLatch(1);
+    public void createPublishingEndpoint(MediaOptions mediaOptions) {
         publisher.createEndpoint(endPointLatch);
         if (getPublisher().getEndpoint() == null) {
             throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE, "Unable to create publisher endpoint");
@@ -118,16 +117,18 @@ public class KurentoParticipant extends Participant {
         this.session.publishedStreamIds.putIfAbsent(this.getPublisherStreamId(),
                 this.getParticipantPrivatetId());
 
-        if (remoteNeed &&
-                this.remotePublisher != null) {
+    }
+
+    public void createRemotePublishingEndpoint(MediaOptions mediaOptions) {
+        if (this.remotePublisher != null) {
             this.remotePublisher.createEndpoint(remotePointLatch);
             if (getRemotePublisher().getEndpoint() == null) {
                 throw new CloudMediaException(CloudMediaException.Code.MEDIA_ENDPOINT_ERROR_CODE,
                         "Unable to create remote publisher endpoint");
             }
-            this.remotePublisher.setEndpointName(publisherStreamId);
+            /*this.remotePublisher.setEndpointName(publisherStreamId);
             this.remotePublisher.getEndpoint().setName(publisherStreamId);
-            this.remotePublisher.setStreamId(publisherStreamId);
+            this.remotePublisher.setStreamId(publisherStreamId);*/
         }
     }
 
@@ -216,7 +217,7 @@ public class KurentoParticipant extends Participant {
                                 MediaElement loopbackAlternativeSrc, MediaType loopbackConnectionType, boolean remoteNeed) {
         String sdpResponse = publishToRoom(
                 sdpType, sdpString, doLoopback, loopbackAlternativeSrc, loopbackConnectionType);
-        if (remoteNeed && this.remotePublisher != null) {
+        if (remoteNeed && this.remotePublisher != null && this.publisher != null) {
             //将视频通过rtpEndpoint发布出去
             publisher.connect(remotePublisher.getEndpoint());
         }

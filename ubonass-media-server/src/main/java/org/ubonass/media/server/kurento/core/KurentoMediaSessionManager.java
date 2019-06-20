@@ -103,7 +103,9 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         /**
          * 如果remoteNeed为true,则会自动创建rtpEndpoint
          */
-        kParticipant.createPublishingEndpoint(mediaOptions, remoteNeed);
+        kParticipant.createPublishingEndpoint(mediaOptions);
+        if (remoteNeed)
+            kParticipant.createRemotePublishingEndpoint(mediaOptions);
 
         //return kParticipant.startCallMediaStream(sdpType, kurentoOptions.sdpOffer, null);
 
@@ -216,7 +218,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         } else {
             //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理
             clusterSessionEvent.publishToRoom(
-                    kParticipantCallee.getSessionId(),callerId,kParticipantCallee.getRemotePublisher());
+                    kParticipantCallee.getSessionId(), callerId, kParticipantCallee.getRemotePublisher());
         }
         /**
          * 添加到集群
