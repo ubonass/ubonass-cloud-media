@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
 
-public class RpcRoomHandler extends RpcHandler{
+public class RpcRoomHandler extends RpcCallHandler{
 
     @Override
     public void handleRequest(Transaction transaction, Request<JsonObject> request) throws Exception {
