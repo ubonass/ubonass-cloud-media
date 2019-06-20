@@ -233,10 +233,10 @@ public class MediaEndpoint {
                 public void onSuccess(WebRtcEndpoint result) throws Exception {
                     webEndpoint = result;
 
-                    webEndpoint.setMaxVideoRecvBandwidth(maxRecvKbps);
+                    /*webEndpoint.setMaxVideoRecvBandwidth(maxRecvKbps);
                     webEndpoint.setMinVideoRecvBandwidth(minRecvKbps);
                     webEndpoint.setMaxVideoSendBandwidth(maxSendKbps);
-                    webEndpoint.setMinVideoSendBandwidth(minSendKbps);
+                    webEndpoint.setMinVideoSendBandwidth(minSendKbps);*/
 
                     endpointLatch.countDown();
                     log.info("EP {}: Created a new WebRtcEndpoint", endpointName);
