@@ -128,8 +128,6 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                             .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
                     cloudMediaConfig/*recordingManager*/);
             createSession(sessionNotActive, kcSessionInfo);
-            clusterRpcService.joinSession(
-                    sessionId, participant.getParticipantPublicId());
         }
     }
 
@@ -162,6 +160,9 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         if (sdpAnswer != null) {
             sessionEventsHandler.onCall(participant, calleeId, sdpAnswer, transactionId);
         }
+        //加入集群session
+        clusterRpcService.joinSession(
+                participant.getSessionId(), participant.getParticipantPublicId());
 
     }
 
@@ -170,13 +171,11 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                              String callerId,
                              MediaOptions mediaOptions,
                              Integer transactionId) {
-
         ClusterConnection callerConnection =
                 clusterRpcService.getConnection(callerId);
         boolean isLocal =
-                clusterRpcService.isLocalHostMember(
-                        callerConnection.getMemberId());
-        if (!isLocal)
+                clusterRpcService.isLocalHostMember(callerConnection.getMemberId());
+        if (!isLocal)//如果当前连接不在Caller服务器上需要再在远程创建一个连接
             createSessionIfNotExist(participant);
 
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
@@ -191,8 +190,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         /**
          * 将caller和call进行连接
          */
-        KurentoMediaSession kSession = (KurentoMediaSession)
-                sessions.get(participant.getSessionId());
+        KurentoMediaSession kSession = (KurentoMediaSession) sessions.get(participant.getSessionId());
         KurentoParticipant kParticipantCallee =
                 (KurentoParticipant)
                         kSession.getParticipantByPrivateId(participant.getParticipantPrivatetId());
@@ -200,6 +198,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
          * 寻找找出calleer
          */
         if (isLocal) {//callee连接在本host上
+            log.info("...........start connect .........");
             KurentoParticipant kParticipantCaller =
                     (KurentoParticipant)
                             kSession.getParticipantByPrivateId(callerConnection.getParticipantPrivateId());
@@ -209,6 +208,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
 
             kParticipantCaller.getPublisher().
                     connect(kParticipantCallee.getPublisher().getEndpoint());
+            log.info("...........end connect .........");
         } else {
             //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理
             clusterSessionEvent.publishToRoom(
