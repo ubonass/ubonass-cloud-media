@@ -144,7 +144,7 @@ public class ClusterRpcService {
         while (entries.hasNext()) {
             Map.Entry<String, ClusterConnection> entry = entries.next();
 
-            logger.info("<ParticipantPublicId{}, ClusterConnection>: {}",
+            logger.info("<{}, {}>",
                     entry.getKey(),entry.getValue().toString());
             //System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
         }
@@ -260,7 +260,7 @@ public class ClusterRpcService {
             IMap<String, ClusterConnection> childMap =
                     hazelcastInstance.getMap(session.getSessionName());
             for (ClusterConnection connection : childMap.values())
-                logger.info("<sessionId, ClusterConnection>: {}", connection.toString());
+                logger.info("<{}, {}>", session.getSessionName(),connection.toString());
             //System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
         }
     }

@@ -46,8 +46,7 @@ public class ClusterSessionEvent {
         JsonObject object = new JsonObject();
         object.addProperty(REMOTE_MEDIA_EVENT, REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS);
         JsonObject paramsObject = new JsonObject();
-        paramsObject.addProperty(REMOTE_MEDIA_PARAMS_SDPOFFER,
-                remotePublisher.prepareRemoteConnection());
+        paramsObject.addProperty(REMOTE_MEDIA_PARAMS_SDPOFFER, remotePublisher.prepareRemoteConnection());
         object.addProperty("params", paramsObject.toString());
         String message = object.toString();
 
@@ -60,7 +59,7 @@ public class ClusterSessionEvent {
         try {
             JsonParser parser = new JsonParser();
             JsonObject rtpAnswerObject =
-                    parser.parse(processAnswer.get()).getAsJsonObject();
+                    (JsonObject) parser.parse(processAnswer.get());
             if (rtpAnswerObject.
                     get(REMOTE_MEDIA_EVENT).toString().equals(REMOTE_MEDIA_EVENT_SDPOFFER_PROCESS)) {
                 String rtpAnswer = rtpAnswerObject.get(REMOTE_MEDIA_PARAMS_SDPANSWER).toString();

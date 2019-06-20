@@ -27,8 +27,7 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
     private JsonObject messageJsonObject() {
         if (message != null) {
             JsonParser jsonParser = new JsonParser();
-            JsonElement parse = jsonParser.parse(message);
-            return parse.getAsJsonObject();
+            return (JsonObject) jsonParser.parse(message);
         }
         return null;
     }
@@ -61,7 +60,7 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
         JsonObject paramsObject = null;
         if (messageObject.has("params"))
             paramsObject =
-                    new JsonParser().parse(messageObject.get("params").toString()).getAsJsonObject();
+                    (JsonObject) new JsonParser().parse(messageObject.get("params").toString());
 
         String result = null;
         switch (messageObject.get(ClusterSessionEvent.REMOTE_MEDIA_EVENT).toString()) {
