@@ -169,7 +169,7 @@ public class PublisherEndpoint extends MediaEndpoint {
         }
         String sdpResponse = processOfferOrAnswer(sdpType,sdpString);
 
-        //gatherCandidates();
+        gatherCandidates();
         this.createdAt = System.currentTimeMillis();
         return sdpResponse;
     }

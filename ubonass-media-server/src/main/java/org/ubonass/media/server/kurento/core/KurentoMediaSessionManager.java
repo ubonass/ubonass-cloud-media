@@ -211,8 +211,8 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             kParticipantCaller.getPublisher().
                     connect(kParticipantCallee.getPublisher().getEndpoint());
 
-            kParticipantCallee.getPublisher().startTransmission();
-            kParticipantCaller.getPublisher().startTransmission();
+            /*kParticipantCallee.getPublisher().startTransmission();
+            kParticipantCaller.getPublisher().startTransmission();*/
 
             log.info("...........end connect .........");
         } else {
