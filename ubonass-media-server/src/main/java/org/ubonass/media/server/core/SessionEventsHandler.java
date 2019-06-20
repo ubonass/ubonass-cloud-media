@@ -63,6 +63,7 @@ public class SessionEventsHandler {
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, participant.getSessionId());
         rpcNotificationService.sendNotificationByPublicId(
                 calleeParticipantPublicId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
+
         JsonObject result = new JsonObject();
         result.addProperty("method", ProtocolElements.CALL_METHOD);
         result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");

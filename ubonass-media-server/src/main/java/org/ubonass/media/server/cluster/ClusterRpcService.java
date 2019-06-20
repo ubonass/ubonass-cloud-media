@@ -12,6 +12,7 @@ import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -129,7 +130,7 @@ public class ClusterRpcService {
                 rpcConnection.getParticipantPublicId(),
                 rpcConnection.getParticipantPrivateId(),
                 rpcConnection.getMemberId());
-        logger.info("connection:{} ,add to clusterConnections map",connection.toString());
+        logger.info("connection:{} ,add to clusterConnections map", connection.toString());
         ClusterConnection oldConnection =
                 clusterConnections.putIfAbsent(connection.getParticipantPublicId(), connection);
         return oldConnection;
@@ -230,10 +231,25 @@ public class ClusterRpcService {
                  */
                 hazelcastInstance.getMap(session.getSessionName())
                         .putIfAbsent(participantPublicId, connection);
+                showSessions();
             } else {
                 throw new CloudMediaException(CloudMediaException.Code.TRANSPORT_ERROR_CODE,
                         "participantPublicId : {" + participantPublicId + "} connection not Exist in local and remote member");
             }
+        }
+    }
+
+    public void showSessions() {
+        Iterator<IMap.Entry<String, ClusterSession>> entries =
+                clusterSessions.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<String, ClusterSession> entry = entries.next();
+            ClusterSession session = entry.getValue();
+            IMap<String, ClusterConnection> childMap =
+                    hazelcastInstance.getMap(session.getSessionName());
+            for (ClusterConnection connection : childMap.values())
+                logger.info("<sessionId, ClusterConnection>: {}", connection.toString());
+            //System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
         }
     }
 
@@ -281,6 +297,7 @@ public class ClusterRpcService {
 
     /**
      * 根据publicid
+     *
      * @param memberId
      * @return
      */

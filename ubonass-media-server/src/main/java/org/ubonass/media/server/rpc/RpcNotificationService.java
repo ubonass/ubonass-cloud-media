@@ -218,6 +218,7 @@ public class RpcNotificationService {
             ClusterConnection connection =
                     clusterRpcService.getConnection(participantPublicId);
             if (clusterRpcService.isLocalHostMember(connection.getMemberId())) {
+                log.info("send {} local host message",participantPublicId);
                 sendNotification(
                         connection.getParticipantPrivateId(), method, object);
             } else {
@@ -225,6 +226,7 @@ public class RpcNotificationService {
                 if (object != null) {
                     message = object.toString();
                 }
+                log.info("send {} remote host message member id {}",participantPublicId,connection.getMemberId());
                 clusterRpcService.executeToMember(
                         new ClusterRpcNotification(
                                 participantPublicId, method, message), connection.getMemberId());
