@@ -403,7 +403,6 @@ public class KurentoParticipant extends Participant {
     }
 
     private void releasePublisherEndpoint(EndReason reason) {
-
         /**
          * add by jeffrey......
          */

@@ -421,9 +421,16 @@ public class MediaEndpoint {
             throw new CloudMediaException(Code.MEDIA_WEBRTC_ENDPOINT_ERROR_CODE,
                     "Can't register event listener for null WebRtcEndpoint (ep: " + endpointName + ")");
         }
-        webEndpoint.addOnIceCandidateListener(new EventListener<OnIceCandidateEvent>() {
+        //modify by jeffrey
+        /*webEndpoint.addOnIceCandidateListener(new EventListener<OnIceCandidateEvent>() {
             @Override
             public void onEvent(OnIceCandidateEvent event) {
+                owner.sendIceCandidate(senderPublicId, endpointName, event.getCandidate());
+            }
+        });*/
+        webEndpoint.addIceCandidateFoundListener(new EventListener<IceCandidateFoundEvent>() {
+            @Override
+            public void onEvent(IceCandidateFoundEvent event) {
                 owner.sendIceCandidate(senderPublicId, endpointName, event.getCandidate());
             }
         });
