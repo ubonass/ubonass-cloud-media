@@ -130,9 +130,10 @@ public class ClusterRpcService {
                 rpcConnection.getParticipantPublicId(),
                 rpcConnection.getParticipantPrivateId(),
                 rpcConnection.getMemberId());
-        logger.info("connection:{} ,add to clusterConnections map", connection.toString());
+        //logger.info("connection:{} ,add to clusterConnections map", connection.toString());
         ClusterConnection oldConnection =
                 clusterConnections.putIfAbsent(connection.getParticipantPublicId(), connection);
+        showConnections();
         return oldConnection;
     }
 

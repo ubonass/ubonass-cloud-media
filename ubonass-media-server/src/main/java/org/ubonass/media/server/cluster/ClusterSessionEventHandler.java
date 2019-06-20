@@ -17,8 +17,6 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
     private String message;
     private String sessionId;
 
-    private transient ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
-
     public ClusterSessionEventHandler(
             String sessionId, String participantPublicId, String message) {
         this.sessionId = sessionId;
@@ -41,7 +39,7 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
                 || participantPublicId == null) return;
         JsonObject messageObject = messageJsonObject();
         if (messageObject == null) return;
-        //ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         MediaSessionManager sessionManager = clusterRpcService.getSessionManager();
         switch (messageObject.get(ClusterSessionEvent.REMOTE_MEDIA_EVENT).toString()) {
             case ClusterSessionEvent.REMOTE_MEDIA_EVENT_CLOSE_SESSION:
@@ -58,7 +56,7 @@ public class ClusterSessionEventHandler implements Callable<String>, Runnable, S
                 || participantPublicId == null) return null;
         JsonObject messageObject = messageJsonObject();
         if (messageObject == null) return null;
-        //ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+        ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         MediaSessionManager sessionManager = clusterRpcService.getSessionManager();
         JsonObject paramsObject = null;
         if (messageObject.has("params"))

@@ -35,23 +35,10 @@ public class ClusterRpcNotification implements Runnable, Serializable {
         ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
         RpcNotificationService notificationService =
                 clusterRpcService.getRpcNotificationService();
-        /*RpcConnection rpcConnection =
-                notificationService.getRpcConnection(
-                        clusterRpcService.getConnection(clientId).getParticipantPrivateId());
-        if (rpcConnection == null) return;*/
         ClusterConnection connection = clusterRpcService.getConnection(clientId);
         logger.info("exist connection {} in current host", connection.toString());
         JsonParser parser = new JsonParser();
         JsonObject jsonObject = parser.parse(object).getAsJsonObject();
         notificationService.sendNotification(connection.getParticipantPrivateId(), method, jsonObject);
-        /*try {
-            if (object != null) {
-                rpcConnection.getSession().sendNotification(method, jsonObject);
-            } else {
-                rpcConnection.getSession().sendNotification(method);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
     }
 }
