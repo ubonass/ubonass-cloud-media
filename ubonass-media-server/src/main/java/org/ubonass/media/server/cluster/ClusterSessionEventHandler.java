@@ -1,8 +1,5 @@
 package org.ubonass.media.server.cluster;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.Data;
 import org.ubonass.media.server.cluster.event.Event;
 import org.ubonass.media.server.cluster.event.SdpEvent;

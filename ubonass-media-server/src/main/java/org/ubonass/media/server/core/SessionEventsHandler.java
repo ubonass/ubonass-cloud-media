@@ -13,14 +13,13 @@ import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.java.client.CloudMediaRole;
+import org.ubonass.media.server.cluster.ClusterConnection;
+import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.kurento.KurentoFilter;
 import org.ubonass.media.server.kurento.core.KurentoParticipant;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -31,6 +30,9 @@ public class SessionEventsHandler {
 
     @Autowired
     protected RpcNotificationService rpcNotificationService;
+
+    @Autowired
+    protected ClusterRpcService clusterRpcService;
 
    /* @Autowired
     protected InfoHandler infoHandler;
@@ -85,19 +87,20 @@ public class SessionEventsHandler {
                 participant.getParticipantPrivatetId(), ProtocolElements.ONCALL_METHOD, connectedObject);
     }
 
-    public void onCallHangup(Participant participant, Set<Participant> participants, Integer transactionId) {
+    public void onCallHangup(Participant participant, Collection<ClusterConnection> connections,Integer transactionId) {
 
-        for (Participant p : participants) {
-            if (p.getParticipantPrivatetId().equals(participant.getParticipantPrivatetId())) {
+        for (ClusterConnection connection : connections) {
+            if (connection.getParticipantPrivateId().
+                    equals(participant.getParticipantPrivatetId()) &&
+                    clusterRpcService.isLocalHostMember(connection.getMemberId()))
                 continue;
-            } else {
-                JsonObject hangupObject = new JsonObject();
-                hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
-                        ProtocolElements.ONCALL_EVENT_HANGUP);
-                rpcNotificationService.sendNotificationByPublicId(
-                        p.getParticipantPublicId(),
-                        ProtocolElements.ONCALL_METHOD, hangupObject);
-            }
+
+            JsonObject hangupObject = new JsonObject();
+            hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
+                    ProtocolElements.ONCALL_EVENT_HANGUP);
+            rpcNotificationService.sendNotificationByPublicId(
+                    connection.getParticipantPublicId(),
+                    ProtocolElements.ONCALL_METHOD, hangupObject);
         }
     }
 

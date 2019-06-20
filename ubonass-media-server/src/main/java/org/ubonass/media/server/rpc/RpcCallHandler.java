@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.internal.ProtocolElements;
-import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaOptions;
 import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.utils.RandomStringGenerator;
@@ -157,7 +156,7 @@ public class RpcCallHandler extends RpcHandler {
                 rpcConnection.getSessionId());
     }
 
-    private void onIceCandidate(RpcConnection rpcConnection,
+    protected void onIceCandidate(RpcConnection rpcConnection,
                                 Request<JsonObject> request) {
         Participant participant;
         try {

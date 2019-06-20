@@ -33,6 +33,7 @@ import org.ubonass.media.server.kurento.kms.FixedOneKmsManager;
 import org.ubonass.media.server.rpc.RpcCallHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
 import org.ubonass.media.server.rpc.RpcNotificationService;
+import org.ubonass.media.server.rpc.RpcRoomHandler;
 
 import java.io.IOException;
 import java.util.List;
@@ -96,8 +97,8 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     }
 
     @Bean
-    public RpcHandler callRpcHandler() {
-        return new RpcCallHandler();
+    public RpcHandler rpcHandler() {
+        return new RpcRoomHandler();
     }
 
     @Bean
@@ -128,7 +129,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
     @ConditionalOnMissingBean
     @Bean
     public ClusterRpcService clusterRpcService() {
-        return new ClusterRpcService(config()/*, rpcNotificationService(), sessionManager()*/);
+        return new ClusterRpcService(config());
     }
 
     @ConditionalOnMissingBean
@@ -139,9 +140,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @Override
     public void registerJsonRpcHandlers(JsonRpcHandlerRegistry registry) {
-        /*registry.addHandler(rpcHandler().withPingWatchdog(true)
-                .withInterceptors(new HttpHandshakeInterceptor()), "/media");*/
-        registry.addHandler(callRpcHandler().withPingWatchdog(true)
+        registry.addHandler(rpcHandler().withPingWatchdog(true)
                 .withInterceptors(new HttpHandshakeInterceptor()), "/call");
     }
 

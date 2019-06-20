@@ -248,23 +248,22 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
     @Override
     public void onCallHangup(Participant participant, Integer transactionId) {
         //判断另一个connection是否在本机
-        ClusterRpcService context = clusterRpcService;
         Collection<ClusterConnection> values =
-                context.getSessionConnections(participant.getSessionId());
+                clusterRpcService.getSessionConnections(participant.getSessionId());
+
+        sessionEventsHandler.onCallHangup(participant, values,transactionId);
+
 
         for (ClusterConnection connection : values) {
-            if (!context.isLocalHostMember(connection.getMemberId())) {
-                clusterSessionEvent.closeSession(participant.getSessionId(),
+            if (!clusterRpcService.isLocalHostMember(connection.getMemberId())) {
+                clusterSessionEvent.closeSession(connection.getSessionId(),
                         connection.getParticipantPublicId());
             }
         }
-        /**
-         * 本服务器的媒体服务进行关闭
-         */
-        Set<Participant> existsParticipants = getParticipants(participant.getSessionId());
-        sessionEventsHandler.onCallHangup(participant, existsParticipants, transactionId);
         Set<Participant> participants =
                 closeSession(participant.getSessionId(), null);
+
+
     }
 
 
