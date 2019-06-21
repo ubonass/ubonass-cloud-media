@@ -42,7 +42,7 @@ public class RpcRoomHandler extends RpcCallHandler {
                 break;
 
             default:
-                logger.error("Unrecognized request {}", request);
+                //logger.error("Unrecognized request {}", request);
                 break;
         }
     }
