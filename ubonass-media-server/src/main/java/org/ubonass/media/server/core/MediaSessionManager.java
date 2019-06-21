@@ -278,6 +278,10 @@ public abstract class MediaSessionManager {
 
     public abstract void onCallHangup(Participant participant, Integer transactionId);
 
+    public abstract void joinRoom(Participant participant, String sessionId, Integer transactionId);
+
+    public abstract void subscribe(Participant participant, String senderName, String sdpOffer, Integer transactionId);
+
     public abstract void onIceCandidate(Participant participant, String endpointName, String candidate,
                                         int sdpMLineIndex, String sdpMid, Integer transactionId);
 

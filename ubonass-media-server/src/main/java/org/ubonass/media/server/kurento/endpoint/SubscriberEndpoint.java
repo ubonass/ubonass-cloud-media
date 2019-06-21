@@ -37,17 +37,33 @@ public class SubscriberEndpoint extends MediaEndpoint {
 
     private boolean connectedToPublisher = false;
 
+    //如果是本host则对应一个PublisherEndpoint
     private PublisherEndpoint publisher = null;
 
+    /**
+     *
+     * @param web
+     * @param owner
+     * @param endpointName:对应哪个publisher的endpointName
+     * @param pipeline
+     * @param cloudMediaConfig
+     */
     public SubscriberEndpoint(boolean web,
                               KurentoParticipant owner,
                               String endpointName,
                               MediaPipeline pipeline,
                               CloudMediaConfig cloudMediaConfig) {
         super(web, owner, endpointName, pipeline, cloudMediaConfig, log);
+        //如果endpointName对应的publisher不在本host上这里应该要创建一个rtpEndpoint
     }
 
+    /**
+     * @param sdpOffer :当前endpoint发送来的sdpOffer
+     * @param publisher:这是要接收哪个流？
+     * @return
+     */
     public synchronized String subscribe(String sdpOffer, PublisherEndpoint publisher) {
+        //为啥？
         registerOnIceCandidateEventListener(publisher.getOwner().getParticipantPublicId());
         String sdpAnswer = processOffer(sdpOffer);
         gatherCandidates();

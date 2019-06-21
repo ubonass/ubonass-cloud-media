@@ -20,10 +20,9 @@ public class RpcCallHandler extends RpcHandler {
     public void handleRequest(Transaction transaction,
                               Request<JsonObject> request) throws Exception {
         super.handleRequest(transaction, request);
-        String participantPrivateId =
-                getParticipantPrivateIdByTransaction(transaction);
         RpcConnection rpcConnection =
-                notificationService.getRpcConnection(participantPrivateId);
+                notificationService.getRpcConnection(
+                        getParticipantPrivateIdByTransaction(transaction));
         if (rpcConnection == null) return;
 
         switch (request.getMethod()) {

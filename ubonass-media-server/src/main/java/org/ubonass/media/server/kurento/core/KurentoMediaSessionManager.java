@@ -84,7 +84,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     + "' is trying to call session '" + sessionId + "' but it is closing");
         }
         //创建pipe和KurentoParticipant
-        kSession.createCallMediaStream(participant, remoteNeed);
+        kSession.join(participant, remoteNeed);
 
         KurentoMediaOptions kurentoOptions = (KurentoMediaOptions) mediaOptions;
 
@@ -123,7 +123,8 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         String sessionId = participant.getSessionId();
         KurentoClientSessionInfo kcSessionInfo = new CloudMediaKurentoClientSessionInfo(
                 participant.getParticipantPrivatetId(), sessionId);
-        if (!sessions.containsKey(sessionId) && kcSessionInfo != null) {
+        if ((!sessions.containsKey(sessionId) || sessions.get(sessionId) == null)
+                && kcSessionInfo != null) {
             MediaSession sessionNotActive = new MediaSession(sessionId,
                     new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
                             .recordingMode(RecordingMode.ALWAYS)
@@ -193,7 +194,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
          * 将caller和call进行连接
          */
         KurentoMediaSession kSession = (KurentoMediaSession) sessions.get(participant.getSessionId());
-        KurentoParticipant kParticipantCallee =
+        KurentoParticipant calleeParticipant =
                 (KurentoParticipant)
                         kSession.getParticipantByPrivateId(participant.getParticipantPrivatetId());
         /**
@@ -201,21 +202,21 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
          */
         if (isLocal) {//callee连接在本host上
             log.info("...........start connect .........");
-            KurentoParticipant kParticipantCaller =
+            KurentoParticipant callerParticipant =
                     (KurentoParticipant)
                             kSession.getParticipantByPrivateId(callerConnection.getParticipantPrivateId());
 
-            kParticipantCallee.getPublisher().
-                    connect(kParticipantCaller.getPublisher().getEndpoint());
+            calleeParticipant.getPublisher().
+                    connect(callerParticipant.getPublisher().getEndpoint());
 
-            kParticipantCaller.getPublisher().
-                    connect(kParticipantCallee.getPublisher().getEndpoint());
+            callerParticipant.getPublisher().
+                    connect(calleeParticipant.getPublisher().getEndpoint());
 
             log.info("...........end connect .........");
         } else {
             //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理
             clusterSessionEvent.publishToRoom(
-                    kParticipantCallee.getSessionId(), callerId, kParticipantCallee.getRemotePublisher());
+                    calleeParticipant.getSessionId(), callerId, calleeParticipant.getRemotePublisher());
         }
         /**
          * 添加到集群
@@ -264,6 +265,100 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                 closeSession(participant.getSessionId(), null);
 
 
+    }
+
+    @Override
+    public synchronized void joinRoom(Participant participant, String sessionId, Integer transactionId) {
+        Set<Participant> existingParticipants = null;
+        try {
+
+            KurentoClientSessionInfo kcSessionInfo = new CloudMediaKurentoClientSessionInfo(
+                    participant.getParticipantPrivatetId(), sessionId);
+            KurentoMediaSession kSession = (KurentoMediaSession) sessions.get(sessionId);
+
+            if (kSession == null && kcSessionInfo != null) {
+                // First user connecting to the session
+                MediaSession sessionNotActive = sessionsNotActive.remove(sessionId);
+                //modify by jeffrey
+                if (sessionNotActive == null /*&& this.isInsecureParticipant(participant.getParticipantPrivateId())*/) {
+                    // Insecure user directly call joinRoom RPC method, without REST API use
+                    sessionNotActive = new MediaSession(sessionId,
+                            new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
+                                    .recordingMode(RecordingMode.ALWAYS)
+                                    .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
+                            cloudMediaConfig/*, recordingManager*/);//modify by jeffrey
+                }
+
+                createSession(sessionNotActive, kcSessionInfo);
+            }
+            kSession = (KurentoMediaSession) sessions.get(sessionId);
+            if (kSession == null) {
+                log.warn("Session '{}' not found");
+                throw new CloudMediaException(Code.ROOM_NOT_FOUND_ERROR_CODE, "Session '" + sessionId
+                        + "' was not found, must be created before '" + sessionId + "' can join");
+            }
+            if (kSession.isClosed()) {
+                log.warn("'{}' is trying to join session '{}' but it is closing", participant.getParticipantPublicId(),
+                        sessionId);
+                throw new CloudMediaException(Code.ROOM_CLOSED_ERROR_CODE, "'" + participant.getParticipantPublicId()
+                        + "' is trying to join session '" + sessionId + "' but it is closing");
+            }
+            existingParticipants = getParticipants(sessionId);
+            kSession.join(participant,false);//modify by jeffrey for test
+        } catch (CloudMediaException e) {
+            log.warn("PARTICIPANT {}: Error joining/creating session {}", participant.getParticipantPublicId(),
+                    sessionId, e);
+            sessionEventsHandler.onParticipantJoined(participant, sessionId, null, transactionId, e);
+        }
+        //modify by jeffrey for test 稍后取屏蔽
+        /*if (existingParticipants != null) {
+            sessionEventsHandler.onParticipantJoined(participant, sessionId, existingParticipants, transactionId, null);
+        }*/
+    }
+
+
+    @Override
+    public void subscribe(Participant participant, String senderName, String sdpOffer, Integer transactionId) {
+        String sdpAnswer = null;
+        MediaSession session = null;
+        try {
+            log.info("Request [SUBSCRIBE] remoteParticipant={} sdpOffer={} ({})", senderName, sdpOffer,
+                    participant.getParticipantPublicId());
+
+            KurentoParticipant kParticipant = (KurentoParticipant) participant;
+            session = ((KurentoParticipant) participant).getSession();
+            Participant senderParticipant = session.getParticipantByPublicId(senderName);
+
+            if (senderParticipant == null) {
+                log.warn(
+                        "PARTICIPANT {}: Requesting to recv media from user {} "
+                                + "in session {} but user could not be found",
+                        participant.getParticipantPublicId(), senderName, session.getSessionId());
+                throw new CloudMediaException(Code.USER_NOT_FOUND_ERROR_CODE,
+                        "User '" + senderName + " not found in session '" + session.getSessionId() + "'");
+            }
+            if (!senderParticipant.isStreaming()) {
+                log.warn(
+                        "PARTICIPANT {}: Requesting to recv media from user {} "
+                                + "in session {} but user is not streaming media",
+                        participant.getParticipantPublicId(), senderName, session.getSessionId());
+                throw new CloudMediaException(Code.USER_NOT_STREAMING_ERROR_CODE,
+                        "User '" + senderName + " not streaming media in session '" + session.getSessionId() + "'");
+            }
+
+            sdpAnswer = kParticipant.receiveMediaFrom(senderParticipant, sdpOffer);
+            if (sdpAnswer == null) {
+                throw new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
+                        "Unable to generate SDP answer when subscribing '" + participant.getParticipantPublicId()
+                                + "' to '" + senderName + "'");
+            }
+        } catch (CloudMediaException e) {
+            log.error("PARTICIPANT {}: Error subscribing to {}", participant.getParticipantPublicId(), senderName, e);
+            sessionEventsHandler.onSubscribe(participant, session, null, transactionId, e);
+        }
+        if (sdpAnswer != null) {
+            sessionEventsHandler.onSubscribe(participant, session, sdpAnswer, transactionId, null);
+        }
     }
 
 

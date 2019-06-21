@@ -183,6 +183,7 @@ public class SessionEventsHandler {
                         ProtocolElements.PARTICIPANTJOINED_METHOD, notifParams);
             }
         }
+        result.addProperty("method", ProtocolElements.JOINROOM_METHOD);//标识这是当前是joinRoom请求
         result.addProperty(ProtocolElements.PARTICIPANTJOINED_USER_PARAM, participant.getParticipantPublicId());
         result.addProperty(ProtocolElements.PARTICIPANTJOINED_CREATEDAT_PARAM, participant.getCreatedAt());
         result.addProperty(ProtocolElements.PARTICIPANTJOINED_METADATA_PARAM, participant.getFullMetadata());

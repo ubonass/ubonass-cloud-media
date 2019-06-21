@@ -67,7 +67,7 @@ public class KurentoParticipant extends Participant {
                               KurentoParticipantEndpointConfig endpointConfig,
                               CloudMediaConfig cloudMediaConfig/*,
                               RecordingManager recordingManager*/,
-                              boolean useCall, boolean remoteNeed) {
+                              boolean remoteNeed) {
         super(participant.getMemberId(),
                 participant.getParticipantPrivatetId(),
                 participant.getParticipantPublicId(),
@@ -84,8 +84,9 @@ public class KurentoParticipant extends Participant {
         this.session = kurentoSession;
 
         Token token = participant.getToken();
-        if (useCall || token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
-            this.publisher = new PublisherEndpoint(webParticipant, this, participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudMediaConfig);
+        if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
+            this.publisher = new PublisherEndpoint(webParticipant, this,
+                    participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudMediaConfig);
         }
         /**
          * 如果房间使用了集群
@@ -258,6 +259,7 @@ public class KurentoParticipant extends Participant {
         log.debug("PARTICIPANT {}: Creating a subscriber endpoint to user {}", this.getParticipantPublicId(),
                 senderName);
 
+        //创建SubscriberEndpoint
         SubscriberEndpoint subscriber = getNewOrExistingSubscriber(senderName);
 
         try {
@@ -367,6 +369,7 @@ public class KurentoParticipant extends Participant {
      * @senderPublicId remotePublicId id of another user
      */
     public SubscriberEndpoint getNewOrExistingSubscriber(String senderPublicId) {
+        //创建SubscriberEndpoin实例
         SubscriberEndpoint subscriberEndpoint = new SubscriberEndpoint(
                 webParticipant, this, senderPublicId,
                 this.getPipeline(), this.cloudMediaConfig);
