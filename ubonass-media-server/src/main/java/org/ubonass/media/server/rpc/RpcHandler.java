@@ -387,7 +387,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
         }
 
-
+        clusterRpcService.showConnections();
+        clusterRpcService.showSessions();
 
     }
 
