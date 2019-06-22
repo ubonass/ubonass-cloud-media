@@ -51,7 +51,7 @@ public class RpcRoomHandler extends RpcCallHandler {
         //测试使用
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
         rpcConnection.setSessionId(sessionId);
-        Token tokenObj = new Token(null, CloudMediaRole.SUBSCRIBER, null, null, null);
+        Token tokenObj = new Token(null, CloudMediaRole.SUBSCRIBER, "helloworld", null, null);
         Participant p = new Participant(
                 rpcConnection.getMemberId(), rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId(),
                 sessionId, tokenObj, null, null, null, null);
