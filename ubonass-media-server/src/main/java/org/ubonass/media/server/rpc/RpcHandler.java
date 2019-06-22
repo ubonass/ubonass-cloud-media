@@ -326,11 +326,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 rpcSession.getAttributes().put("httpSession", httpSession);
             }
             if (attributes.containsKey("clientId")) {
-                /**
-                 * add by jeffrey......
-                 */
-                String participantPublicId =
-                        attributes.get("clientId").toString();
+                String participantPublicId = attributes.get("clientId").toString();
                 //rpcSession.getAttributes().put("clientId", participantPublicId);
                 RpcConnection rpcConnection = new RpcConnection(rpcSession);
                 rpcConnection.setMemberId(clusterRpcService.getMemberId());
@@ -340,6 +336,29 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 logger.info("participantPublicId: {}", participantPublicId);
             }
         }
+    }
+
+
+    private void closeConnection(Session rpcSession) {
+        String rpcSessionId = rpcSession.getSessionId();
+        RpcConnection rpc = this.notificationService.closeRpcSession(rpcSessionId);
+        if (rpc != null && rpc.getSessionId() != null) {
+            logger.info("~~~~~~~~~~~~3~~~~~~~~~~~");
+            MediaSession session = this.sessionManager.getSession(rpc.getSessionId());
+            if (session != null && session.getParticipantByPrivateId(rpc.getParticipantPrivateId()) != null) {
+                logger.info("~~~~~~~~~~~~4~~~~~~~~~~~");
+                leaveRoomAfterConnClosed(rpc.getParticipantPrivateId(), EndReason.networkDisconnect);
+                //将该会话从集群会话中移除
+                this.clusterRpcService.leaveSession(rpc.getSessionId(), rpc.getParticipantPublicId());
+            }
+        }
+        logger.info("~~~~~~~~~~~~5~~~~~~~~~~~");
+        //将该连接从集群连接中移除
+        ClusterConnection clusterConnection =
+                this.clusterRpcService.closeConnection(rpc.getParticipantPublicId());
+
+        if (rpc != null) rpc = null;
+        if (clusterConnection != null) clusterConnection = null;
     }
 
     @Override
@@ -353,10 +372,10 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         if ("Close for not receive ping from client".equals(status)) {
             message = "Evicting participant with private id {} because of a network disconnection";
         } else if (status == null) { // && this.webSocketBrokenPipeTransportError.remove(rpcSessionId) != null)) {
-            try {
+            try { //这种情况是直接客户端杀掉进程
                 Participant p = sessionManager.getParticipant(rpcSession.getSessionId());
                 if (p != null) {
-                    logger.info("---------------1-------------");
+                    logger.info("~~~~~~~~~~~~1~~~~~~~~~~~");
                     message = "Evicting participant with private id {} because its websocket unexpectedly closed in the client side";
                 }
             } catch (CloudMediaException exception) {
@@ -364,30 +383,18 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         }
 
         if (!message.isEmpty()) {
-            RpcConnection rpc = this.notificationService.closeRpcSession(rpcSessionId);
-            if (rpc != null && rpc.getSessionId() != null) {
-
-                MediaSession session = this.sessionManager.getSession(rpc.getSessionId());
-                if (session != null && session.getParticipantByPrivateId(rpc.getParticipantPrivateId()) != null) {
-                    //将该链接从集群session中移除
-                    this.clusterRpcService.leaveSession(rpc.getSessionId(),rpc.getParticipantPublicId());
-                    //将该集群链接从集群集合中清除
-                    ClusterConnection clusterConnection = this.clusterRpcService.closeConnection(rpc.getParticipantPublicId());
-                    if (clusterConnection != null) clusterConnection = null;
-
-                    logger.info(message, rpc.getParticipantPrivateId());
-                    leaveRoomAfterConnClosed(rpc.getParticipantPrivateId(), EndReason.networkDisconnect);
-                }
-            }
+            closeConnection(rpcSession);
         }
-
+        /**
+         * 这种直接杀掉进程的
+         */
         if (this.webSocketEOFTransportError.remove(rpcSessionId) != null) {
-            logger.info("---------------2-------------");
+            logger.info("~~~~~~~~~~~~4~~~~~~~~~~~");
             logger.warn(
                     "Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
                     rpcSession.getSessionId());
-
-            this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
+            closeConnection(rpcSession);
+            //this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
         }
 
         clusterRpcService.showConnections();
