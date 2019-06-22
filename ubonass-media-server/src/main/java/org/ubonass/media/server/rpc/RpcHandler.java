@@ -356,6 +356,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             try {
                 Participant p = sessionManager.getParticipant(rpcSession.getSessionId());
                 if (p != null) {
+                    logger.info("---------------1-------------");
                     message = "Evicting participant with private id {} because its websocket unexpectedly closed in the client side";
                 }
             } catch (CloudMediaException exception) {
@@ -381,9 +382,11 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         }
 
         if (this.webSocketEOFTransportError.remove(rpcSessionId) != null) {
+            logger.info("---------------2-------------");
             logger.warn(
                     "Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
                     rpcSession.getSessionId());
+
             this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
         }
 
