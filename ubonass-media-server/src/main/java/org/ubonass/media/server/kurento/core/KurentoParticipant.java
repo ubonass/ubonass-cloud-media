@@ -1,19 +1,3 @@
-/*
- * (C) Copyright 2017-2019 OpenVidu (https://openvidu.io/)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
 
 package org.ubonass.media.server.kurento.core;
 
@@ -33,6 +17,7 @@ import org.ubonass.media.server.core.MediaOptions;
 import org.ubonass.media.server.core.Participant;
 import org.ubonass.media.server.core.Token;
 import org.ubonass.media.server.kurento.endpoint.*;
+import org.ubonass.media.server.recording.service.RecordingManager;
 
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -41,8 +26,8 @@ public class KurentoParticipant extends Participant {
 
     private static final Logger log = LoggerFactory.getLogger(KurentoParticipant.class);
 
-    private CloudMediaConfig cloudMediaConfig;
-    /*private RecordingManager recordingManager;*/
+    private CloudMediaConfig cloudmediaConfig;
+    private RecordingManager recordingManager;
 
     private boolean webParticipant = true;
 
@@ -65,8 +50,8 @@ public class KurentoParticipant extends Participant {
     public KurentoParticipant(Participant participant,
                               KurentoMediaSession kurentoSession,
                               KurentoParticipantEndpointConfig endpointConfig,
-                              CloudMediaConfig cloudMediaConfig/*,
-                              RecordingManager recordingManager*/,
+                              CloudMediaConfig cloudmediaConfig,
+                              RecordingManager recordingManager,
                               boolean remoteNeed) {
         super(participant.getMemberId(),
                 participant.getParticipantPrivatetId(),
@@ -79,21 +64,21 @@ public class KurentoParticipant extends Participant {
                 participant.getCreatedAt());
 
         this.endpointConfig = endpointConfig;
-        this.cloudMediaConfig = cloudMediaConfig;
-        /*this.recordingManager = recordingManager;*/
+        this.cloudmediaConfig = cloudmediaConfig;
+        this.recordingManager = recordingManager;
         this.session = kurentoSession;
 
         Token token = participant.getToken();
         if (token == null || !CloudMediaRole.SUBSCRIBER.equals(token.getRole())) {
             this.publisher = new PublisherEndpoint(webParticipant, this,
-                    participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudMediaConfig);
+                    participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudmediaConfig);
         }
         /**
          * 如果房间使用了集群
          */
         if (remoteNeed) {
             this.remotePublisher = new RemoteEndpoint(
-                    this, participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudMediaConfig);
+                    this, participant.getParticipantPublicId(), this.session.getPipeline(), this.cloudmediaConfig);
         }
     }
 
@@ -202,13 +187,13 @@ public class KurentoParticipant extends Participant {
         log.trace("PARTICIPANT {}: Publishing Sdp ({}) is {}", this.getParticipantPublicId(), sdpType, sdpResponse);
         log.info("PARTICIPANT {}: Is now publishing video in room {}", this.getParticipantPublicId(),
                 this.session.getSessionId());
-
-        /*if (this.cloudMediaConfig.isRecordingModuleEnabled()
+        //modify by jeffrey
+        if (this.cloudmediaConfig.isRecordingModuleEnable()
                 && this.recordingManager.sessionIsBeingRecorded(session.getSessionId())) {
             this.recordingManager.startOneIndividualStreamRecording(session, null, null, this);
         }
-
-        endpointConfig.getCdr().recordNewPublisher(this, session.getSessionId(), publisher.getStreamId(),
+        //modify by jeffrey
+        /*endpointConfig.getCdr().recordNewPublisher(this, session.getSessionId(), publisher.getStreamId(),
                 publisher.getMediaOptions(), publisher.createdAt());*/
 
         return sdpResponse;
@@ -231,7 +216,7 @@ public class KurentoParticipant extends Participant {
                 this.session.getSessionId());
         releasePublisherEndpoint(reason);
         this.publisher = new PublisherEndpoint(webParticipant, this, this.getParticipantPublicId(), this.getPipeline(),
-                this.cloudMediaConfig);
+                this.cloudmediaConfig);
         log.info("PARTICIPANT {}: released publisher endpoint and left it initialized (ready for future streaming)",
                 this.getParticipantPublicId());
     }
@@ -372,7 +357,7 @@ public class KurentoParticipant extends Participant {
         //创建SubscriberEndpoin实例
         SubscriberEndpoint subscriberEndpoint = new SubscriberEndpoint(
                 webParticipant, this, senderPublicId,
-                this.getPipeline(), this.cloudMediaConfig);
+                this.getPipeline(), this.cloudmediaConfig);
 
         SubscriberEndpoint existingSendingEndpoint = this.subscribers.putIfAbsent(senderPublicId, subscriberEndpoint);
         if (existingSendingEndpoint != null) {
@@ -421,11 +406,11 @@ public class KurentoParticipant extends Participant {
             // Remove streamId from publisher's map
             this.session.publishedStreamIds.remove(this.getPublisherStreamId());
             //modify by jeffrey
-            /*if (this.cloudMediaConfig.isRecordingModuleEnabled()
+            if (this.cloudmediaConfig.isRecordingModuleEnable()
                     && this.recordingManager.sessionIsBeingRecorded(session.getSessionId())) {
                 this.recordingManager.stopOneIndividualStreamRecording(session.getSessionId(),
                         this.getPublisherStreamId(), false);
-            }*/
+            }
 
             publisher.unregisterErrorListeners();
             if (publisher.kmsWebrtcStatsThread != null) {
@@ -505,7 +490,7 @@ public class KurentoParticipant extends Participant {
     public void resetPublisherEndpoint() {
         log.info("Reseting publisher endpoint for participant {}", this.getParticipantPublicId());
         this.publisher = new PublisherEndpoint(webParticipant, this, this.getParticipantPublicId(),
-                this.session.getPipeline(), this.cloudMediaConfig);
+                this.session.getPipeline(), this.cloudmediaConfig);
     }
 
     @Override

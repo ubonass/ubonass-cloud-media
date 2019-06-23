@@ -21,11 +21,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.internal.ProtocolElements;
-import org.ubonass.media.java.client.Recording;
+import org.ubonass.media.java.client.RecordingInfo;
 import org.ubonass.media.java.client.RecordingLayout;
 import org.ubonass.media.java.client.SessionProperties;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.kurento.core.KurentoParticipant;
+import org.ubonass.media.server.recording.service.RecordingManager;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -37,9 +38,9 @@ import java.util.function.Function;
 
 public class MediaSession {
 
-    protected CloudMediaConfig cloudMediaConfig;
+    protected CloudMediaConfig cloudmediaConfig;
 
-    //protected RecordingManager recordingManager;
+    protected RecordingManager recordingManager;
     /**
      * 私有ID
      * @Key:participantPrivatetId
@@ -59,19 +60,19 @@ public class MediaSession {
         this.sessionId = previousSession.getSessionId();
         this.startTime = previousSession.getStartTime();
         this.sessionProperties = previousSession.getSessionProperties();
-        this.cloudMediaConfig = previousSession.cloudMediaConfig;
-        //this.recordingManager = previousSession.recordingManager;
+        this.cloudmediaConfig = previousSession.cloudmediaConfig;
+        this.recordingManager = previousSession.recordingManager;
     }
 
     public MediaSession(String sessionId,
                         SessionProperties sessionProperties,
-                        CloudMediaConfig cloudMediaConfig/*,
-                        RecordingManager recordingManager*/) {
+                        CloudMediaConfig cloudmediaConfig,
+                        RecordingManager recordingManager) {
         this.sessionId = sessionId;
         this.startTime = System.currentTimeMillis();
         this.sessionProperties = sessionProperties;
-        this.cloudMediaConfig = cloudMediaConfig;
-        //this.recordingManager = recordingManager;
+        this.cloudmediaConfig = cloudmediaConfig;
+        this.recordingManager = recordingManager;
     }
 
     public String getSessionId() {
@@ -143,7 +144,7 @@ public class MediaSession {
         json.addProperty("mediaMode", this.sessionProperties.mediaMode().name());
         json.addProperty("recordingMode", this.sessionProperties.recordingMode().name());
         json.addProperty("defaultOutputMode", this.sessionProperties.defaultOutputMode().name());
-        if (Recording.OutputMode.COMPOSED.equals(this.sessionProperties.defaultOutputMode())) {
+        if (RecordingInfo.OutputMode.COMPOSED.equals(this.sessionProperties.defaultOutputMode())) {
             json.addProperty("defaultRecordingLayout", this.sessionProperties.defaultRecordingLayout().name());
             if (RecordingLayout.CUSTOM.equals(this.sessionProperties.defaultRecordingLayout())) {
                 json.addProperty("defaultCustomLayout", this.sessionProperties.defaultCustomLayout());
@@ -162,7 +163,7 @@ public class MediaSession {
         connections.addProperty("numberOfElements", participants.size());
         connections.add("content", participants);
         json.add("connections", connections);
-        //json.addProperty("recording", this.recordingManager.sessionIsBeingRecorded(this.sessionId));
+        json.addProperty("recording", this.recordingManager.sessionIsBeingRecorded(this.sessionId));
         return json;
     }
 

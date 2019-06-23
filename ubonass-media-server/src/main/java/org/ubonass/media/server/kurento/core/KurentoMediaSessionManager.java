@@ -129,7 +129,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
                             .recordingMode(RecordingMode.ALWAYS)
                             .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
-                    cloudMediaConfig/*recordingManager*/);
+                    cloudmediaConfig, recordingManager);
             createSession(sessionNotActive, kcSessionInfo);
         }
     }
@@ -201,7 +201,6 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
          * 寻找找出calleer
          */
         if (isLocal) {//callee连接在本host上
-            log.info("...........start connect .........");
             KurentoParticipant callerParticipant =
                     (KurentoParticipant)
                             kSession.getParticipantByPrivateId(callerConnection.getParticipantPrivateId());
@@ -211,8 +210,6 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
 
             callerParticipant.getPublisher().
                     connect(calleeParticipant.getPublisher().getEndpoint());
-
-            log.info("...........end connect .........");
         } else {
             //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理
             clusterSessionEvent.publishToRoom(
@@ -252,7 +249,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         Collection<ClusterConnection> values =
                 clusterRpcService.getSessionConnections(participant.getSessionId());
 
-        sessionEventsHandler.onCallHangup(participant, values,transactionId);
+        sessionEventsHandler.onCallHangup(participant, values, transactionId);
 
 
         for (ClusterConnection connection : values) {
@@ -286,7 +283,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                             new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
                                     .recordingMode(RecordingMode.ALWAYS)
                                     .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
-                            cloudMediaConfig/*, recordingManager*/);//modify by jeffrey
+                            cloudmediaConfig, recordingManager);//modify by jeffrey
                 }
 
                 createSession(sessionNotActive, kcSessionInfo);
@@ -304,7 +301,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                         + "' is trying to join session '" + sessionId + "' but it is closing");
             }
             existingParticipants = getParticipants(sessionId);
-            kSession.join(participant,false);//modify by jeffrey for test
+            kSession.join(participant, false);//modify by jeffrey for test
         } catch (CloudMediaException e) {
             log.warn("PARTICIPANT {}: Error joining/creating session {}", participant.getParticipantPublicId(),
                     sessionId, e);
@@ -440,32 +437,31 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             // "SessionManager.closeSessionAndEmptyCollections"
             if (remainingParticipants.isEmpty()) {
                 //modify by jeffrey
-                /*if (cloudMediaConfig.isRecordingModuleEnabled()
+                if (cloudmediaConfig.isRecordingModuleEnable()
                         && MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode())
                         && (this.recordingManager.sessionIsBeingRecorded(sessionId))) {
                     // Start countdown to stop recording. Will be aborted if a Publisher starts
                     // before timeout
                     log.info(
                             "Last participant left. Starting {} seconds countdown for stopping recording of session {}",
-                            this.cloudMediaConfig.getOpenviduRecordingAutostopTimeout(), sessionId);
+                            this.cloudmediaConfig.getRecordingAutostopTimeout(), sessionId);
                     recordingManager.initAutomaticRecordingStopThread(session);
-                } else*/
-                {
+                } else {
                     log.info("No more participants in session '{}', removing it and closing it", sessionId);
                     this.closeSessionAndEmptyCollections(session, reason);
                     showTokens();
                 }
                 //modify by jeffrey
-            } /*else if (remainingParticipants.size() == 1 && cloudMediaConfig.isRecordingModuleEnabled()
+            } else if (remainingParticipants.size() == 1 && cloudmediaConfig.isRecordingModuleEnable()
                     && MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode())
                     && this.recordingManager.sessionIsBeingRecorded(sessionId)
                     && ProtocolElements.RECORDER_PARTICIPANT_PUBLICID
                     .equals(remainingParticipants.iterator().next().getParticipantPublicId())) {
                 // Start countdown
                 log.info("Last participant left. Starting {} seconds countdown for stopping recording of session {}",
-                        this.cloudMediaConfig.getOpenviduRecordingAutostopTimeout(), sessionId);
+                        this.cloudmediaConfig.getRecordingAutostopTimeout(), sessionId);
                 recordingManager.initAutomaticRecordingStopThread(session);
-            }*/
+            }
         }
 
         // Finally close websocket session if required

@@ -17,6 +17,8 @@ import org.ubonass.media.server.cluster.ClusterRpcNotification;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -158,6 +160,16 @@ public class RpcNotificationService {
         rpcSession.removeTransaction(transactionId);
         return t;
     }
+
+    /*public void showRpcConnections() {
+        Iterator<ConcurrentMap.Entry<String, RpcConnection>> entries =
+                rpcConnections.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<String, RpcConnection> entry = entries.next();
+            log.info("<{}, {}>",
+                    entry.getKey(),entry.getValue().toString());
+        }
+    }*/
 
     public void showRpcConnections() {
         log.info("<PRIVATE_ID, RPC_CONNECTION>: {}", this.rpcConnections.toString());

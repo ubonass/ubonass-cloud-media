@@ -9,6 +9,7 @@ import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.config.CloudMediaConfig;
+import org.ubonass.media.server.recording.service.RecordingManager;
 
 import javax.annotation.PreDestroy;
 import java.util.Collection;
@@ -51,13 +52,16 @@ public abstract class MediaSessionManager {
     public ConcurrentMap<String, ConcurrentHashMap<String, Token>> sessionidTokenTokenobj = new ConcurrentHashMap<>();
 
     @Autowired
-    protected CloudMediaConfig cloudMediaConfig;
+    protected CloudMediaConfig cloudmediaConfig;
 
     @Autowired
     protected SessionEventsHandler sessionEventsHandler;
 
     @Autowired
     protected ClusterRpcService clusterRpcService;
+
+    @Autowired
+    protected RecordingManager recordingManager;
 
     private volatile boolean closed = false;
 
@@ -244,7 +248,7 @@ public abstract class MediaSessionManager {
 
     public void closeSessionAndEmptyCollections(MediaSession session, EndReason reason) {
 
-        /*if (cloudMediaConfig.isRecordingModuleEnabled()
+        /*if (cloudmediaConfig.isRecordingModuleEnabled()
                 && this.recordingManager.sessionIsBeingRecorded(session.getSessionId())) {
             recordingManager.stopRecording(session, null, RecordingManager.finalReason(reason));
         }*/

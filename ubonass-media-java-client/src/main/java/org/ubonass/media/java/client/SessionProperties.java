@@ -17,7 +17,7 @@
 
 package org.ubonass.media.java.client;
 
-import org.ubonass.media.java.client.Recording.*;
+import org.ubonass.media.java.client.RecordingInfo.*;
 
 /**
  * See {@link org.ubonass.media.java.client.OpenVidu#createSession(SessionProperties)}
@@ -79,10 +79,10 @@ public class SessionProperties {
          * Call this method to set the the default value used to initialize property
          * {@link org.ubonass.media.java.client.RecordingProperties#outputMode()} of every
          * recording of this session. You can easily override this value later when
-         * starting a {@link org.ubonass.media.java.client.Recording} by calling
-         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
+         * starting a {@link RecordingInfo} by calling
+         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
          * with any other value.<br>
-         * Default value is {@link Recording.OutputMode#COMPOSED}
+         * Default value is {@link RecordingInfo.OutputMode#COMPOSED}
          */
         public SessionProperties.Builder defaultOutputMode(OutputMode outputMode) {
             this.defaultOutputMode = outputMode;
@@ -93,13 +93,13 @@ public class SessionProperties {
          * Call this method to set the the default value used to initialize property
          * {@link org.ubonass.media.java.client.RecordingProperties#recordingLayout()} of
          * every recording of this session. You can easily override this value later
-         * when starting a {@link org.ubonass.media.java.client.Recording} by calling
+         * when starting a {@link RecordingInfo} by calling
          * {@link org.ubonass.media.java.client.RecordingProperties.Builder#recordingLayout(RecordingLayout)}
          * with any other value.<br>
          * Default value is {@link RecordingLayout#BEST_FIT}<br>
          * <br>
-         * Recording layouts are only applicable to recordings with OutputMode
-         * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}
+         * RecordingInfo layouts are only applicable to recordings with OutputMode
+         * {@link RecordingInfo.OutputMode#COMPOSED}
          */
         public SessionProperties.Builder defaultRecordingLayout(RecordingLayout layout) {
             this.defaultRecordingLayout = layout;
@@ -110,13 +110,13 @@ public class SessionProperties {
          * Call this method to set the default value used to initialize property
          * {@link org.ubonass.media.java.client.RecordingProperties#customLayout()} of every
          * recording of this session. You can easily override this value later when
-         * starting a {@link org.ubonass.media.java.client.Recording} by calling
+         * starting a {@link RecordingInfo} by calling
          * {@link org.ubonass.media.java.client.RecordingProperties.Builder#customLayout(String)}
          * with any other value.<br>
          * <br>
          * <p>
          * Custom layouts are only applicable to recordings with OutputMode
-         * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED} and
+         * {@link RecordingInfo.OutputMode#COMPOSED} and
          * RecordingLayout {@link org.ubonass.media.java.client.RecordingLayout#CUSTOM}
          */
         public SessionProperties.Builder defaultCustomLayout(String path) {
@@ -179,8 +179,8 @@ public class SessionProperties {
      * Defines the default value used to initialize property
      * {@link org.ubonass.media.java.client.RecordingProperties#outputMode()} of every
      * recording of this session. You can easily override this value later when
-     * starting a {@link org.ubonass.media.java.client.Recording} by calling
-     * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
+     * starting a {@link RecordingInfo} by calling
+     * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
      * with any other value
      */
     public OutputMode defaultOutputMode() {
@@ -191,11 +191,11 @@ public class SessionProperties {
      * Defines the default value used to initialize property
      * {@link org.ubonass.media.java.client.RecordingProperties#recordingLayout()} of
      * every recording of this session. You can easily override this value later
-     * when starting a {@link org.ubonass.media.java.client.Recording} by calling
+     * when starting a {@link RecordingInfo} by calling
      * {@link org.ubonass.media.java.client.RecordingProperties.Builder#recordingLayout(RecordingLayout)}
      * with any other value.<br>
-     * Recording layouts are only applicable to recordings with OutputMode
-     * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}
+     * RecordingInfo layouts are only applicable to recordings with OutputMode
+     * {@link RecordingInfo.OutputMode#COMPOSED}
      */
     public RecordingLayout defaultRecordingLayout() {
         return this.defaultRecordingLayout;
@@ -205,11 +205,11 @@ public class SessionProperties {
      * Defines the default value used to initialize property
      * {@link org.ubonass.media.java.client.RecordingProperties#customLayout()} of every
      * recording of this session. You can easily override this value later when
-     * starting a {@link org.ubonass.media.java.client.Recording} by calling
+     * starting a {@link RecordingInfo} by calling
      * {@link org.ubonass.media.java.client.RecordingProperties.Builder#customLayout(String)}
      * with any other value.<br>
      * Custom layouts are only applicable to recordings with OutputMode
-     * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED} and
+     * {@link RecordingInfo.OutputMode#COMPOSED} and
      * RecordingLayout {@link org.ubonass.media.java.client.RecordingLayout#CUSTOM}
      */
     public String defaultCustomLayout() {

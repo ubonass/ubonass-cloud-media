@@ -13,8 +13,10 @@ import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.java.client.CloudMediaRole;
+import org.ubonass.media.java.client.RecordingInfo;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.kurento.KurentoFilter;
 import org.ubonass.media.server.kurento.core.KurentoParticipant;
 import org.ubonass.media.server.rpc.RpcNotificationService;
@@ -39,11 +41,11 @@ public class SessionEventsHandler {
 
     @Autowired
     protected CallDetailRecord CDR;
-
+    */
     @Autowired
-    protected OpenviduConfig openviduConfig;
+    protected CloudMediaConfig cloudmediaConfig;
 
-    Map<String, Recording> recordingsStarted = new ConcurrentHashMap<>();*/
+    Map<String, RecordingInfo> recordingsStarted = new ConcurrentHashMap<>();
 
     ReentrantLock lock = new ReentrantLock();
 
@@ -327,7 +329,7 @@ public class SessionEventsHandler {
        /* if (ProtocolElements.RECORDER_PARTICIPANT_PUBLICID.equals(participant.getParticipantPublicId())) {
             lock.lock();
             try {
-                Recording recording = this.recordingsStarted.remove(session.getSessionId());
+                RecordingInfo recording = this.recordingsStarted.remove(session.getSessionId());
                 if (recording != null) {
                     // RECORDER participant is now receiving video from the first publisher
                     this.sendRecordingStartedNotification(session, recording);
@@ -457,17 +459,17 @@ public class SessionEventsHandler {
         }
     }
 
-    /*public void sendRecordingStartedNotification(MediaSession session, Recording recording) {
+    public void sendRecordingStartedNotification(MediaSession session, RecordingInfo recordingInfo) {
+        //modify by jeffrey
+        //CDR.recordRecordingStarted(session.getSessionId(), recordingInfo);
 
-        CDR.recordRecordingStarted(session.getSessionId(), recording);
-
-        // Filter participants by roles according to "openvidu.recording.notification"
+        // Filter participants by roles according to "openvidu.recordingInfo.notification"
         Set<Participant> filteredParticipants = this.filterParticipantsByRole(
-                this.openviduConfig.getRolesFromRecordingNotification(), session.getParticipants());
+                this.cloudmediaConfig.getRolesFromRecordingNotification(), session.getParticipants());
 
         JsonObject params = new JsonObject();
-        params.addProperty(ProtocolElements.RECORDINGSTARTED_ID_PARAM, recording.getId());
-        params.addProperty(ProtocolElements.RECORDINGSTARTED_NAME_PARAM, recording.getName());
+        params.addProperty(ProtocolElements.RECORDINGSTARTED_ID_PARAM, recordingInfo.getId());
+        params.addProperty(ProtocolElements.RECORDINGSTARTED_NAME_PARAM, recordingInfo.getName());
 
         for (Participant p : filteredParticipants) {
             rpcNotificationService.sendNotification(p.getParticipantPrivatetId(),
@@ -475,14 +477,14 @@ public class SessionEventsHandler {
         }
     }
 
-    public void sendRecordingStoppedNotification(Session session, Recording recording, EndReason reason) {
-
-        CDR.recordRecordingStopped(session.getSessionId(), recording, reason);
+    public void sendRecordingStoppedNotification(MediaSession session, RecordingInfo recordingInfo, EndReason reason) {
+        //modify by jeffrey
+        //CDR.recordRecordingStopped(session.getSessionId(), recordingInfo, reason);
 
         // Be sure to clean this map (this should return null)
         this.recordingsStarted.remove(session.getSessionId());
 
-        // Filter participants by roles according to "openvidu.recording.notification"
+        // Filter participants by roles according to "openvidu.recordingInfo.notification"
         Set<Participant> existingParticipants;
         try {
             existingParticipants = session.getParticipants();
@@ -493,18 +495,18 @@ public class SessionEventsHandler {
             return;
         }
         Set<Participant> filteredParticipants = this.filterParticipantsByRole(
-                this.openviduConfig.getRolesFromRecordingNotification(), existingParticipants);
+                this.cloudmediaConfig.getRolesFromRecordingNotification(), existingParticipants);
 
         JsonObject params = new JsonObject();
-        params.addProperty(ProtocolElements.RECORDINGSTOPPED_ID_PARAM, recording.getId());
-        params.addProperty(ProtocolElements.RECORDINGSTARTED_NAME_PARAM, recording.getName());
+        params.addProperty(ProtocolElements.RECORDINGSTOPPED_ID_PARAM, recordingInfo.getId());
+        params.addProperty(ProtocolElements.RECORDINGSTARTED_NAME_PARAM, recordingInfo.getName());
         params.addProperty(ProtocolElements.RECORDINGSTOPPED_REASON_PARAM, reason != null ? reason.name() : "");
 
         for (Participant p : filteredParticipants) {
             rpcNotificationService.sendNotification(p.getParticipantPrivatetId(),
                     ProtocolElements.RECORDINGSTOPPED_METHOD, params);
         }
-    }*/
+    }
 
     public void onFilterChanged(Participant participant, Participant moderator, Integer transactionId,
                                 Set<Participant> participants, String streamId, KurentoFilter filter, CloudMediaException error,
@@ -586,9 +588,9 @@ public class SessionEventsHandler {
         this.rpcNotificationService.closeRpcSession(participantPrivateId);
     }
     //modify by jeffrey
-    /*public void setRecordingStarted(String sessionId, Recording recording) {
-        this.recordingsStarted.put(sessionId, recording);
-    }*/
+    public void setRecordingStarted(String sessionId, RecordingInfo recordingInfo) {
+        this.recordingsStarted.put(sessionId, recordingInfo);
+    }
 
     private Set<Participant> filterParticipantsByRole(CloudMediaRole[] roles, Set<Participant> participants) {
         return participants.stream().filter(part -> {

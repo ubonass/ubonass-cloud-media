@@ -24,7 +24,7 @@ package org.ubonass.media.java.client;
 public class RecordingProperties {
 
     private String name;
-    private Recording.OutputMode outputMode;
+    private RecordingInfo.OutputMode outputMode;
     private RecordingLayout recordingLayout;
     private String customLayout;
     private String resolution;
@@ -37,7 +37,7 @@ public class RecordingProperties {
     public static class Builder {
 
         private String name = "";
-        private Recording.OutputMode outputMode = Recording.OutputMode.COMPOSED;
+        private RecordingInfo.OutputMode outputMode = RecordingInfo.OutputMode.COMPOSED;
         private RecordingLayout recordingLayout;
         private String customLayout;
         private String resolution;
@@ -48,7 +48,7 @@ public class RecordingProperties {
          * Builder for {@link org.ubonass.media.java.client.RecordingProperties}
          */
         public RecordingProperties build() {
-            if (Recording.OutputMode.COMPOSED.equals(this.outputMode)) {
+            if (RecordingInfo.OutputMode.COMPOSED.equals(this.outputMode)) {
                 this.recordingLayout = this.recordingLayout != null ? this.recordingLayout : RecordingLayout.BEST_FIT;
                 this.resolution = this.resolution != null ? this.resolution : "1920x1080";
                 if (RecordingLayout.CUSTOM.equals(this.recordingLayout)) {
@@ -73,7 +73,7 @@ public class RecordingProperties {
          * Call this method to set the mode of recording: COMPOSED for a single archive
          * in a grid layout or INDIVIDUAL for one archive for each stream
          */
-        public RecordingProperties.Builder outputMode(Recording.OutputMode outputMode) {
+        public RecordingProperties.Builder outputMode(RecordingInfo.OutputMode outputMode) {
             this.outputMode = outputMode;
             return this;
         }
@@ -81,9 +81,9 @@ public class RecordingProperties {
         /**
          * Call this method to set the layout to be used in the recording. Will only
          * have effect if
-         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
+         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
          * has been called with value
-         * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}
+         * {@link RecordingInfo.OutputMode#COMPOSED}
          */
         public RecordingProperties.Builder recordingLayout(RecordingLayout layout) {
             this.recordingLayout = layout;
@@ -97,9 +97,9 @@ public class RecordingProperties {
          * method to set the relative path to the specific custom layout you want to
          * use.<br>
          * Will only have effect if
-         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
+         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
          * has been called with value
-         * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}.<br>
+         * {@link RecordingInfo.OutputMode#COMPOSED}.<br>
          * See <a href=
          * "https://openvidu.io/docs/advanced-features/recording#custom-recording-layouts"
          * target="_blank">Custom recording layouts</a> to learn more
@@ -114,10 +114,10 @@ public class RecordingProperties {
          * format "WIDTHxHEIGHT", being both WIDTH and HEIGHT the number of pixels
          * between 100 and 1999.<br>
          * Will only have effect if
-         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
+         * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
          * has been called with value
-         * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}. For
-         * {@link org.ubonass.media.java.client.Recording.OutputMode#INDIVIDUAL} all
+         * {@link RecordingInfo.OutputMode#COMPOSED}. For
+         * {@link RecordingInfo.OutputMode#INDIVIDUAL} all
          * individual video files will have the native resolution of the published
          * stream
          */
@@ -146,7 +146,7 @@ public class RecordingProperties {
 
     }
 
-    protected RecordingProperties(String name, Recording.OutputMode outputMode, RecordingLayout layout,
+    protected RecordingProperties(String name, RecordingInfo.OutputMode outputMode, RecordingLayout layout,
                                   String customLayout, String resolution, boolean hasAudio, boolean hasVideo) {
         this.name = name;
         this.outputMode = outputMode;
@@ -167,22 +167,22 @@ public class RecordingProperties {
     }
 
     /**
-     * Defines the mode of recording: {@link Recording.OutputMode#COMPOSED} for a
-     * single archive in a grid layout or {@link Recording.OutputMode#INDIVIDUAL}
+     * Defines the mode of recording: {@link RecordingInfo.OutputMode#COMPOSED} for a
+     * single archive in a grid layout or {@link RecordingInfo.OutputMode#INDIVIDUAL}
      * for one archive for each stream.<br>
      * <br>
      * <p>
-     * Default to {@link Recording.OutputMode#COMPOSED}
+     * Default to {@link RecordingInfo.OutputMode#COMPOSED}
      */
-    public Recording.OutputMode outputMode() {
+    public RecordingInfo.OutputMode outputMode() {
         return this.outputMode;
     }
 
     /**
      * Defines the layout to be used in the recording.<br>
      * Will only have effect if
-     * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
-     * has been called with value {@link Recording.OutputMode#COMPOSED}.<br>
+     * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
+     * has been called with value {@link RecordingInfo.OutputMode#COMPOSED}.<br>
      * <br>
      * <p>
      * Default to {@link RecordingLayout#BEST_FIT}
@@ -206,10 +206,10 @@ public class RecordingProperties {
     /**
      * Defines the resolution of the recorded video.<br>
      * Will only have effect if
-     * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(Recording.OutputMode)}
+     * {@link org.ubonass.media.java.client.RecordingProperties.Builder#outputMode(RecordingInfo.OutputMode)}
      * has been called with value
-     * {@link org.ubonass.media.java.client.Recording.OutputMode#COMPOSED}. For
-     * {@link org.ubonass.media.java.client.Recording.OutputMode#INDIVIDUAL} all
+     * {@link RecordingInfo.OutputMode#COMPOSED}. For
+     * {@link RecordingInfo.OutputMode#INDIVIDUAL} all
      * individual video files will have the native resolution of the published
      * stream.<br>
      * <br>

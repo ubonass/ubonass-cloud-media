@@ -7,7 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
+import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.java.client.CloudMediaRole;
+import org.ubonass.media.java.client.RecordingInfo;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaSession;
 import org.ubonass.media.server.core.Participant;
@@ -58,7 +60,7 @@ public class KurentoMediaSession extends MediaSession {
         createPipeline();
         KurentoParticipant kurentoParticipant =
                 new KurentoParticipant(participant, this, this.kurentoEndpointConfig,
-                        this.cloudMediaConfig/*, this.recordingManager*/, remoteNeed);
+                        this.cloudmediaConfig, this.recordingManager, remoteNeed);
         participants.put(participant.getParticipantPrivatetId(), kurentoParticipant);
 
         filterStates.forEach((filterId, state) -> {
@@ -72,25 +74,6 @@ public class KurentoMediaSession extends MediaSession {
 			kurentoEndpointConfig.getCdr().recordParticipantJoined(participant, sessionId);
 		}*/
     }
-
-    /**
-     * for one to one call
-     *
-     * @param participant
-     */
-    /*public void createCallMediaStream(Participant participant,boolean remoteNeed) {
-        checkClosed();
-        createPipeline();
-        KurentoParticipant kurentoParticipant =
-                new KurentoParticipant(participant, this, this.kurentoEndpointConfig,
-                        this.cloudMediaConfig*//*, this.recordingManager*//*,remoteNeed);
-        participants.put(participant.getParticipantPrivatetId(), kurentoParticipant);
-        filterStates.forEach((filterId, state) -> {
-            log.info("Adding filter {}", filterId);
-            kurentoSessionHandler.updateFilter(sessionId, participant, filterId, state);
-        });
-    }*/
-
 
 
     public void newPublisher(Participant participant) {
@@ -280,15 +263,15 @@ public class KurentoMediaSession extends MediaSession {
 
         //modify by jeffrey
         // Stop recording if session is being recorded
-		/*if (recordingManager.sessionIsBeingRecorded(this.sessionId)) {
-			Recording stoppedRecording = this.recordingManager.forceStopRecording(this,
+		if (recordingManager.sessionIsBeingRecorded(this.sessionId)) {
+			RecordingInfo stoppedRecordingInfo = this.recordingManager.forceStopRecording(this,
 					EndReason.mediaServerDisconnect);
-			if (OutputMode.COMPOSED.equals(stoppedRecording.getOutputMode()) && stoppedRecording.hasVideo()) {
+			if (RecordingInfo.OutputMode.COMPOSED.equals(stoppedRecordingInfo.getOutputMode()) && stoppedRecordingInfo.hasVideo()) {
 				recordingManager.getSessionManager().evictParticipant(
 						this.getParticipantByPublicId(ProtocolElements.RECORDER_PARTICIPANT_PUBLICID), null, null,
 						null);
 			}
-		}*/
+		}
 
         // Close all MediaEndpoints of participants
         this.getParticipants().forEach(p -> {

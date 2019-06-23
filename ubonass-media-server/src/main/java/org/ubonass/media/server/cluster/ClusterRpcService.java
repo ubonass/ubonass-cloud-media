@@ -138,7 +138,6 @@ public class ClusterRpcService {
     }
 
     public void showConnections() {
-
         Iterator<IMap.Entry<String, ClusterConnection>> entries =
                 clusterConnections.entrySet().iterator();
         while (entries.hasNext()) {
@@ -148,7 +147,6 @@ public class ClusterRpcService {
                     entry.getKey(),entry.getValue().toString());
             //System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
         }
-
         //logger.info("<ParticipantPublicId, ClusterConnection>: {}", this.clusterConnections.toString());
     }
 

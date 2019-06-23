@@ -343,20 +343,16 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         String rpcSessionId = rpcSession.getSessionId();
         RpcConnection rpc = this.notificationService.closeRpcSession(rpcSessionId);
         if (rpc != null && rpc.getSessionId() != null) {
-            logger.info("~~~~~~~~~~~~3~~~~~~~~~~~");
             MediaSession session = this.sessionManager.getSession(rpc.getSessionId());
             if (session != null && session.getParticipantByPrivateId(rpc.getParticipantPrivateId()) != null) {
-                logger.info("~~~~~~~~~~~~4~~~~~~~~~~~");
                 leaveRoomAfterConnClosed(rpc.getParticipantPrivateId(), EndReason.networkDisconnect);
                 //将该会话从集群会话中移除
                 this.clusterRpcService.leaveSession(rpc.getSessionId(), rpc.getParticipantPublicId());
             }
         }
-        logger.info("~~~~~~~~~~~~5~~~~~~~~~~~");
         //将该连接从集群连接中移除
         ClusterConnection clusterConnection =
                 this.clusterRpcService.closeConnection(rpc.getParticipantPublicId());
-
         if (rpc != null) rpc = null;
         if (clusterConnection != null) clusterConnection = null;
     }
@@ -375,7 +371,6 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             try { //这种情况是直接客户端杀掉进程
                 Participant p = sessionManager.getParticipant(rpcSession.getSessionId());
                 if (p != null) {
-                    logger.info("~~~~~~~~~~~~1~~~~~~~~~~~");
                     message = "Evicting participant with private id {} because its websocket unexpectedly closed in the client side";
                 }
             } catch (CloudMediaException exception) {
@@ -383,17 +378,16 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         }
 
         if (!message.isEmpty()) {
-            closeConnection(rpcSession);
+            this.closeConnection(rpcSession);
         }
         /**
          * 这种直接杀掉进程的
          */
         if (this.webSocketEOFTransportError.remove(rpcSessionId) != null) {
-            logger.info("~~~~~~~~~~~~4~~~~~~~~~~~");
             logger.warn(
-                    "Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
+                    "()Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
                     rpcSession.getSessionId());
-            closeConnection(rpcSession);
+            this.closeConnection(rpcSession);
             //this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
         }
 
