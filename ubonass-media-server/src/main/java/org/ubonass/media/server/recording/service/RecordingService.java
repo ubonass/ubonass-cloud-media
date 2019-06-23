@@ -24,13 +24,13 @@ public abstract class RecordingService {
 
     private static final Logger log = LoggerFactory.getLogger(RecordingService.class);
 
-    protected CloudMediaConfig cloudmediaConfig;
+    protected CloudMediaConfig cloudMediaConfig;
     protected RecordingManager recordingManager;
     protected CustomFileManager fileWriter = new CustomFileManager();
 
-    RecordingService(RecordingManager recordingManager, CloudMediaConfig cloudmediaConfig) {
+    RecordingService(RecordingManager recordingManager, CloudMediaConfig cloudMediaConfig) {
         this.recordingManager = recordingManager;
-        this.cloudmediaConfig = cloudmediaConfig;
+        this.cloudMediaConfig = cloudMediaConfig;
     }
 
     public abstract RecordingInfo startRecording(MediaSession session, RecordingProperties properties) throws CloudMediaException;
@@ -79,7 +79,7 @@ public abstract class RecordingService {
      * store RecordingInfo entity)
      */
     protected void generateRecordingMetadataFile(RecordingInfo recordingInfo) {
-        String folder = this.cloudmediaConfig.getRecordingPath() + recordingInfo.getId();
+        String folder = this.cloudMediaConfig.getRecordingPath() + recordingInfo.getId();
         boolean newFolderCreated = this.fileWriter.createFolderIfNotExists(folder);
 
         if (newFolderCreated) {
@@ -90,7 +90,7 @@ public abstract class RecordingService {
             log.info("Folder {} already existed. Some publisher is already being recorded", folder);
         }
 
-        String filePath = this.cloudmediaConfig.getRecordingPath() + recordingInfo.getId() + "/"
+        String filePath = this.cloudMediaConfig.getRecordingPath() + recordingInfo.getId() + "/"
                 + RecordingManager.RECORDING_ENTITY_FILE + recordingInfo.getId();
         String text = recordingInfo.toJson().toString();
         this.fileWriter.createAndWriteFile(filePath, text);

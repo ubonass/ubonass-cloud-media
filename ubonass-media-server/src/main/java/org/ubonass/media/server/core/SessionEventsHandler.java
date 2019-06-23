@@ -43,7 +43,7 @@ public class SessionEventsHandler {
     protected CallDetailRecord CDR;
     */
     @Autowired
-    protected CloudMediaConfig cloudmediaConfig;
+    protected CloudMediaConfig cloudMediaConfig;
 
     Map<String, RecordingInfo> recordingsStarted = new ConcurrentHashMap<>();
 
@@ -465,7 +465,7 @@ public class SessionEventsHandler {
 
         // Filter participants by roles according to "openvidu.recordingInfo.notification"
         Set<Participant> filteredParticipants = this.filterParticipantsByRole(
-                this.cloudmediaConfig.getRolesFromRecordingNotification(), session.getParticipants());
+                this.cloudMediaConfig.getRolesFromRecordingNotification(), session.getParticipants());
 
         JsonObject params = new JsonObject();
         params.addProperty(ProtocolElements.RECORDINGSTARTED_ID_PARAM, recordingInfo.getId());
@@ -495,7 +495,7 @@ public class SessionEventsHandler {
             return;
         }
         Set<Participant> filteredParticipants = this.filterParticipantsByRole(
-                this.cloudmediaConfig.getRolesFromRecordingNotification(), existingParticipants);
+                this.cloudMediaConfig.getRolesFromRecordingNotification(), existingParticipants);
 
         JsonObject params = new JsonObject();
         params.addProperty(ProtocolElements.RECORDINGSTOPPED_ID_PARAM, recordingInfo.getId());

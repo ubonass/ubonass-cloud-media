@@ -39,8 +39,8 @@ public class SingleStreamRecordingService extends RecordingService {
 	private Map<String, Map<String, RecorderEndpointWrapper>> recorders = new ConcurrentHashMap<>();
 	private final String INDIVIDUAL_STREAM_METADATA_FILE = ".stream.";
 
-	public SingleStreamRecordingService(RecordingManager recordingManager, CloudMediaConfig cloudmediaConfig) {
-		super(recordingManager, cloudmediaConfig);
+	public SingleStreamRecordingService(RecordingManager recordingManager, CloudMediaConfig cloudMediaConfig) {
+		super(recordingManager, cloudMediaConfig);
 	}
 
 	@Override
@@ -163,7 +163,7 @@ public class SingleStreamRecordingService extends RecordingService {
 		MediaPipeline pipeline = kurentoParticipant.getPublisher().getPipeline();
 
 		RecorderEndpoint recorder = new RecorderEndpoint.Builder(pipeline,
-				"file://" + this.cloudmediaConfig.getRecordingPath() + recordingId + "/"
+				"file://" + this.cloudMediaConfig.getRecordingPath() + recordingId + "/"
 						+ participant.getPublisherStreamId() + ".webm").withMediaProfile(profile).build();
 
 		recorder.addRecordingListener(new EventListener<RecordingEvent>() {
@@ -297,7 +297,7 @@ public class SingleStreamRecordingService extends RecordingService {
 	}
 
 	private void generateIndividualMetadataFile(RecorderEndpointWrapper wrapper) {
-		String filesPath = this.cloudmediaConfig.getRecordingPath() + wrapper.getRecordingId() + "/";
+		String filesPath = this.cloudMediaConfig.getRecordingPath() + wrapper.getRecordingId() + "/";
 		File videoFile = new File(filesPath + wrapper.getStreamId() + ".webm");
 		wrapper.setSize(videoFile.length());
 		String metadataFilePath = filesPath + INDIVIDUAL_STREAM_METADATA_FILE + wrapper.getStreamId();
@@ -309,7 +309,7 @@ public class SingleStreamRecordingService extends RecordingService {
 		// Must update recording "status" (to stopped), "duration" (min startTime of all
 		// individual recordings) and "size" (sum of all individual recordings size)
 
-		String folderPath = this.cloudmediaConfig.getRecordingPath() + recordingInfo.getId() + "/";
+		String folderPath = this.cloudMediaConfig.getRecordingPath() + recordingInfo.getId() + "/";
 
 		String metadataFilePath = folderPath + RecordingManager.RECORDING_ENTITY_FILE + recordingInfo.getId();
 		String syncFilePath = folderPath + recordingInfo.getName() + ".json";

@@ -60,7 +60,7 @@ public class KurentoMediaSession extends MediaSession {
         createPipeline();
         KurentoParticipant kurentoParticipant =
                 new KurentoParticipant(participant, this, this.kurentoEndpointConfig,
-                        this.cloudmediaConfig, this.recordingManager, remoteNeed);
+                        this.cloudMediaConfig, this.recordingManager, remoteNeed);
         participants.put(participant.getParticipantPrivatetId(), kurentoParticipant);
 
         filterStates.forEach((filterId, state) -> {

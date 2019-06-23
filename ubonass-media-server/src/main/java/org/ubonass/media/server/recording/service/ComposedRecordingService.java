@@ -43,8 +43,8 @@ public class ComposedRecordingService extends RecordingService {
 
 	private DockerManager dockerManager;
 
-	public ComposedRecordingService(RecordingManager recordingManager, CloudMediaConfig cloudmediaConfig) {
-		super(recordingManager, cloudmediaConfig);
+	public ComposedRecordingService(RecordingManager recordingManager, CloudMediaConfig cloudMediaConfig) {
+		super(recordingManager, cloudMediaConfig);
 		this.dockerManager = new DockerManager();
 	}
 
@@ -141,7 +141,7 @@ public class ComposedRecordingService extends RecordingService {
 			List<Volume> volumes = new ArrayList<>();
 			volumes.add(volume1);
 			volumes.add(volume2);
-			Bind bind1 = new Bind(cloudmediaConfig.getRecordingPath(), volume1);
+			Bind bind1 = new Bind(cloudMediaConfig.getRecordingPath(), volume1);
 			Bind bind2 = new Bind("/dev/shm", volume2);
 			List<Bind> binds = new ArrayList<>();
 			binds.add(bind1);
@@ -174,7 +174,7 @@ public class ComposedRecordingService extends RecordingService {
 				recordingInfo.getSessionId());
 
 		CompositeWrapper compositeWrapper = new CompositeWrapper((KurentoMediaSession) session,
-				"file://" + this.cloudmediaConfig.getRecordingPath() + recordingInfo.getId() + "/" + properties.name()
+				"file://" + this.cloudMediaConfig.getRecordingPath() + recordingInfo.getId() + "/" + properties.name()
 						+ ".webm");
 		this.composites.put(session.getSessionId(), compositeWrapper);
 
@@ -283,7 +283,7 @@ public class ComposedRecordingService extends RecordingService {
 			// Update recording attributes reading from video report file
 			try {
 				RecordingInfoUtils infoUtils = new RecordingInfoUtils(
-						this.cloudmediaConfig.getRecordingPath() + recordingId + "/" + recordingId + ".info");
+						this.cloudMediaConfig.getRecordingPath() + recordingId + "/" + recordingId + ".info");
 
 				if (!infoUtils.hasVideo()) {
 					log.error("COMPOSED recording {} with hasVideo=true has not video track", recordingId);
@@ -324,7 +324,7 @@ public class ComposedRecordingService extends RecordingService {
 			log.warn(
 					"Existing recording {} does not have an active session associated. This means the recording "
 							+ "has been automatically stopped after last user left and {} seconds timeout passed",
-					recordingInfo.getId(), this.cloudmediaConfig.getRecordingAutostopTimeout());
+					recordingInfo.getId(), this.cloudMediaConfig.getRecordingAutostopTimeout());
 			sessionId = recordingInfo.getSessionId();
 		} else {
 			sessionId = session.getSessionId();
@@ -350,7 +350,7 @@ public class ComposedRecordingService extends RecordingService {
 
 		this.cleanRecordingMaps(recordingInfo);
 
-		String filesPath = this.cloudmediaConfig.getRecordingPath() + recordingInfo.getId() + "/";
+		String filesPath = this.cloudMediaConfig.getRecordingPath() + recordingInfo.getId() + "/";
 		File videoFile = new File(filesPath + recordingInfo.getName() + ".webm");
 		long finalSize = videoFile.length();
 		double finalDuration = (double) compositeWrapper.getDuration() / 1000;
@@ -375,7 +375,7 @@ public class ComposedRecordingService extends RecordingService {
 			try {
 				Thread.sleep(150);
 				timeout++;
-				File f = new File(this.cloudmediaConfig.getRecordingPath() + recordingInfo.getId() + "/"
+				File f = new File(this.cloudMediaConfig.getRecordingPath() + recordingInfo.getId() + "/"
 						+ recordingInfo.getName() + ".mp4");
 				isPresent = ((f.isFile()) && (f.length() > 0));
 			} catch (InterruptedException e) {
@@ -400,11 +400,11 @@ public class ComposedRecordingService extends RecordingService {
 	}
 
 	private String getLayoutUrl(RecordingInfo recordingInfo, String shortSessionId) {
-		String secret = cloudmediaConfig.getSecret();
-		boolean recordingUrlDefined = cloudmediaConfig.getRecordingComposedUrl() != null
-				&& !cloudmediaConfig.getRecordingComposedUrl().isEmpty();
-		String recordingUrl = recordingUrlDefined ? cloudmediaConfig.getRecordingComposedUrl()
-				: cloudmediaConfig.getWsUrl();
+		String secret = cloudMediaConfig.getSecret();
+		boolean recordingUrlDefined = cloudMediaConfig.getRecordingComposedUrl() != null
+				&& !cloudMediaConfig.getRecordingComposedUrl().isEmpty();
+		String recordingUrl = recordingUrlDefined ? cloudMediaConfig.getRecordingComposedUrl()
+				: cloudMediaConfig.getWsUrl();
 		recordingUrl = recordingUrl.replaceFirst("wss://", "").replaceFirst("https://", "");
 		boolean startsWithHttp = recordingUrl.startsWith("http://") || recordingUrl.startsWith("ws://");
 
@@ -430,7 +430,7 @@ public class ComposedRecordingService extends RecordingService {
 			layout = recordingInfo.getRecordingLayout().name().toLowerCase().replaceAll("_", "-");
 			int port = startsWithHttp ? 80 : 443;
 			try {
-				port = new URL(cloudmediaConfig.getFinalUrl()).getPort();
+				port = new URL(cloudMediaConfig.getFinalUrl()).getPort();
 			} catch (MalformedURLException e) {
 				log.error(e.getMessage());
 			}

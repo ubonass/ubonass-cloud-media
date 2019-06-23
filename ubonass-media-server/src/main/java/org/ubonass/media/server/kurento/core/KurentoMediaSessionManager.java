@@ -129,7 +129,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
                             .recordingMode(RecordingMode.ALWAYS)
                             .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
-                    cloudmediaConfig, recordingManager);
+                    cloudMediaConfig, recordingManager);
             createSession(sessionNotActive, kcSessionInfo);
         }
     }
@@ -283,7 +283,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                             new SessionProperties.Builder().mediaMode(MediaMode.ROUTED)
                                     .recordingMode(RecordingMode.ALWAYS)
                                     .defaultRecordingLayout(RecordingLayout.BEST_FIT).build(),
-                            cloudmediaConfig, recordingManager);//modify by jeffrey
+                            cloudMediaConfig, recordingManager);//modify by jeffrey
                 }
 
                 createSession(sessionNotActive, kcSessionInfo);
@@ -437,14 +437,14 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             // "SessionManager.closeSessionAndEmptyCollections"
             if (remainingParticipants.isEmpty()) {
                 //modify by jeffrey
-                if (cloudmediaConfig.isRecordingModuleEnable()
+                if (cloudMediaConfig.isRecordingModuleEnable()
                         && MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode())
                         && (this.recordingManager.sessionIsBeingRecorded(sessionId))) {
                     // Start countdown to stop recording. Will be aborted if a Publisher starts
                     // before timeout
                     log.info(
                             "Last participant left. Starting {} seconds countdown for stopping recording of session {}",
-                            this.cloudmediaConfig.getRecordingAutostopTimeout(), sessionId);
+                            this.cloudMediaConfig.getRecordingAutostopTimeout(), sessionId);
                     recordingManager.initAutomaticRecordingStopThread(session);
                 } else {
                     log.info("No more participants in session '{}', removing it and closing it", sessionId);
@@ -452,14 +452,14 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     showTokens();
                 }
                 //modify by jeffrey
-            } else if (remainingParticipants.size() == 1 && cloudmediaConfig.isRecordingModuleEnable()
+            } else if (remainingParticipants.size() == 1 && cloudMediaConfig.isRecordingModuleEnable()
                     && MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode())
                     && this.recordingManager.sessionIsBeingRecorded(sessionId)
                     && ProtocolElements.RECORDER_PARTICIPANT_PUBLICID
                     .equals(remainingParticipants.iterator().next().getParticipantPublicId())) {
                 // Start countdown
                 log.info("Last participant left. Starting {} seconds countdown for stopping recording of session {}",
-                        this.cloudmediaConfig.getRecordingAutostopTimeout(), sessionId);
+                        this.cloudMediaConfig.getRecordingAutostopTimeout(), sessionId);
                 recordingManager.initAutomaticRecordingStopThread(session);
             }
         }

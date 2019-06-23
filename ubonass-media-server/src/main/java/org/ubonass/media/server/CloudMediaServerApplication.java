@@ -35,6 +35,7 @@ import org.ubonass.media.server.kurento.core.KurentoSessionEventsHandler;
 import org.ubonass.media.server.kurento.core.KurentoMediaSessionManager;
 import org.ubonass.media.server.kurento.kms.FixedOneKmsManager;
 import org.ubonass.media.server.recording.service.RecordingManager;
+import org.ubonass.media.server.rpc.RpcCallHandler;
 import org.ubonass.media.server.rpc.RpcHandler;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 import org.ubonass.media.server.rpc.RpcRoomHandler;
@@ -81,8 +82,8 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
             return new FixedOneKmsManager(firstKmsWsUri);
         }
     }
-
     @Bean
+    @ConditionalOnMissingBean
     public Config config() {
         //如果有集群管理中心，可以配置
         Config confg = null;
@@ -96,7 +97,6 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         }
         return confg;
     }
-
 
     @Bean
     @ConditionalOnMissingBean
@@ -171,21 +171,21 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @PostConstruct
     public void init() throws MalformedURLException, InterruptedException {
-        CloudMediaConfig cloudmediaConfig = cloudMediaConfig();
+        CloudMediaConfig cloudmediaConf = cloudMediaConfig();
 
-        String publicUrl = cloudmediaConfig.getPublicUrl();
+        String publicUrl = cloudmediaConf.getPublicUrl();
         String type = publicUrl;
 
         switch (publicUrl) {
             case "docker":
                 try {
                     String containerIp = getContainerIp();
-                    cloudmediaConfig.setWsUrl("wss://" + containerIp + ":" + cloudmediaConfig.getServerPort());
+                    cloudmediaConf.setWsUrl("wss://" + containerIp + ":" + cloudmediaConf.getServerPort());
                 } catch (Exception e) {
                     logger.error("Docker container IP was configured, but there was an error obtaining IP: "
                             + e.getClass().getName() + " " + e.getMessage());
                     logger.error("Fallback to local URL");
-                    cloudmediaConfig.setWsUrl(null);
+                    cloudmediaConf.setWsUrl(null);
                 }
                 break;
 
@@ -200,24 +200,24 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
                 type = "custom";
 
                 if (publicUrl.startsWith("https://")) {
-                    cloudmediaConfig.setWsUrl(publicUrl.replace("https://", "wss://"));
+                    cloudmediaConf.setWsUrl(publicUrl.replace("https://", "wss://"));
                 } else if (publicUrl.startsWith("http://")) {
-                    cloudmediaConfig.setWsUrl(publicUrl.replace("http://", "wss://"));
+                    cloudmediaConf.setWsUrl(publicUrl.replace("http://", "wss://"));
                 }
 
-                if (!cloudmediaConfig.getWsUrl().startsWith("wss://")) {
-                    cloudmediaConfig.setWsUrl("wss://" + cloudmediaConfig.getWsUrl());
+                if (!cloudmediaConf.getWsUrl().startsWith("wss://")) {
+                    cloudmediaConf.setWsUrl("wss://" + cloudmediaConf.getWsUrl());
                 }
         }
 
-        if (cloudmediaConfig.getWsUrl() == null) {
+        if (cloudmediaConf.getWsUrl() == null) {
             type = "local";
-            cloudmediaConfig.setWsUrl("wss://localhost:" + cloudmediaConfig.getServerPort());
+            cloudmediaConf.setWsUrl("wss://localhost:" + cloudmediaConf.getServerPort());
         }
 
-        if (cloudmediaConfig.getWsUrl().endsWith("/")) {
-            cloudmediaConfig.setWsUrl(
-                    cloudmediaConfig.getWsUrl().substring(0,cloudmediaConfig.getWsUrl().length() - 1));
+        if (cloudmediaConf.getWsUrl().endsWith("/")) {
+            cloudmediaConf.setWsUrl(
+                    cloudmediaConf.getWsUrl().substring(0,cloudmediaConf.getWsUrl().length() - 1));
         }
 
         if (this.cloudMediaConfig().isRecordingModuleEnable()) {
@@ -241,9 +241,9 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
             }
         }
 
-        String finalUrl = cloudmediaConfig.getWsUrl().replaceFirst("wss://", "https://").replaceFirst("ws://", "http://");
-        cloudmediaConfig.setFinalUrl(finalUrl);
-        logger.info("CloudMededia Server using " + type + " URL: [" + cloudmediaConfig.getWsUrl() + "]");
+        String finalUrl = cloudmediaConf.getWsUrl().replaceFirst("wss://", "https://").replaceFirst("ws://", "http://");
+        cloudmediaConf.setFinalUrl(finalUrl);
+        logger.info("CloudMededia Server using " + type + " URL: [" + cloudmediaConf.getWsUrl() + "]");
     }
 
     @EventListener(ApplicationReadyEvent.class)

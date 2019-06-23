@@ -1,0 +1,29 @@
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:openvidu-selfsigned.jks
+    key-store-password: openvidu
+    key-store-type: JKS
+    key-alias: openvidu-selfsigned
+
+cloudmedia:
+  secret: MY_SECRET
+  publicurl: local
+
+  recording:
+    enable: true
+    path: /opt/cloudmedia/recordings
+    public-access: false
+    notification: publisher_moderator
+    custom-layout: /opt/cloudmedia/custom-layout
+    autostop-timeout: 120
+    composed-url:
+    version: 1.0.0
+
+  streams:
+    video:
+      max-recv-bandwidth: 1000
+      min-recv-bandwidth: 300
+      max-send-bandwidth: 1000
+      min-send-bandwidth: 300

@@ -52,7 +52,7 @@ public abstract class MediaSessionManager {
     public ConcurrentMap<String, ConcurrentHashMap<String, Token>> sessionidTokenTokenobj = new ConcurrentHashMap<>();
 
     @Autowired
-    protected CloudMediaConfig cloudmediaConfig;
+    protected CloudMediaConfig cloudMediaConfig;
 
     @Autowired
     protected SessionEventsHandler sessionEventsHandler;
@@ -248,7 +248,7 @@ public abstract class MediaSessionManager {
 
     public void closeSessionAndEmptyCollections(MediaSession session, EndReason reason) {
 
-        /*if (cloudmediaConfig.isRecordingModuleEnabled()
+        /*if (cloudMediaConfig.isRecordingModuleEnabled()
                 && this.recordingManager.sessionIsBeingRecorded(session.getSessionId())) {
             recordingManager.stopRecording(session, null, RecordingManager.finalReason(reason));
         }*/

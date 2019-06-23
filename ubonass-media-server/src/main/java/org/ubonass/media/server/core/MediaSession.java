@@ -38,7 +38,7 @@ import java.util.function.Function;
 
 public class MediaSession {
 
-    protected CloudMediaConfig cloudmediaConfig;
+    protected CloudMediaConfig cloudMediaConfig;
 
     protected RecordingManager recordingManager;
     /**
@@ -60,18 +60,18 @@ public class MediaSession {
         this.sessionId = previousSession.getSessionId();
         this.startTime = previousSession.getStartTime();
         this.sessionProperties = previousSession.getSessionProperties();
-        this.cloudmediaConfig = previousSession.cloudmediaConfig;
+        this.cloudMediaConfig = previousSession.cloudMediaConfig;
         this.recordingManager = previousSession.recordingManager;
     }
 
     public MediaSession(String sessionId,
                         SessionProperties sessionProperties,
-                        CloudMediaConfig cloudmediaConfig,
+                        CloudMediaConfig cloudMediaConfig,
                         RecordingManager recordingManager) {
         this.sessionId = sessionId;
         this.startTime = System.currentTimeMillis();
         this.sessionProperties = sessionProperties;
-        this.cloudmediaConfig = cloudmediaConfig;
+        this.cloudMediaConfig = cloudMediaConfig;
         this.recordingManager = recordingManager;
     }
 
