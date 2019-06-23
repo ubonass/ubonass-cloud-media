@@ -100,7 +100,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @Bean
     @ConditionalOnMissingBean
-    public CloudMediaConfig cloudmediaConfig() {
+    public CloudMediaConfig cloudMediaConfig() {
         return new CloudMediaConfig();
     }
 
@@ -171,7 +171,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
     @PostConstruct
     public void init() throws MalformedURLException, InterruptedException {
-        CloudMediaConfig cloudmediaConfig = cloudmediaConfig();
+        CloudMediaConfig cloudmediaConfig = cloudMediaConfig();
 
         String publicUrl = cloudmediaConfig.getPublicUrl();
         String type = publicUrl;
@@ -220,7 +220,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
                     cloudmediaConfig.getWsUrl().substring(0,cloudmediaConfig.getWsUrl().length() - 1));
         }
 
-        if (this.cloudmediaConfig().isRecordingModuleEnable()) {
+        if (this.cloudMediaConfig().isRecordingModuleEnable()) {
             try {
                 this.recordingManager().initializeRecordingManager();
             } catch (CloudMediaException e) {
@@ -229,11 +229,11 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
                     finalErrorMessage = "Error connecting to Docker daemon. Enabling CloudMedia recording module requires Docker";
                 } else if (e.getCodeValue() == Code.RECORDING_PATH_NOT_VALID.getValue()) {
                     finalErrorMessage = "Error initializing recording path \""
-                            + this.cloudmediaConfig().getRecordingPath()
+                            + this.cloudMediaConfig().getRecordingPath()
                             + "\" set with system property \"cloudmedia.recording.path\"";
                 } else if (e.getCodeValue() == Code.RECORDING_FILE_EMPTY_ERROR.getValue()) {
                     finalErrorMessage = "Error initializing recording custom layouts path \""
-                            + this.cloudmediaConfig().getRecordingCustomLayout()
+                            + this.cloudMediaConfig().getRecordingCustomLayout()
                             + "\" set with system property \"openvidu.recording.custom-layout\"";
                 }
                 logger.error(finalErrorMessage + ". Shutting down CloudMedia Server");
@@ -252,7 +252,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         String str = NEW_LINE +
                 NEW_LINE + "    ACCESS IP            " +
                 NEW_LINE + "-------------------------" +
-                NEW_LINE + cloudmediaConfig().getFinalUrl() +
+                NEW_LINE + cloudMediaConfig().getFinalUrl() +
                 NEW_LINE + "-------------------------" +
                 NEW_LINE;
         logger.info(str);
