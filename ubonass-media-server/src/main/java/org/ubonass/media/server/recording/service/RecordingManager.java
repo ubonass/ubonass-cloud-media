@@ -68,7 +68,7 @@ public class RecordingManager {
             Runtime.getRuntime().availableProcessors());
 
     static final String RECORDING_ENTITY_FILE = ".recording.";
-    public static final String IMAGE_NAME = "openvidu/openvidu-recording";
+    public static final String IMAGE_NAME = "ubonass/ubonass-media-recording";
     static String IMAGE_TAG;
 
     private static final List<EndReason> LAST_PARTICIPANT_LEFT_REASONS = Arrays
@@ -96,8 +96,8 @@ public class RecordingManager {
         this.singleStreamRecordingService = new SingleStreamRecordingService(this, cloudMediaConfig);
 
         //modify by jeffrey
-        /*log.info("RecordingInfo module required: Downloading openvidu/openvidu-recording:"
-                + cloudMediaConfig.getRecordingVersion() + " Docker image (350MB aprox)");
+        log.info("RecordingInfo module required: Downloading ubonass/ubonass-media-recording:"
+                + cloudMediaConfig.getRecordingVersion() + " Docker image (341MB aprox)");
 
         this.checkRecordingRequirements(this.cloudMediaConfig.getRecordingPath(),
                 this.cloudMediaConfig.getRecordingCustomLayout());
@@ -134,7 +134,7 @@ public class RecordingManager {
         }
 
         // Clean any stranded openvidu/openvidu-recording container on startup
-        dockerManager.cleanStrandedContainers(RecordingManager.IMAGE_NAME);*/
+        dockerManager.cleanStrandedContainers(RecordingManager.IMAGE_NAME);
     }
 
     public void checkRecordingRequirements(String recordingPath, String recordingCustomLayout)
