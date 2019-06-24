@@ -361,7 +361,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     this.clusterSessionManager.leaveSession(rpc.getSessionId(), rpc.getParticipantPublicId());
             }
         }
-        logger.info("5555555555555555:" +rpc.getParticipantPublicId() );
+        logger.info("5555555555555555:" + rpc.getParticipantPublicId());
         //将该连接从集群连接中移除
         ClusterConnection clusterConnection =
                 this.clusterRpcService.closeConnection(rpc.getParticipantPublicId());
@@ -378,26 +378,21 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
         String message = "";
 
         if ("Close for not receive ping from client".equals(status)) {
-            logger.info("1111111111111111111");
             message = "Evicting participant with private id {} because of a network disconnection";
         } else if (status == null) { // && this.webSocketBrokenPipeTransportError.remove(rpcSessionId) != null)) {
             try { //这种情况是直接客户端杀掉进程
                 Participant p = sessionManager.getParticipant(rpcSession.getSessionId());
                 if (p != null) {
-                    logger.info("22222222222222222222222");
                     message = "Evicting participant with private id {} because its websocket unexpectedly closed in the client side";
                 } else {
-                    logger.info("..............@@@.................");
-                    message = "not exist session force disconnect connection";
+                    message = "not exist session in current Connection";
                 }
             } catch (CloudMediaException exception) {
-                logger.info("...............................");
-                message = "not exist session force disconnect connection";
+                message = "not exist session in current Connection!!";
             }
         }
-
         if (!message.isEmpty()) {
-            this.closeConnection(rpcSession);
+            logger.info(message);
         }
         /**
          * 这种直接杀掉进程的
@@ -407,9 +402,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     "()Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
                     rpcSession.getSessionId());
             logger.info("666666666666666666666666666:");
-            this.closeConnection(rpcSession);
-            //this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
         }
+
+        this.closeConnection(rpcSession);
         clusterRpcService.showConnections();
         if (cloudMediaConfig.isSessionClusterEnable())
             clusterSessionManager.showSessions();
