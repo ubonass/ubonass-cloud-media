@@ -74,10 +74,11 @@ public class SessionEventsHandler {
     public void onCall(Participant participant, String calleeParticipantPublicId, String sdpAnswer, Integer transactionId) {
         if (sdpAnswer == null) return;
 
-        /*JsonObject notifyInCallObject = new JsonObject();
+        JsonObject notifyInCallObject = new JsonObject();
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_CALLER_PARAM, participant.getParticipantPublicId());
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, participant.getSessionId());
-        rpcNotificationService.sendNotificationByPublicId(calleeParticipantPublicId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);*/
+        rpcNotificationService.sendNotificationByPublicId(
+                calleeParticipantPublicId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
 
         JsonObject result = new JsonObject();
         result.addProperty("method", ProtocolElements.CALL_METHOD);
