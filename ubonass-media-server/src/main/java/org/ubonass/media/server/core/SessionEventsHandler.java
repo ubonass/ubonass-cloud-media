@@ -73,19 +73,18 @@ public class SessionEventsHandler {
 
     public void onCall(Participant participant, String calleeParticipantPublicId, String sdpAnswer, Integer transactionId) {
         if (sdpAnswer == null) return;
-        JsonObject notifyInCallObject = new JsonObject();
+
+        /*JsonObject notifyInCallObject = new JsonObject();
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_CALLER_PARAM, participant.getParticipantPublicId());
         notifyInCallObject.addProperty(ProtocolElements.INCOMINGCALL_SESSION_PARAM, participant.getSessionId());
-        rpcNotificationService.sendNotificationByPublicId(
-                calleeParticipantPublicId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);
+        rpcNotificationService.sendNotificationByPublicId(calleeParticipantPublicId, ProtocolElements.INCOMINGCALL_METHOD, notifyInCallObject);*/
 
         JsonObject result = new JsonObject();
         result.addProperty("method", ProtocolElements.CALL_METHOD);
         result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM, "OK");
         result.addProperty(ProtocolElements.CALL_CALLER_PARAM, participant.getParticipantPublicId());
         result.addProperty(ProtocolElements.CALL_SDPANSWER_PARAM, sdpAnswer);
-        rpcNotificationService.sendResponse(
-                participant.getParticipantPrivatetId(), transactionId, result);
+        rpcNotificationService.sendResponse(participant.getParticipantPrivatetId(), transactionId, result);
     }
 
     public void onCallConnected(Participant participant, String callerId, String sdpAnswer, Integer transactionId) {

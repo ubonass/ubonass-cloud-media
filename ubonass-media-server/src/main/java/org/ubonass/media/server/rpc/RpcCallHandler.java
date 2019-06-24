@@ -41,17 +41,17 @@ public class RpcCallHandler extends RpcHandler {
     }
 
     private void call(RpcConnection rpcConnection, Request<JsonObject> request) {
-        String targetId = getStringParam(request, ProtocolElements.CALL_CALLEE_PARAM);
+        String calleeId = getStringParam(request, ProtocolElements.CALL_CALLEE_PARAM);
         //String clientId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
         JsonObject result = new JsonObject();
         /**
          * 如果callee不存在
          */
-        if (!clusterRpcService.connectionExist(targetId)) {
+        if (!clusterRpcService.connectionExist(calleeId)) {
             result.addProperty("method", ProtocolElements.CALL_METHOD);
             result.addProperty(ProtocolElements.CALL_RESPONSE_PARAM,
-                    "rejected: user '" + targetId + "' is not registered");
-            logger.info("rejected send incoming cluster to {} user,reason its not registered", targetId);
+                    "rejected: user '" + calleeId + "' is not registered");
+            logger.info("rejected send incoming cluster to {} user,reason its not registered", calleeId);
             notificationService.sendResponse(
                     rpcConnection.getParticipantPrivateId(), request.getId(), result);
             return;
@@ -75,7 +75,7 @@ public class RpcCallHandler extends RpcHandler {
         /**
          * 已经在sessionId中发布了视频
          */
-        sessionManager.call(participant, targetId, options, request.getId());
+        sessionManager.call(participant, calleeId, options, request.getId());
 
     }
 
