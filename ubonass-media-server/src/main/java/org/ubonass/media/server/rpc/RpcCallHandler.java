@@ -41,7 +41,7 @@ public class RpcCallHandler extends RpcHandler {
     }
 
     private void call(RpcConnection rpcConnection, Request<JsonObject> request) {
-        String targetId = getStringParam(request, ProtocolElements.CALL_TARGETUSER_PARAM);
+        String targetId = getStringParam(request, ProtocolElements.CALL_CALLEE_PARAM);
         //String clientId = getStringParam(request, ProtocolElements.CALL_FROMUSER_PARAM);
         JsonObject result = new JsonObject();
         /**
@@ -67,7 +67,7 @@ public class RpcCallHandler extends RpcHandler {
         //添加进集群
         Participant participant =
                 sessionManager.newCallParticipant(
-                        rpcConnection.getMemberId(),sessionId, rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId());
+                        rpcConnection.getMemberId(), sessionId, rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId());
         /**
          * 获取媒体参数
          */
@@ -97,8 +97,8 @@ public class RpcCallHandler extends RpcHandler {
     private void onCallAcceptProcess(RpcConnection rpcConnection, Request<JsonObject> request) {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_ACCEPT) ||
-                !request.getParams().has(ProtocolElements.ONCALL_FROMUSER_PARAM)) return;
-        String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+                !request.getParams().has(ProtocolElements.ONCALL_CALLER_PARAM)) return;
+        String callerId = getStringParam(request, ProtocolElements.ONCALL_CALLER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
 
         rpcConnection.setSessionId(sessionId);
@@ -110,23 +110,25 @@ public class RpcCallHandler extends RpcHandler {
          * 获取媒体参数
          */
         MediaOptions options = sessionManager.generateMediaOptions(request);
-        sessionManager.onCallAccept(participant, fromId, options, request.getId());
+        sessionManager.onCallAccept(participant, callerId, options, request.getId());
 
         JsonObject accetpObject = new JsonObject();
         /*告知calleer对方已经接听*/
+        accetpObject.addProperty(ProtocolElements.ONCALL_CALLER_PARAM, callerId);
+        accetpObject.addProperty(ProtocolElements.ONCALL_CALLEE_PARAM, rpcConnection.getParticipantPublicId());
         accetpObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_ACCEPT);
         notificationService.sendNotificationByPublicId(
-                fromId, ProtocolElements.ONCALL_METHOD, accetpObject);
+                callerId, ProtocolElements.ONCALL_METHOD, accetpObject);
     }
 
     private void onCallRejectProcess(RpcConnection rpcConnection,
                                      Request<JsonObject> request) {
         if (!getStringParam(request, ProtocolElements.ONCALL_EVENT_PARAM)
                 .equals(ProtocolElements.ONCALL_EVENT_REJECT)) return;
-        String fromId = getStringParam(request, ProtocolElements.ONCALL_FROMUSER_PARAM);
+        String callerId = getStringParam(request, ProtocolElements.ONCALL_CALLER_PARAM);
         String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
 
-        sessionManager.onCallReject(sessionId, fromId,request.getId());
+        sessionManager.onCallReject(sessionId, callerId, request.getId());
 
         JsonObject rejectObject = new JsonObject();
         if (request.getParams().has(ProtocolElements.ONCALL_EVENT_REJECT_REASON)) {
@@ -136,7 +138,7 @@ public class RpcCallHandler extends RpcHandler {
         rejectObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM, ProtocolElements.ONCALL_EVENT_REJECT);
 
         notificationService.sendNotificationByPublicId(
-                fromId, ProtocolElements.ONCALL_METHOD, rejectObject);
+                callerId, ProtocolElements.ONCALL_METHOD, rejectObject);
     }
 
     private void onCallHangupProcess(RpcConnection rpcConnection,
@@ -156,7 +158,7 @@ public class RpcCallHandler extends RpcHandler {
     }
 
     protected void onIceCandidate(RpcConnection rpcConnection,
-                                Request<JsonObject> request) {
+                                  Request<JsonObject> request) {
         Participant participant;
         try {
             participant = sanityCheckOfSession(rpcConnection, "onIceCandidate");

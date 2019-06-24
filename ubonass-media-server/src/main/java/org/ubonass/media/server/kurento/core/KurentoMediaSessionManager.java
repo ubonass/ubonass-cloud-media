@@ -174,7 +174,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
 
         if (sdpAnswer != null) {
-            sessionEventsHandler.onCallAccept(participant, sdpAnswer, transactionId);
+            sessionEventsHandler.onCallConnected(participant, callerId, sdpAnswer, transactionId);
         }
         /**
          * 将caller和call进行连接
@@ -242,7 +242,7 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
             sessionEventsHandler.onCallHangup(participant, values, transactionId);
         } else {
             sessionEventsHandler.onCallHangup(participant,
-                    getParticipants(participant.getSessionId()),transactionId);
+                    getParticipants(participant.getSessionId()), transactionId);
         }
         Set<Participant> participants =
                 closeSession(participant.getSessionId(), null);

@@ -502,7 +502,7 @@ public class RecordingManager {
             log.error(errorMessage);
             throw new CloudMediaException(Code.RECORDING_PATH_NOT_VALID, errorMessage);
         } else {
-            log.info("OpenVidu Server has write permissions on recording path: {}", cloudmediaRecordingPath);
+            log.info("CloudMedia Server has write permissions on recording path: {}", cloudmediaRecordingPath);
         }
 
         final String testFolderPath = cloudmediaRecordingPath + "/TEST_RECORDING_PATH_" + System.currentTimeMillis();

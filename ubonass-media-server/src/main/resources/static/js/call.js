@@ -27,8 +27,8 @@ var videoOutput;
 var webRtcPeer;
 var response;
 var callerMessage;
-var fromId;
-var targetId;
+var callerId;
+var calleeId;
 
 var registerName = null;
 var registerState = null;
@@ -264,7 +264,7 @@ function incomingCall(message) {
     if (callState != NO_CALL) {
         var response = {
             /*id: 'incomingCallResponse',*/
-            fromId: message.fromId,
+            callerId: message.callerId,
             sessionName: message.sessionName,
             event: 'busy',
             media: message.media,
@@ -274,10 +274,10 @@ function incomingCall(message) {
     }
 
     setCallState(PROCESSING_CALL);
-    if (confirm('User ' + message.fromId
+    if (confirm('User ' + message.callerId
         + ' is calling you. Do you accept the call?')) {
         showSpinner(videoInput, videoOutput);
-        fromId = message.fromId;
+        callerId = message.callerId;
         sessionName = message.sessionName;
         var options = {
             localVideo: videoInput,
@@ -295,7 +295,7 @@ function incomingCall(message) {
 
     } else {
         var reject = {
-            fromId: message.fromId,
+            callerId: message.callerId,
             event: 'reject',
             reason: "....busy......"
         };
@@ -309,7 +309,7 @@ function onOfferIncomingCall(error, offerSdp) {
         return console.error("Error generating the offer");
     var accept = {
         media: 'all',
-        fromId: fromId,
+        callerId: callerId,
         sessionName: sessionName,
         hasAudio: true,
         hasVideo: true,
@@ -373,8 +373,8 @@ function onOfferCall(error, offerSdp) {
     console.log('Invoking SDP offer callback function');
 
     var message = {
-        fromId: userId,
-        targetId: document.getElementById('peer').value,
+        callerId: userId,
+        calleeId: document.getElementById('peer').value,
         hasAudio: true,
         hasVideo: true,
         sdpOffer: offerSdp
