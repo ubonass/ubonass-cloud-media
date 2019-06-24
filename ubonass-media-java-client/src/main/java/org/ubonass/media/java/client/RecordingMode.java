@@ -26,15 +26,15 @@ public enum RecordingMode {
      * The session is recorded automatically as soon as the first client publishes a
      * stream to the session. It is automatically stopped after last user leaves the
      * session (or until you call
-     * {@link org.ubonass.media.java.client.OpenVidu#stopRecording(String)}).
+     * {@link org.ubonass.media.java.client.CloudMedia#stopRecording(String)}).
      */
     ALWAYS,
 
     /**
      * The session is not recorded automatically. To record the session, you must
-     * call {@link org.ubonass.media.java.client.OpenVidu#startRecording(String)} method.
+     * call {@link org.ubonass.media.java.client.CloudMedia#startRecording(String)} method.
      * To stop the recording, you must call
-     * {@link org.ubonass.media.java.client.OpenVidu#stopRecording(String)}.
+     * {@link org.ubonass.media.java.client.CloudMedia#stopRecording(String)}.
      */
     MANUAL;
 }

@@ -20,7 +20,7 @@ package org.ubonass.media.java.client;
 import org.ubonass.media.java.client.RecordingInfo.*;
 
 /**
- * See {@link org.ubonass.media.java.client.OpenVidu#createSession(SessionProperties)}
+ * See {@link org.ubonass.media.java.client.Cloud#createSession(SessionProperties)}
  */
 public class SessionProperties {
 

@@ -19,36 +19,36 @@ package org.ubonass.media.java.client;
 
 /**
  * See
- * {@link io.openvidu.java.client.SessionProperties.Builder#defaultRecordingLayout(RecordingLayout)}
+ * {@link org.ubonass.media.java.client.SessionProperties.Builder#defaultRecordingLayout(RecordingLayout)}
  * and
- * {@link io.openvidu.java.client.RecordingProperties.Builder#recordingLayout(RecordingLayout)}
+ * {@link org.ubonass.media.java.client.RecordingProperties.Builder#recordingLayout(RecordingLayout)}
  */
 public enum RecordingLayout {
 
-	/**
-	 * All the videos are evenly distributed, taking up as much space as possible
-	 */
-	BEST_FIT,
+    /**
+     * All the videos are evenly distributed, taking up as much space as possible
+     */
+    BEST_FIT,
 
-	/**
-	 * <i>(not available yet)</i>
-	 */
-	PICTURE_IN_PICTURE,
+    /**
+     * <i>(not available yet)</i>
+     */
+    PICTURE_IN_PICTURE,
 
-	/**
-	 * <i>(not available yet)</i>
-	 */
-	VERTICAL_PRESENTATION,
+    /**
+     * <i>(not available yet)</i>
+     */
+    VERTICAL_PRESENTATION,
 
-	/**
-	 * <i>(not available yet)</i>
-	 */
-	HORIZONTAL_PRESENTATION,
+    /**
+     * <i>(not available yet)</i>
+     */
+    HORIZONTAL_PRESENTATION,
 
-	/**
-	 * Use your own custom recording layout. See <a href=
-	 * "https://openvidu.io/docs/advanced-features/recording#custom-recording-layouts"
-	 * target="_blank">Custom recording layouts</a> to learn more
-	 */
-	CUSTOM
+    /**
+     * Use your own custom recording layout. See <a href=
+     * "https://openvidu.io/docs/advanced-features/recording#custom-recording-layouts"
+     * target="_blank">Custom recording layouts</a> to learn more
+     */
+    CUSTOM
 }
