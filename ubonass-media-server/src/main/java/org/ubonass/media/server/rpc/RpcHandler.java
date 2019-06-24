@@ -350,9 +350,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     private void closeConnection(Session rpcSession) {
         String rpcSessionId = rpcSession.getSessionId();
         RpcConnection rpc = this.notificationService.closeRpcSession(rpcSessionId);
-        logger.info("333333333333333333333333333");
         if (rpc != null && rpc.getSessionId() != null) {
-            logger.info("444444444444444444444444444");
             MediaSession session = this.sessionManager.getSession(rpc.getSessionId());
             if (session != null && session.getParticipantByPrivateId(rpc.getParticipantPrivateId()) != null) {
                 leaveRoomAfterConnClosed(rpc.getParticipantPrivateId(), EndReason.networkDisconnect);
@@ -361,7 +359,6 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                     this.clusterSessionManager.leaveSession(rpc.getSessionId(), rpc.getParticipantPublicId());
             }
         }
-        logger.info("5555555555555555:" + rpc.getParticipantPublicId());
         //将该连接从集群连接中移除
         ClusterConnection clusterConnection =
                 this.clusterRpcService.closeConnection(rpc.getParticipantPublicId());
