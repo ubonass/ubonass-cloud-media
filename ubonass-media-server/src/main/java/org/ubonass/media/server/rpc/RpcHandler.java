@@ -17,6 +17,8 @@ import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.client.internal.ProtocolElements;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.cluster.ClusterSessionManager;
+import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.core.EndReason;
 import org.ubonass.media.server.core.MediaSession;
 import org.ubonass.media.server.core.Participant;
@@ -48,7 +50,13 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
     protected ClusterRpcService clusterRpcService;
 
     @Autowired
+    protected ClusterSessionManager clusterSessionManager;
+
+    @Autowired
     protected MediaSessionManager sessionManager;
+
+    @Autowired
+    protected CloudMediaConfig cloudMediaConfig;
 
     @Override
     public void handleRequest(Transaction transaction, Request<JsonObject> request)
@@ -347,7 +355,8 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             if (session != null && session.getParticipantByPrivateId(rpc.getParticipantPrivateId()) != null) {
                 leaveRoomAfterConnClosed(rpc.getParticipantPrivateId(), EndReason.networkDisconnect);
                 //将该会话从集群会话中移除
-                this.clusterRpcService.leaveSession(rpc.getSessionId(), rpc.getParticipantPublicId());
+                if (cloudMediaConfig.isSessionClusterEnable())
+                    this.clusterSessionManager.leaveSession(rpc.getSessionId(), rpc.getParticipantPublicId());
             }
         }
         //将该连接从集群连接中移除
@@ -390,10 +399,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
             this.closeConnection(rpcSession);
             //this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
         }
-
         clusterRpcService.showConnections();
-        clusterRpcService.showSessions();
-
+        if (cloudMediaConfig.isSessionClusterEnable())
+            clusterSessionManager.showSessions();
     }
 
     @Override

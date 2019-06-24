@@ -22,6 +22,10 @@ public class ClusterSessionEvent {
     @Autowired
     private ClusterRpcService clusterRpcService;
 
+    @Autowired
+    private ClusterSessionManager clusterSessionManager;
+
+
     /**
      * @param sessionId 房间号
      * @param participantPublicId:目标参与者的participantPublicId
@@ -39,7 +43,7 @@ public class ClusterSessionEvent {
         Callable callable = new ClusterSessionEventHandler(sdpEvent);
         Future<Event> processAnswer = (Future<Event>)
                 clusterRpcService.submitTaskToMembers(callable,
-                        clusterRpcService.getConnectionMemberId(sessionId,participantPublicId));
+                        clusterSessionManager.getConnectionMemberId(sessionId,participantPublicId));
         try {
             Event result = processAnswer.get();
             if (result instanceof SdpEvent) {
@@ -62,12 +66,11 @@ public class ClusterSessionEvent {
     public void closeSession(String sessionId, String participantPublicId) {
 
         Event sessionEvent =
-                new SessionEvent(participantPublicId,
-                        sessionId,Event.MEDIA_EVENT_CLOSE_SESSION);
+                new SessionEvent(participantPublicId, sessionId,Event.MEDIA_EVENT_CLOSE_SESSION);
 
         Runnable runnable = new ClusterSessionEventHandler(sessionEvent);
         clusterRpcService.executeToMember(runnable,
-                clusterRpcService.getConnectionMemberId(sessionId,participantPublicId));
+                clusterSessionManager.getConnectionMemberId(sessionId,participantPublicId));
     }
 
 }

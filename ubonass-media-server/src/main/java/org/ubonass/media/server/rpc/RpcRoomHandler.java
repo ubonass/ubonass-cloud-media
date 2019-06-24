@@ -49,13 +49,13 @@ public class RpcRoomHandler extends RpcCallHandler {
 
     private void receiveVideoFrom(RpcConnection rpcConnection, Request<JsonObject> request) {
         //测试使用
-        String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
+        /*String sessionId = getStringParam(request, ProtocolElements.ONCALL_SESSION_PARAM);
         rpcConnection.setSessionId(sessionId);
         Token tokenObj = new Token(null, CloudMediaRole.SUBSCRIBER, "helloworld", null, null);
         Participant p = new Participant(
                 rpcConnection.getMemberId(), rpcConnection.getParticipantPrivateId(), rpcConnection.getParticipantPublicId(),
                 sessionId, tokenObj, null, null, null, null);
-        sessionManager.joinRoom(p,sessionId,request.getId());
+        sessionManager.joinRoom(p,sessionId,request.getId());*/
 
         Participant participant;
         try {

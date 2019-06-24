@@ -38,6 +38,9 @@ public class CloudMediaConfig {
     @Value("${server.port}")
     private String serverPort;
 
+    @Value("${cloudmedia.session.cluster.enable}")
+    private boolean sessionClusterEnable;
+
     @Value("${cloudmedia.secret}")
     private String secret;
 

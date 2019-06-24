@@ -27,3 +27,6 @@ cloudmedia:
       min-recv-bandwidth: 300
       max-send-bandwidth: 1000
       min-send-bandwidth: 300
+  session:
+    cluster:
+      enable: true

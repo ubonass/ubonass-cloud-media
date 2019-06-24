@@ -16,9 +16,12 @@ import org.ubonass.media.java.client.CloudMediaRole;
 import org.ubonass.media.java.client.RecordingInfo;
 import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.cluster.ClusterSessionEvent;
+import org.ubonass.media.server.cluster.ClusterSessionManager;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.kurento.KurentoFilter;
 import org.ubonass.media.server.kurento.core.KurentoParticipant;
+import org.ubonass.media.server.kurento.endpoint.RemoteEndpoint;
 import org.ubonass.media.server.rpc.RpcNotificationService;
 
 import java.util.*;
@@ -36,12 +39,21 @@ public class SessionEventsHandler {
     @Autowired
     protected ClusterRpcService clusterRpcService;
 
-   /* @Autowired
-    protected InfoHandler infoHandler;
+    @Autowired
+    protected ClusterSessionManager clusterSessionManager;
 
     @Autowired
-    protected CallDetailRecord CDR;
-    */
+    protected ClusterSessionEvent clusterSessionEvent;
+
+    @Autowired
+    protected MediaSessionManager sessionManager;
+
+    /* @Autowired
+     protected InfoHandler infoHandler;
+
+     @Autowired
+     protected CallDetailRecord CDR;
+     */
     @Autowired
     protected CloudMediaConfig cloudMediaConfig;
 
@@ -76,9 +88,7 @@ public class SessionEventsHandler {
                 participant.getParticipantPrivatetId(), transactionId, result);
     }
 
-    public void onCallAccept(Participant participant,
-                             String sdpAnswer,
-                             Integer transactionId) {
+    public void onCallAccept(Participant participant, String sdpAnswer, Integer transactionId) {
         JsonObject connectedObject = new JsonObject();
         //startCommunication.addProperty("id", "startCommunication");
         connectedObject.addProperty(
@@ -89,22 +99,36 @@ public class SessionEventsHandler {
                 participant.getParticipantPrivatetId(), ProtocolElements.ONCALL_METHOD, connectedObject);
     }
 
-    public void onCallHangup(Participant participant, Collection<ClusterConnection> connections,Integer transactionId) {
+    public void onCallHangup(Participant participant, Collection<ClusterConnection> connections, Integer transactionId) {
+
+        JsonObject hangupObject = new JsonObject();
+        hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
+                ProtocolElements.ONCALL_EVENT_HANGUP);
 
         for (ClusterConnection connection : connections) {
+            if (!clusterRpcService.isLocalHostMember(connection.getMemberId()))
+                clusterSessionEvent.closeSession(connection.getSessionId(), connection.getParticipantPublicId());
             if (connection.getParticipantPrivateId().
-                    equals(participant.getParticipantPrivatetId()) &&
-                    clusterRpcService.isLocalHostMember(connection.getMemberId()))
+                    equals(participant.getParticipantPrivatetId()) && clusterRpcService.isLocalHostMember(connection.getMemberId()))
                 continue;
-
-            JsonObject hangupObject = new JsonObject();
-            hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
-                    ProtocolElements.ONCALL_EVENT_HANGUP);
             rpcNotificationService.sendNotificationByPublicId(
-                    connection.getParticipantPublicId(),
-                    ProtocolElements.ONCALL_METHOD, hangupObject);
+                    connection.getParticipantPublicId(), ProtocolElements.ONCALL_METHOD, hangupObject);
         }
     }
+
+    public void onCallHangup(Participant participant, Set<Participant> existingParticipants, Integer transactionId) {
+
+        JsonObject hangupObject = new JsonObject();
+        hangupObject.addProperty(ProtocolElements.ONCALL_EVENT_PARAM,
+                ProtocolElements.ONCALL_EVENT_HANGUP);
+        for (Participant p : existingParticipants) {
+            if (p.getParticipantPrivatetId().
+                    equals(participant.getParticipantPrivatetId()))
+                continue;
+            rpcNotificationService.sendNotification(p.getParticipantPrivatetId(), ProtocolElements.ONCALL_METHOD, hangupObject);
+        }
+    }
+
 
     public void onParticipantJoined(Participant participant, String sessionId, Set<Participant> existingParticipants,
                                     Integer transactionId, CloudMediaException error) {
@@ -325,8 +349,8 @@ public class SessionEventsHandler {
         result.addProperty("method", ProtocolElements.RECEIVEVIDEO_METHOD);
         result.addProperty(ProtocolElements.RECEIVEVIDEO_SDPANSWER_PARAM, sdpAnswer);
         rpcNotificationService.sendResponse(participant.getParticipantPrivatetId(), transactionId, result);
-        //modify by jeffrey
-       /* if (ProtocolElements.RECORDER_PARTICIPANT_PUBLICID.equals(participant.getParticipantPublicId())) {
+
+        if (ProtocolElements.RECORDER_PARTICIPANT_PUBLICID.equals(participant.getParticipantPublicId())) {
             lock.lock();
             try {
                 RecordingInfo recording = this.recordingsStarted.remove(session.getSessionId());
@@ -337,7 +361,7 @@ public class SessionEventsHandler {
             } finally {
                 lock.unlock();
             }
-        }*/
+        }
     }
 
     public void onUnsubscribe(Participant participant, Integer transactionId, CloudMediaException error) {
@@ -587,6 +611,7 @@ public class SessionEventsHandler {
     public void closeRpcSession(String participantPrivateId) {
         this.rpcNotificationService.closeRpcSession(participantPrivateId);
     }
+
     //modify by jeffrey
     public void setRecordingStarted(String sessionId, RecordingInfo recordingInfo) {
         this.recordingsStarted.put(sessionId, recordingInfo);

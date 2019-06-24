@@ -95,7 +95,8 @@ public class RecordingManager {
         this.composedRecordingService = new ComposedRecordingService(this, cloudMediaConfig);
         this.singleStreamRecordingService = new SingleStreamRecordingService(this, cloudMediaConfig);
 
-        log.info("RecordingInfo module required: Downloading openvidu/openvidu-recording:"
+        //modify by jeffrey
+        /*log.info("RecordingInfo module required: Downloading openvidu/openvidu-recording:"
                 + cloudMediaConfig.getRecordingVersion() + " Docker image (350MB aprox)");
 
         this.checkRecordingRequirements(this.cloudMediaConfig.getRecordingPath(),
@@ -133,7 +134,7 @@ public class RecordingManager {
         }
 
         // Clean any stranded openvidu/openvidu-recording container on startup
-        dockerManager.cleanStrandedContainers(RecordingManager.IMAGE_NAME);
+        dockerManager.cleanStrandedContainers(RecordingManager.IMAGE_NAME);*/
     }
 
     public void checkRecordingRequirements(String recordingPath, String recordingCustomLayout)

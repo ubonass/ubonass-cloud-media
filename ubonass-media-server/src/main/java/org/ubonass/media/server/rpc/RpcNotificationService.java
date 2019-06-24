@@ -3,7 +3,6 @@
 package org.ubonass.media.server.rpc;
 
 import com.google.gson.JsonObject;
-import com.hazelcast.core.IMap;
 import org.kurento.jsonrpc.Session;
 import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.message.Request;
@@ -15,19 +14,14 @@ import org.ubonass.media.server.cluster.ClusterConnection;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.cluster.ClusterRpcNotification;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class RpcNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(RpcNotificationService.class);
-
     private ConcurrentMap<String, RpcConnection> rpcConnections = new ConcurrentHashMap<>();
-
     @Autowired
     private ClusterRpcService clusterRpcService;
 
@@ -42,25 +36,10 @@ public class RpcNotificationService {
         return connection;
     }
 
-    /*public ClusterConnection newClusterConnection(RpcConnection rpcConnection) {
-        if (rpcConnection == null) return null;
-        ClusterConnection connection = new ClusterConnection(
-                rpcConnection.getClientId(),
-                rpcConnection.getParticipantPrivateId(),
-                rpcConnection.getMemberId());
-        ClusterConnection oldConnection =
-                clusterRpcService
-                        .getConnections().putIfAbsent(rpcConnection.getClientId(), connection);
-        if (oldConnection != null) {
-            log.warn("Concurrent initialization of rpcSession #{}", rpcConnection.getClientId());
-            connection = oldConnection;
-        }
-        return connection;
-    }*/
-
     /**
      * @param connection
      * @return
+     * 连接的时候一定要确保ParticipantPublicId唯一
      */
     public RpcConnection addRpcConnection(RpcConnection connection) {
         if (connection == null) return null;

@@ -55,11 +55,8 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
     @Autowired
     private KurentoParticipantEndpointConfig kurentoEndpointConfig;
 
-    @Autowired
-    private ClusterSessionEvent clusterSessionEvent;
 
     private KurentoClient kurentoClient;
-
 
     /**
      * 返回sdpAnswer
@@ -134,6 +131,15 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
         }
     }
 
+
+    private boolean isLocalHost(String participantPublicId) {
+        boolean isLocal = true;
+        if (cloudMediaConfig.isSessionClusterEnable())
+            isLocal = clusterRpcService.isLocalHostMember(
+                    clusterRpcService.getConnection(participantPublicId).getMemberId());
+        return isLocal;
+    }
+
     /**
      * call support add by jeffrey
      *
@@ -145,48 +151,28 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
     public void call(Participant participant, String calleeId, MediaOptions mediaOptions, Integer transactionId) {
 
         createSessionIfNotExist(participant);
-        ClusterConnection calleeConnection =
-                clusterRpcService.getConnection(calleeId);
         /**
          * 如果为true则不需要创建
          */
-        boolean isLocal = clusterRpcService
-                .isLocalHostMember(calleeConnection.getMemberId());
+        boolean isLocal = isLocalHost(calleeId);
 
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
-
-        if (sdpAnswer == null) {
-            CloudMediaException e = new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
-                    "Error generating SDP response for publishing user " + participant.getParticipantPublicId());
-            log.error("PARTICIPANT {}: Error publishing media", participant.getParticipantPublicId(), e);
-        }
         if (sdpAnswer != null) {
             sessionEventsHandler.onCall(participant, calleeId, sdpAnswer, transactionId);
         }
         //加入集群session
-        clusterRpcService.joinSession(
-                participant.getSessionId(), participant.getParticipantPublicId());
-
+        if (cloudMediaConfig.isSessionClusterEnable())
+            clusterSessionManager.joinSession(participant.getSessionId(), participant.getParticipantPublicId());
     }
 
     @Override
-    public void onCallAccept(Participant participant,
-                             String callerId,
-                             MediaOptions mediaOptions,
-                             Integer transactionId) {
-        ClusterConnection callerConnection =
-                clusterRpcService.getConnection(callerId);
-        boolean isLocal =
-                clusterRpcService.isLocalHostMember(callerConnection.getMemberId());
+    public void onCallAccept(Participant participant, String callerId, MediaOptions mediaOptions, Integer transactionId) {
+        boolean isLocal = isLocalHost(callerId);
         if (!isLocal)//如果当前连接不在Caller服务器上需要再在远程创建一个连接
             createSessionIfNotExist(participant);
 
         String sdpAnswer = createAndProcessCallMediaStream(participant, mediaOptions, !isLocal);
-        if (sdpAnswer == null) {
-            CloudMediaException e = new CloudMediaException(Code.MEDIA_SDP_ERROR_CODE,
-                    "Error generating SDP response for publishing user " + participant.getParticipantPublicId());
-            log.error("PARTICIPANT {}: Error publishing media", participant.getParticipantPublicId(), e);
-        }
+
         if (sdpAnswer != null) {
             sessionEventsHandler.onCallAccept(participant, sdpAnswer, transactionId);
         }
@@ -201,41 +187,45 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
          * 寻找找出calleer
          */
         if (isLocal) {//callee连接在本host上
-            KurentoParticipant callerParticipant =
-                    (KurentoParticipant)
-                            kSession.getParticipantByPrivateId(callerConnection.getParticipantPrivateId());
+            Set<Participant> participants = getParticipants(participant.getSessionId());
+            Participant caller = null;
+            for (Participant p : participants) {
+                if (p.getParticipantPublicId().equals(callerId)) {
+                    caller = p;
+                    break;
+                }
+            }
+            if (caller != null) {
+                KurentoParticipant callerParticipant =
+                        (KurentoParticipant)
+                                kSession.getParticipantByPrivateId(caller.getParticipantPrivatetId());
+                calleeParticipant.getPublisher().
+                        connect(callerParticipant.getPublisher().getEndpoint());
 
-            calleeParticipant.getPublisher().
-                    connect(callerParticipant.getPublisher().getEndpoint());
-
-            callerParticipant.getPublisher().
-                    connect(calleeParticipant.getPublisher().getEndpoint());
+                callerParticipant.getPublisher().
+                        connect(calleeParticipant.getPublisher().getEndpoint());
+            }
         } else {
             //当前rtpEndpoint生成sdpOffer,然后发送到目标机上,目标机接收到后开始进行处理
             clusterSessionEvent.publishToRoom(
                     calleeParticipant.getSessionId(), callerId, calleeParticipant.getRemotePublisher());
+            /**
+             * 添加到集群
+             */
+            clusterSessionManager.joinSession(participant.getSessionId(), participant.getParticipantPublicId());
         }
-        /**
-         * 添加到集群
-         */
-        clusterRpcService.joinSession(
-                participant.getSessionId(), participant.getParticipantPublicId());
     }
 
     /**
-     * 据接应用于1对1服务
+     * 拒接应用于1对1服务
      *
      * @param sessionId
      * @param transactionId
      */
     @Override
     public void onCallReject(String sessionId, String callerId, Integer transactionId) {
-        ClusterConnection callerConnection =
-                clusterRpcService.getConnection(callerId);
-        if (callerConnection == null) return;
-        boolean callerRemote =
-                clusterRpcService.isLocalHostMember(callerConnection.getMemberId());
-        if (!callerRemote) {
+        boolean isLocal = isLocalHost(callerId);
+        if (isLocal) {
             closeSession(sessionId, null);
         } else {
             //远程caller closeSession
@@ -245,23 +235,17 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
 
     @Override
     public void onCallHangup(Participant participant, Integer transactionId) {
-        //判断另一个connection是否在本机
-        Collection<ClusterConnection> values =
-                clusterRpcService.getSessionConnections(participant.getSessionId());
-
-        sessionEventsHandler.onCallHangup(participant, values, transactionId);
-
-
-        for (ClusterConnection connection : values) {
-            if (!clusterRpcService.isLocalHostMember(connection.getMemberId())) {
-                clusterSessionEvent.closeSession(connection.getSessionId(),
-                        connection.getParticipantPublicId());
-            }
+        if (cloudMediaConfig.isSessionClusterEnable()) {
+            //判断另一个connection是否在本机
+            Collection<ClusterConnection> values =
+                    clusterSessionManager.getSessionConnections(participant.getSessionId());
+            sessionEventsHandler.onCallHangup(participant, values, transactionId);
+        } else {
+            sessionEventsHandler.onCallHangup(participant,
+                    getParticipants(participant.getSessionId()),transactionId);
         }
         Set<Participant> participants =
                 closeSession(participant.getSessionId(), null);
-
-
     }
 
     @Override
@@ -307,10 +291,10 @@ public class KurentoMediaSessionManager extends MediaSessionManager {
                     sessionId, e);
             sessionEventsHandler.onParticipantJoined(participant, sessionId, null, transactionId, e);
         }
-        //modify by jeffrey for test 稍后取屏蔽
-        /*if (existingParticipants != null) {
+
+        if (existingParticipants != null) {
             sessionEventsHandler.onParticipantJoined(participant, sessionId, existingParticipants, transactionId, null);
-        }*/
+        }
     }
 
 

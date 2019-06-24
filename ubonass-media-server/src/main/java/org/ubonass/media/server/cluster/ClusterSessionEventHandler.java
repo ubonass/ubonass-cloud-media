@@ -34,9 +34,10 @@ public class ClusterSessionEventHandler implements Callable<Event>, Runnable, Se
     @Override
     public Event call() throws Exception {
         ClusterRpcService clusterRpcService = ClusterRpcService.getContext();
+        ClusterSessionManager clusterSessionManager = clusterRpcService.getClusterSessionManager();
         MediaSessionManager sessionManager = clusterRpcService.getSessionManager();
         ClusterConnection connection =
-                clusterRpcService.getConnection(event.getSessionId(), event.getParticipantPublicId());
+                clusterSessionManager.getConnection(event.getSessionId(), event.getParticipantPublicId());
         KurentoParticipant kParticipant =
                 (KurentoParticipant)
                         sessionManager.getParticipant(event.getSessionId(), connection.getParticipantPrivateId());

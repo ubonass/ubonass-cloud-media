@@ -8,8 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.server.cluster.ClusterRpcService;
+import org.ubonass.media.server.cluster.ClusterSessionEvent;
+import org.ubonass.media.server.cluster.ClusterSessionManager;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.recording.service.RecordingManager;
+import org.ubonass.media.server.utils.FormatChecker;
 
 import javax.annotation.PreDestroy;
 import java.util.Collection;
@@ -22,6 +25,27 @@ import java.util.stream.Collectors;
 public abstract class MediaSessionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaSessionManager.class);
+
+    @Autowired
+    protected CloudMediaConfig cloudMediaConfig;
+
+    @Autowired
+    protected SessionEventsHandler sessionEventsHandler;
+
+    @Autowired
+    protected ClusterRpcService clusterRpcService;
+
+    @Autowired
+    protected ClusterSessionManager clusterSessionManager;
+
+    @Autowired
+    protected ClusterSessionEvent clusterSessionEvent;
+
+    @Autowired
+    protected RecordingManager recordingManager;
+
+    public FormatChecker formatChecker = new FormatChecker();
+
 
     /**
      * @Key: media sessionId
@@ -50,18 +74,6 @@ public abstract class MediaSessionManager {
      * @value:Token
      */
     public ConcurrentMap<String, ConcurrentHashMap<String, Token>> sessionidTokenTokenobj = new ConcurrentHashMap<>();
-
-    @Autowired
-    protected CloudMediaConfig cloudMediaConfig;
-
-    @Autowired
-    protected SessionEventsHandler sessionEventsHandler;
-
-    @Autowired
-    protected ClusterRpcService clusterRpcService;
-
-    @Autowired
-    protected RecordingManager recordingManager;
 
     private volatile boolean closed = false;
 
@@ -108,11 +120,11 @@ public abstract class MediaSessionManager {
      *
      * @return set of the session's identifiers
      */
-    public Collection<MediaSession> getMediaSessions() {
+    public Collection<MediaSession> getSessions() {
         return sessions.values();
     }
 
-    public MediaSession getMediaSessionNotActive(String sessionId) {
+    public MediaSession getSessionNotActive(String sessionId) {
         return this.sessionsNotActive.get(sessionId);
     }
 
@@ -121,7 +133,7 @@ public abstract class MediaSessionManager {
         allSessions.addAll(this.sessionsNotActive.values().stream()
                 .filter(sessionNotActive -> !sessions.containsKey(sessionNotActive.getSessionId()))
                 .collect(Collectors.toSet()));
-        allSessions.addAll(this.getMediaSessions());
+        allSessions.addAll(this.getSessions());
         return allSessions;
     }
 
@@ -194,7 +206,7 @@ public abstract class MediaSessionManager {
      * <strong>Dev advice:</strong> Send notifications to all participants to inform
      * that their session has been forcibly closed.
      *
-     * @see MediaSessionManmager#closeSession(String)
+     * //@see MediaSessionManmager#closeSession(String)
      */
     @PreDestroy
     public void close() {
@@ -269,7 +281,8 @@ public abstract class MediaSessionManager {
          * 将集群中的session删除
          * add by jeffrey
          */
-        clusterRpcService.closeSession(session.getSessionId());
+        if (cloudMediaConfig.isSessionClusterEnable())
+            clusterSessionManager.closeSession(session.getSessionId());
 
         logger.info("Session '{}' removed and closed", session.getSessionId());
     }

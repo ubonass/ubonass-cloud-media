@@ -17,6 +17,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
@@ -24,6 +25,7 @@ import org.ubonass.media.client.CloudMediaException;
 import org.ubonass.media.client.CloudMediaException.Code;
 import org.ubonass.media.server.cluster.ClusterRpcService;
 import org.ubonass.media.server.cluster.ClusterSessionEvent;
+import org.ubonass.media.server.cluster.ClusterSessionManager;
 import org.ubonass.media.server.config.CloudMediaConfig;
 import org.ubonass.media.server.config.HttpHandshakeInterceptor;
 import org.ubonass.media.server.core.MediaSessionManager;
@@ -82,21 +84,6 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
             return new FixedOneKmsManager(firstKmsWsUri);
         }
     }
-    @Bean
-    @ConditionalOnMissingBean
-    public Config config() {
-        //如果有集群管理中心，可以配置
-        Config confg = null;
-        try {
-            confg = new XmlConfigBuilder(
-                    CloudMediaServerApplication.class
-                            .getResource("/ubonass-media-hazelcast.xml")
-                            .openStream()).build();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return confg;
-    }
 
     @Bean
     @ConditionalOnMissingBean
@@ -139,10 +126,31 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
         return new RecordingManager();
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public Config config() {
+        //如果有集群管理中心，可以配置
+        Config confg = null;
+        try {
+            confg = new XmlConfigBuilder(
+                    CloudMediaServerApplication.class.getResource("/ubonass-media-hazelcast.xml").openStream()).build();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return confg;
+    }
+
     @ConditionalOnMissingBean
     @Bean
     public ClusterRpcService clusterRpcService() {
         return new ClusterRpcService(config());
+    }
+
+
+    @ConditionalOnMissingBean
+    @Bean
+    public ClusterSessionManager clusterSessionManager() {
+        return new ClusterSessionManager(clusterRpcService());
     }
 
     @ConditionalOnMissingBean
@@ -217,7 +225,7 @@ public class CloudMediaServerApplication implements JsonRpcConfigurer {
 
         if (cloudmediaConf.getWsUrl().endsWith("/")) {
             cloudmediaConf.setWsUrl(
-                    cloudmediaConf.getWsUrl().substring(0,cloudmediaConf.getWsUrl().length() - 1));
+                    cloudmediaConf.getWsUrl().substring(0, cloudmediaConf.getWsUrl().length() - 1));
         }
 
         if (this.cloudMediaConfig().isRecordingModuleEnable()) {

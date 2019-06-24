@@ -54,7 +54,7 @@ public class FixedOneKmsManager extends KmsManager {
                         // Different KMS. Reset sessions status (no Publisher or SUbscriber endpoints)
                         log.warn("Kurento Client reconnected to a different KMS instance, with uri {}", kmsWsUri);
                         log.warn("Updating all webrtc endpoints for active sessions");
-                        sessionManager.getMediaSessions().forEach(s -> {
+                        sessionManager.getSessions().forEach(s -> {
                             ((KurentoMediaSession) s).restartStatusInKurento();
                         });
                     } else {
