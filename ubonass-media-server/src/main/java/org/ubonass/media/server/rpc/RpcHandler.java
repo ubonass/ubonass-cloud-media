@@ -386,8 +386,13 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
                 if (p != null) {
                     logger.info("22222222222222222222222");
                     message = "Evicting participant with private id {} because its websocket unexpectedly closed in the client side";
+                } else {
+                    logger.info("..............@@@.................");
+                    message = "not exist session force disconnect connection";
                 }
             } catch (CloudMediaException exception) {
+                logger.info("...............................");
+                message = "not exist session force disconnect connection";
             }
         }
 
