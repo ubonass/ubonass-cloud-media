@@ -288,7 +288,7 @@ public class ProtocolElements {
      */
     public static final String CALL_METHOD = "call";//去电由A发给服务端的请求
     public static final String CALL_CALLER_PARAM = "callerId";//
-    public static final String CALL_CALLEE_PARAM = "targetId";
+    public static final String CALL_CALLEE_PARAM = "calleeId";
     public static final String CALL_MEDIA_PARAM = "media";//
     public static final String CALL_SDPOFFER_PARAM = "sdpOffer";//
     public static final String CALL_SDPANSWER_PARAM = "sdpAnswer";//
