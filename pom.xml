@@ -22,7 +22,7 @@
         <version.io-springfox>2.7.0</version.io-springfox>
 
         <version.jetty>9.3.0.M2</version.jetty>
-        <version.netty>4.1.5.Final</version.netty>
+        <version.netty>4.1.59.Final</version.netty>
 
         <!-- External versions -->
         <webjars-locator.version>0.36</webjars-locator.version>
